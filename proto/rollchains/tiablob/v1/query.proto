@@ -1,0 +1,40 @@
+syntax = "proto3";
+package rollchains.tiablob.v1;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "rollchains/tiablob/v1/validator.proto";
+
+option go_package = "github.com/rollchains/tiablob";
+
+// Query defines the gRPC querier service.
+service Query {
+  // Validators returns registered validators of the module.
+  rpc Validators(QueryValidatorsRequest)
+      returns (QueryValidatorsResponse) {
+    option (google.api.http).get = "/tiablob/v1/validators";
+  }
+
+  rpc CelestiaAddress(QueryCelestiaAddressRequest) returns (QueryCelestiaAddressResponse) {
+    option (google.api.http).get = "/tiablob/v1/celestia_address";
+  }
+}
+
+// QueryValidatorsRequest is the request type for the Query/Validators RPC method.
+message QueryValidatorsRequest {}
+
+// QueryValidatorResponse is the response type for the Query/Validators RPC method.
+message QueryValidatorsResponse {
+  // validators is the returned validators from the module
+  repeated Validator validators = 1 [ (gogoproto.nullable) = false ];
+}
+
+// QueryCelestiaAddressRequest is the request type for the Query/CelestiaAddress RPC method.
+message QueryCelestiaAddressRequest {
+  string validator_address = 1;
+}
+
+// QueryCelestiaAddressResponse is the response type for the Query/CelestiaAddress RPC method.
+message QueryCelestiaAddressResponse {
+  string celestia_address = 1;
+}

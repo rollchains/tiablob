@@ -1,0 +1,19 @@
+syntax = "proto3";
+package rollchains.tiablob.v1;
+
+import "gogoproto/gogo.proto";
+import "rollchains/tiablob/v1/validator.proto";
+
+option go_package = "github.com/rollchains/tiablob";
+
+// GenesisState defines the rollchain module's genesis state.
+message GenesisState {
+    repeated Validator validators = 1 [ (gogoproto.nullable) = false ];
+
+    // the height of the last block that was proven to be posted to Celestia.
+    // increment only, never skipping heights.
+    uint64 proven_height = 2;
+
+    // ID of the IBC client tracking Celestia
+    string client_id = 3;
+}

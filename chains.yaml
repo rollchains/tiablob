@@ -1,0 +1,12 @@
+# This file is used to create docker images using the heighliner binary.
+# see: https://github.com/strangelove-ventures/heighliner
+
+- name: rollchain
+  dockerfile: cosmos
+  build-target: make install
+  build-dir: simapp
+  binaries:
+    - /go/bin/rcd
+  build-env:
+    - LEDGER_ENABLED=false
+    - BUILD_TAGS=muslc
