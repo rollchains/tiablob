@@ -30,7 +30,7 @@ func (r *Relayer) postNextBlocks(ctx sdk.Context, n int) {
 	}
 
 	// only publish every n blocks
-	if (height+1)%int64(n) != 0 {
+	if (height-1)%int64(n) != 0 {
 		return
 	}
 
@@ -44,7 +44,7 @@ func (r *Relayer) postNextBlocks(ctx sdk.Context, n int) {
 	txClient := txtypes.NewServiceClient(r.clientCtx)
 
 	for i := 0; i < n; i++ {
-		h := height - int64(n) - 1 + int64(i)
+		h := height - int64(n) + int64(i)
 		res, err := txClient.GetBlockWithTxs(ctx, &txtypes.GetBlockWithTxsRequest{Height: h})
 		if err != nil {
 			r.logger.Error("Error getting block", "error", err)
@@ -130,7 +130,7 @@ func (r *Relayer) postNextBlocks(ctx sdk.Context, n int) {
 	}
 
 	r.logger.Info("Posted block(s) to Celestia",
-		"height_start", height-int64(n)-1,
+		"height_start", height-int64(n),
 		"height_end", height-1,
 		"celestia_height", res.Height,
 		"tx_hash", hex.EncodeToString(res.Hash),
