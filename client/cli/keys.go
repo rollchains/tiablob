@@ -8,13 +8,12 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/rollchains/tiablob"
+	"github.com/rollchains/tiablob/relayer"
 	"github.com/rollchains/tiablob/relayer/cosmos"
 	"github.com/spf13/cobra"
 )
 
-const keyName = "blob"
-
-// NewTxCmd returns a root CLI command handler for all x/tiablob transaction commands.
+// NewKeysCmd returns a root CLI command handler for all x/tiablob keys commands.
 func NewKeysCmd() *cobra.Command {
 	keysCmd := &cobra.Command{
 		Use:                        tiablob.ModuleName,
@@ -50,7 +49,7 @@ $ %s keys tiablob add
 			}
 
 			keyDir := filepath.Join(clientCtx.HomeDir, "keys")
-			provider, err := cosmos.NewProvider("http://localhost:26657", keyDir)
+			provider, err := cosmos.NewProvider("", keyDir, 0)
 			if err != nil {
 				fmt.Fprintf(cmd.ErrOrStderr(), "Error 1: %s", err)
 				return err
@@ -61,12 +60,12 @@ $ %s keys tiablob add
 				return err
 			}
 
-			exists := provider.KeyExists(keyName)
+			exists := provider.KeyExists(relayer.CelestiaPublishKeyName)
 			if exists {
 				return fmt.Errorf("key already exists")
 			}
 
-			res, err := provider.AddKey(keyName, 118, "secp256k1")
+			res, err := provider.AddKey(relayer.CelestiaPublishKeyName, 118, "secp256k1")
 			if err != nil {
 				fmt.Fprintf(cmd.ErrOrStderr(), "Error 3: %s", err)
 				return err
@@ -107,7 +106,7 @@ $ %s keys tiablob restore "pattern match caution ..."
 			}
 
 			keyDir := filepath.Join(clientCtx.HomeDir, "keys")
-			provider, err := cosmos.NewProvider("http://localhost:26657", keyDir)
+			provider, err := cosmos.NewProvider("", keyDir, 0)
 			if err != nil {
 				return err
 			}
@@ -116,12 +115,12 @@ $ %s keys tiablob restore "pattern match caution ..."
 				return err
 			}
 
-			exists := provider.KeyExists(keyName)
+			exists := provider.KeyExists(relayer.CelestiaPublishKeyName)
 			if exists {
 				return fmt.Errorf("key already exists")
 			}
 
-			res, err := provider.RestoreKey(keyName, args[0], 118, "secp256k1")
+			res, err := provider.RestoreKey(relayer.CelestiaPublishKeyName, args[0], 118, "secp256k1")
 			if err != nil {
 				return err
 			}
@@ -158,7 +157,7 @@ $ %s keys tiablob show
 			}
 
 			keyDir := filepath.Join(clientCtx.HomeDir, "keys")
-			provider, err := cosmos.NewProvider("http://localhost:26657", keyDir)
+			provider, err := cosmos.NewProvider("", keyDir, 0)
 			if err != nil {
 				return err
 			}
@@ -167,7 +166,7 @@ $ %s keys tiablob show
 				return err
 			}
 
-			res, err := provider.ShowAddress(keyName, "celestia")
+			res, err := provider.ShowAddress(relayer.CelestiaPublishKeyName, "celestia")
 			if err != nil {
 				return err
 			}
@@ -197,7 +196,7 @@ $ %s keys tiablob delete
 			}
 
 			keyDir := filepath.Join(clientCtx.HomeDir, "keys")
-			provider, err := cosmos.NewProvider("http://localhost:26657", keyDir)
+			provider, err := cosmos.NewProvider("", keyDir, 0)
 			if err != nil {
 				return err
 			}
@@ -206,7 +205,7 @@ $ %s keys tiablob delete
 				return err
 			}
 
-			if err := provider.DeleteKey(keyName); err != nil {
+			if err := provider.DeleteKey(relayer.CelestiaPublishKeyName); err != nil {
 				return err
 			}
 

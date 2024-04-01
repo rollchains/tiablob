@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+	coretypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
@@ -93,24 +94,24 @@ func (cc *CosmosProvider) Broadcast(
 	sequence uint64,
 	walletState *WalletState,
 	txBz []byte,
-) error {
+) (*coretypes.ResultBroadcastTxCommit, error) {
 	// Broadcast the transaction.
 	res, err := cc.rpcClient.BroadcastTxCommit(ctx, txBz)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if res.CheckTx.Code != 0 {
-		return fmt.Errorf("failed to broadcast, CheckTx failed: %d - %s - %s - %s", res.CheckTx.Code, res.CheckTx.Codespace, res.CheckTx.Log, string(res.CheckTx.Data))
+		return res, fmt.Errorf("failed to broadcast, CheckTx failed: %d - %s - %s - %s", res.CheckTx.Code, res.CheckTx.Codespace, res.CheckTx.Log, string(res.CheckTx.Data))
 	}
 
 	if res.TxResult.Code != 0 {
-		return fmt.Errorf("failed to broadcast, Tx execution failed: %d - %s - %s - %s", res.TxResult.Code, res.TxResult.Codespace, res.TxResult.Log, string(res.TxResult.Data))
+		return res, fmt.Errorf("failed to broadcast, Tx execution failed: %d - %s - %s - %s", res.TxResult.Code, res.TxResult.Codespace, res.TxResult.Log, string(res.TxResult.Data))
 	}
 
 	walletState.updateNextAccountSequence(sequence + 1)
 
-	return nil
+	return res, nil
 }
 
 func (cc *CosmosProvider) EncodeTxJSON(txb client.TxBuilder) ([]byte, error) {

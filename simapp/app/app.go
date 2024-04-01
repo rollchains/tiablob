@@ -724,9 +724,11 @@ func NewChainApp(
 	app.TiaBlobRelayer, err = tiablobrelayer.NewRelayer(
 		logger,
 		"https://rpc-mocha.pops.one:443", // "https://rpc.celestia.strange.love:443", // Celestia RPC URL. TODO config var
+		30*time.Second,                   // Celestia RPC timeout. TODO config var
 		appns.MustNewV0([]byte(celestiaNamespace)),
-		"0.01utia",
-		1.0,
+		"0.01utia", // fee per gas unit. TODO config var
+		1.0,        // gas multiplier based on estimate. TODO config var
+		10,
 		filepath.Join(homePath, "keys"),
 		3*time.Second, // query Celestia for new block proofs this often. TODO config var
 		32,            // only flush at most this many block proofs in an injected tx per block proposal. TODO config var

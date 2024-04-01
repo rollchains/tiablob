@@ -60,8 +60,8 @@ func (cc *CosmosProvider) EnsureWalletState(address string) *WalletState {
 }
 
 // NewProvider validates the CosmosProviderConfig, instantiates a ChainClient and then instantiates a CosmosProvider
-func NewProvider(rpcURL string, keyDir string) (*CosmosProvider, error) {
-	rpcClient, err := client.NewClient(rpcURL, 5*time.Second)
+func NewProvider(rpcURL string, keyDir string, timeout time.Duration) (*CosmosProvider, error) {
+	rpcClient, err := client.NewClient(rpcURL, timeout)
 	if err != nil {
 		return nil, err
 	}
