@@ -23,7 +23,7 @@ replace (
 require (
 	cosmossdk.io/math v1.2.0
 	github.com/cosmos/cosmos-sdk v0.50.4
-	github.com/reecepbcups/globalfee v0.0.1-alpha.2
+	github.com/strangelove-ventures/globalfee v0.50.0
 	github.com/strangelove-ventures/interchaintest/v8 v8.1.0
 	github.com/stretchr/testify v1.8.4
 	go.uber.org/zap v1.26.0

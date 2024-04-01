@@ -38,6 +38,7 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
+	tiablobcli "github.com/rollchains/tiablob/client/cli"
 )
 
 // initCometBFTConfig helps to override default CometBFT Config values.
@@ -109,13 +110,16 @@ func initRootCmd(
 
 	AddCommands(rootCmd, app.DefaultNodeHome, newApp, appExport, addModuleInitFlags)
 
+	keysCmd := keys.Commands()
+	keysCmd.AddCommand(tiablobcli.NewKeysCmd())
+
 	// add keybase, auxiliary RPC, query, genesis, and tx child commands
 	rootCmd.AddCommand(
 		server.StatusCommand(),
 		genesisCommand(txConfig, basicManager),
 		queryCommand(),
 		txCommand(),
-		keys.Commands(),
+		keysCmd,
 	)
 }
 

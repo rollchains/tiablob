@@ -62,11 +62,11 @@ func (cc *CosmosProvider) AccountInfo(ctx context.Context, address string) (auth
 		Address: address,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("unable to query account for noble: %w", err)
+		return nil, fmt.Errorf("unable to query account: %w", err)
 	}
 	var acc authtypes.AccountI
 	if err := cc.cdc.InterfaceRegistry.UnpackAny(res.Account, &acc); err != nil {
-		return nil, fmt.Errorf("unable to unpack account for noble: %w", err)
+		return nil, fmt.Errorf("unable to unpack account: %w", err)
 	}
 
 	return acc, nil

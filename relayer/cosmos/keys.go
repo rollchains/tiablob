@@ -39,12 +39,16 @@ func KeyringAlgoOptions() keyring.Option {
 
 // CreateKeystore initializes a new instance of a keyring at the specified path in the local filesystem.
 func (cc *CosmosProvider) CreateKeystore() error {
-	keybase, err := keyring.New("restaker", "test", cc.keyDir, rand.Reader, cc.cdc.Marshaler, KeyringAlgoOptions())
+	keybase, err := keyring.New("tiablob", "test", cc.keyDir, rand.Reader, cc.cdc.Marshaler, KeyringAlgoOptions())
 	if err != nil {
 		return err
 	}
 	cc.keybase = keybase
 	return nil
+}
+
+func (cc *CosmosProvider) LoadKeystore(keyring keyring.Keyring) {
+	cc.keybase = keyring
 }
 
 // KeystoreCreated returns true if there is an existing keystore instance at the specified path, it returns false otherwise.

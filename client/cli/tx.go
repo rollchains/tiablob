@@ -21,7 +21,7 @@ import (
 func NewTxCmd(ac address.Codec) *cobra.Command {
 	txCmd := &cobra.Command{
 		Use:                        tiablob.ModuleName,
-		Short:                      tiablob.ModuleName + "transaction subcommands",
+		Short:                      tiablob.ModuleName + " transaction subcommands",
 		DisableFlagParsing:         true,
 		SuggestionsMinimumDistance: 2,
 		RunE:                       client.ValidateCmd,
