@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"time"
 
 	cmtcfg "github.com/cometbft/cometbft/config"
 	dbm "github.com/cosmos/cosmos-db"
@@ -39,6 +40,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	tiablobcli "github.com/rollchains/tiablob/client/cli"
+	"github.com/rollchains/tiablob/relayer"
 )
 
 // initCometBFTConfig helps to override default CometBFT Config values.
@@ -60,6 +62,8 @@ func initAppConfig() (string, interface{}) {
 
 	type CustomAppConfig struct {
 		serverconfig.Config
+
+		Celestia *relayer.CelestiaConfig `mapstructure:"celestia"`
 	}
 
 	// Optionally allow the chain developer to overwrite the SDK's default
@@ -82,9 +86,38 @@ func initAppConfig() (string, interface{}) {
 
 	customAppConfig := CustomAppConfig{
 		Config: *srvCfg,
+		Celestia: &relayer.CelestiaConfig{
+			RpcURL:             "https://rpc-mocha.pops.one:443", // TODO remove hardcoded URL
+			RpcTimeout:         30 * time.Second,
+			GasPrice:           "0.01utia",
+			GasAdjustment:      1.0,
+			ProofQueryInterval: 12 * time.Second,
+			MaxFlushSize:       32,
+		},
 	}
 
-	customAppTemplate := serverconfig.DefaultConfigTemplate
+	customAppTemplate := serverconfig.DefaultConfigTemplate + `
+
+	[celestia]
+	# RPC URL of celestia-app node for posting block data
+	# TODO remove hardcoded URL
+	rpc-url = "https://rpc-mocha.pops.one:443"
+
+	# RPC Timeout for transaction broadcasts and queries to celestia-app node
+	rpc-timeout = "30s"
+
+	# Gas price to pay for celestia transactions
+	gas-prices = "0.01utia"
+
+	# Gas adjustment for celestia transactions
+	gas-adjustment = 1.0
+
+	# Query celestia for new block proofs this often
+	proof-query-interval = "12s"
+
+	# Only flush at most this many block proofs in an injected tx per block proposal
+	max-flush-size = 32
+	`
 
 	return customAppTemplate, customAppConfig
 }
@@ -92,8 +125,8 @@ func initAppConfig() (string, interface{}) {
 func initRootCmd(
 	rootCmd *cobra.Command,
 	txConfig client.TxConfig,
-	interfaceRegistry codectypes.InterfaceRegistry,
-	appCodec codec.Codec,
+	_ codectypes.InterfaceRegistry,
+	_ codec.Codec,
 	basicManager module.BasicManager,
 ) {
 	cfg := sdk.GetConfig()

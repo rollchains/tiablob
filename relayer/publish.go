@@ -30,11 +30,11 @@ func (r *Relayer) postNextBlocks(ctx sdk.Context, n int) {
 	}
 
 	// only publish every n blocks
-	if height%int64(n) != 0 {
+	if height%int64(n+1) != 0 {
 		return
 	}
 
-	if !r.provider.KeyExists(celestiaKeyRingName) {
+	if !r.provider.KeyExists(CelestiaPublishKeyName) {
 		r.logger.Error("No Celestia key found, please add with `tiablob keys add` command")
 		return
 	}
@@ -74,7 +74,7 @@ func (r *Relayer) postNextBlocks(ctx sdk.Context, n int) {
 	// 12000 required for feegrant
 	gasLimit := blobtypes.DefaultEstimateGas(blobLens) + 12000
 
-	signer, err := r.provider.ShowAddress(celestiaKeyRingName, "celestia")
+	signer, err := r.provider.ShowAddress(CelestiaPublishKeyName, "celestia")
 	if err != nil {
 		r.logger.Error("Error getting signer address", "error", err)
 		return
@@ -86,7 +86,7 @@ func (r *Relayer) postNextBlocks(ctx sdk.Context, n int) {
 		return
 	}
 
-	ws := r.provider.EnsureWalletState(celestiaKeyRingName)
+	ws := r.provider.EnsureWalletState(CelestiaPublishKeyName)
 	ws.Mu.Lock()
 	defer ws.Mu.Unlock()
 
@@ -98,7 +98,7 @@ func (r *Relayer) postNextBlocks(ctx sdk.Context, n int) {
 		r.celestiaGasAdjustment,
 		gasLimit,
 		celestiaBech32Prefix,
-		celestiaKeyRingName,
+		CelestiaPublishKeyName,
 		[]sdk.Msg{msg},
 		celestiaBlobPostMemo,
 	)

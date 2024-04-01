@@ -7,6 +7,7 @@ import (
 
 	"cosmossdk.io/log"
 	"github.com/cosmos/cosmos-sdk/client"
+	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	appns "github.com/rollchains/tiablob/celestia/namespace"
 	"github.com/rollchains/tiablob/relayer/cosmos"
@@ -40,17 +41,14 @@ type Relayer struct {
 // NewRelayer creates a new Relayer instance
 func NewRelayer(
 	logger log.Logger,
-	celestiaRpcUrl string,
-	celestiaRpcTimeout time.Duration,
+	appOpts servertypes.AppOptions,
 	celestiaNamespace appns.Namespace,
-	celestiaGasPrice string,
-	celestiaGasAdjustment float64,
-	celestiaPublishBlockInterval int,
 	keyDir string,
-	pollInterval time.Duration,
-	blockProofCacheLimit int,
+	celestiaPublishBlockInterval int,
 ) (*Relayer, error) {
-	provider, err := cosmos.NewProvider(celestiaRpcUrl, keyDir, celestiaRpcTimeout)
+	cfg := CelestiaConfigFromAppOpts(appOpts)
+
+	provider, err := cosmos.NewProvider(cfg.RpcURL, keyDir, cfg.RpcTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -58,19 +56,19 @@ func NewRelayer(
 	return &Relayer{
 		logger: logger,
 
-		pollInterval: pollInterval,
+		pollInterval: cfg.ProofQueryInterval,
 
 		provenHeights: make(chan uint64, 10000),
 		commitHeights: make(chan uint64, 10000),
 
 		provider:                     provider,
 		celestiaNamespace:            celestiaNamespace,
-		celestiaGasPrice:             celestiaGasPrice,
-		celestiaGasAdjustment:        celestiaGasAdjustment,
+		celestiaGasPrice:             cfg.GasPrice,
+		celestiaGasAdjustment:        cfg.GasAdjustment,
 		celestiaPublishBlockInterval: celestiaPublishBlockInterval,
 
 		blockProofCache:      make(map[uint64][]byte),
-		blockProofCacheLimit: blockProofCacheLimit,
+		blockProofCacheLimit: cfg.MaxFlushSize,
 	}, nil
 }
 

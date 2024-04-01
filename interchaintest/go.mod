@@ -1,8 +1,6 @@
 module github.com/rollchains/rollchains/interchaintest
 
-go 1.21
-
-toolchain go1.21.0
+go 1.22.1
 
 replace (
 	// not tagged properly (SDK v51)
