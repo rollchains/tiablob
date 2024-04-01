@@ -30,7 +30,7 @@ func (r *Relayer) postNextBlocks(ctx sdk.Context, n int) {
 	}
 
 	// only publish every n blocks
-	if height%int64(n+1) != 0 {
+	if (height+1)%int64(n) != 0 {
 		return
 	}
 
