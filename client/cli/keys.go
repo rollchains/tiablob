@@ -4,13 +4,25 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/spf13/cobra"
+
 	"github.com/cosmos/cosmos-sdk/client"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+	"github.com/cosmos/cosmos-sdk/server"
 	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/cosmos/cosmos-sdk/version"
+
 	"github.com/rollchains/tiablob"
 	"github.com/rollchains/tiablob/relayer"
 	"github.com/rollchains/tiablob/relayer/cosmos"
-	"github.com/spf13/cobra"
+)
+
+const (
+	FlagFeeGrant = "feegrant"
+	FlagPubKey   = "pubkey"
+	FlagAddress  = "address"
+	FlagLedger   = "ledger"
+	FlagCoinType = "coin-type"
 )
 
 // NewKeysCmd returns a root CLI command handler for all x/tiablob keys commands.
@@ -37,7 +49,7 @@ func NewKeysCmd() *cobra.Command {
 func NewKeysAddCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "add",
-		Short: "Generate a key for posting blocks to Celestia",
+		Short: "Generate a key for posting blocks or feegranting on Celestia",
 		Args:  cobra.NoArgs,
 		Example: fmt.Sprintf(` 
 $ %s keys tiablob add
@@ -48,44 +60,89 @@ $ %s keys tiablob add
 				return err
 			}
 
+			serverCtx := server.GetServerContextFromCmd(cmd)
+			cfg := relayer.CelestiaConfigFromAppOpts(serverCtx.Viper)
+
 			keyDir := filepath.Join(clientCtx.HomeDir, "keys")
-			provider, err := cosmos.NewProvider("", keyDir, 0)
+			provider, err := cosmos.NewProvider(cfg.RpcURL, keyDir, 0)
 			if err != nil {
-				fmt.Fprintf(cmd.ErrOrStderr(), "Error 1: %s", err)
 				return err
 			}
 
 			if err := provider.CreateKeystore(); err != nil {
-				fmt.Fprintf(cmd.ErrOrStderr(), "Error 2: %s", err)
 				return err
 			}
 
-			exists := provider.KeyExists(relayer.CelestiaPublishKeyName)
+			keyName := relayer.CelestiaPublishKeyName
+			feeGrant, _ := cmd.Flags().GetBool(FlagFeeGrant)
+			if feeGrant {
+				keyName = relayer.CelestiaFeegrantKeyName
+			}
+
+			exists := provider.KeyExists(keyName)
 			if exists {
 				return fmt.Errorf("key already exists")
 			}
 
-			res, err := provider.AddKey(relayer.CelestiaPublishKeyName, 118, "secp256k1")
-			if err != nil {
-				fmt.Fprintf(cmd.ErrOrStderr(), "Error 3: %s", err)
-				return err
-			}
+			address, _ := cmd.Flags().GetString(FlagAddress)
+			pubKey, _ := cmd.Flags().GetString(FlagPubKey)
+			ledger, _ := cmd.Flags().GetBool(FlagLedger)
+			coinType, _ := cmd.Flags().GetUint32(FlagCoinType)
 
-			b32, err := bech32.ConvertAndEncode("celestia", res.Account)
-			if err != nil {
-				fmt.Fprintf(cmd.ErrOrStderr(), "Error 4: %s", err)
-				return err
-			}
+			var ko *cosmos.KeyOutput
 
-			fmt.Printf(`WRITE THIS MNEMONIC PHRASE DOWN AND KEEP IT SAFE. IT IS THE ONLY WAY TO RECOVER THE ACCOUNT
+			if address != "" {
+				accountInfo, err := provider.AccountInfo(cmd.Context(), address)
+				if err != nil {
+					return fmt.Errorf("failed to query account info: %w", err)
+				}
+
+				ko, err = provider.SaveOfflineKey(keyName, accountInfo.GetPubKey())
+				if err != nil {
+					return err
+				}
+			} else if pubKey != "" {
+				var pk cryptotypes.PubKey
+				if err = clientCtx.Codec.UnmarshalInterfaceJSON([]byte(pubKey), &pk); err != nil {
+					return err
+				}
+				ko, err = provider.SaveOfflineKey(keyName, pk)
+				if err != nil {
+					return err
+				}
+			} else if ledger {
+				ko, err = provider.SaveLedgerKey(keyName, coinType, "celestia")
+				if err != nil {
+					return err
+				}
+			} else {
+				ko, err = provider.AddKey(keyName, coinType, "secp256k1")
+				if err != nil {
+					return err
+				}
+
+				fmt.Printf(`WRITE THIS MNEMONIC PHRASE DOWN AND KEEP IT SAFE. IT IS THE ONLY WAY TO RECOVER THE ACCOUNT
   Mnemonic: "%s"
   CoinType: %d
-  Address: %s
-`, res.Mnemonic, 118, b32)
+`, ko.Mnemonic, coinType)
+			}
+
+			b32, err := bech32.ConvertAndEncode("celestia", ko.Account)
+			if err != nil {
+				return err
+			}
+
+			fmt.Printf("  Address: %s\n", b32)
 
 			return nil
 		},
 	}
+
+	cmd.Flags().BoolP(FlagFeeGrant, "f", false, "Feegranter key")
+	cmd.Flags().Bool(FlagLedger, false, "Store a key for a Ledger device")
+	cmd.Flags().String(FlagPubKey, "", "Specify a public key to add")
+	cmd.Flags().String(FlagAddress, "", "Specify an address to query from Celestia to save as an offline key")
+	cmd.Flags().Uint32(FlagCoinType, 118, "Coin type for key derivation")
 
 	return cmd
 }
@@ -115,12 +172,20 @@ $ %s keys tiablob restore "pattern match caution ..."
 				return err
 			}
 
-			exists := provider.KeyExists(relayer.CelestiaPublishKeyName)
+			keyName := relayer.CelestiaPublishKeyName
+			feeGrant, _ := cmd.Flags().GetBool(FlagFeeGrant)
+			if feeGrant {
+				keyName = relayer.CelestiaFeegrantKeyName
+			}
+
+			exists := provider.KeyExists(keyName)
 			if exists {
 				return fmt.Errorf("key already exists")
 			}
 
-			res, err := provider.RestoreKey(relayer.CelestiaPublishKeyName, args[0], 118, "secp256k1")
+			coinType, _ := cmd.Flags().GetUint32(FlagCoinType)
+
+			res, err := provider.RestoreKey(keyName, args[0], coinType, "secp256k1")
 			if err != nil {
 				return err
 			}
@@ -132,11 +197,14 @@ $ %s keys tiablob restore "pattern match caution ..."
 
 			fmt.Printf(`CoinType: %d
 Address: %s
-`, 118, b32)
+`, coinType, b32)
 
 			return nil
 		},
 	}
+
+	cmd.Flags().BoolP(FlagFeeGrant, "f", false, "Feegranter key")
+	cmd.Flags().Uint32(FlagCoinType, 118, "Coin type for key derivation")
 
 	return cmd
 }
@@ -166,7 +234,13 @@ $ %s keys tiablob show
 				return err
 			}
 
-			res, err := provider.ShowAddress(relayer.CelestiaPublishKeyName, "celestia")
+			keyName := relayer.CelestiaPublishKeyName
+			feeGrant, _ := cmd.Flags().GetBool(FlagFeeGrant)
+			if feeGrant {
+				keyName = relayer.CelestiaFeegrantKeyName
+			}
+
+			res, err := provider.ShowAddress(keyName, "celestia")
 			if err != nil {
 				return err
 			}
@@ -176,6 +250,8 @@ $ %s keys tiablob show
 			return nil
 		},
 	}
+
+	cmd.Flags().BoolP(FlagFeeGrant, "f", false, "Feegranter key")
 
 	return cmd
 }
@@ -205,7 +281,13 @@ $ %s keys tiablob delete
 				return err
 			}
 
-			if err := provider.DeleteKey(relayer.CelestiaPublishKeyName); err != nil {
+			keyName := relayer.CelestiaPublishKeyName
+			feeGrant, _ := cmd.Flags().GetBool(FlagFeeGrant)
+			if feeGrant {
+				keyName = relayer.CelestiaFeegrantKeyName
+			}
+
+			if err := provider.DeleteKey(keyName); err != nil {
 				return err
 			}
 
@@ -214,6 +296,8 @@ $ %s keys tiablob delete
 			return nil
 		},
 	}
+
+	cmd.Flags().BoolP(FlagFeeGrant, "f", false, "Feegranter key")
 
 	return cmd
 }

@@ -9,7 +9,6 @@ import (
 	coretypes "github.com/cometbft/cometbft/rpc/core/types"
 	querytypes "github.com/cosmos/cosmos-sdk/types/query"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	"github.com/cosmos/cosmos-sdk/x/authz"
 )
 
 func defaultPageRequest() *querytypes.PageRequest {
@@ -79,36 +78,4 @@ func (cc *CosmosProvider) QueryChainID(ctx context.Context) (string, error) {
 		return "", err
 	}
 	return status.NodeInfo.Network, nil
-}
-
-// QueryChainID queries the chain ID from the RPC client
-func (cc *CosmosProvider) QueryGranterHasGranteeForClaimAndDelegate(ctx context.Context, granter string, grantee string) (bool, bool, error) {
-	res, err := authz.NewQueryClient(cc).GranteeGrants(ctx, &authz.QueryGranteeGrantsRequest{
-		Grantee:    grantee,
-		Pagination: defaultPageRequest(),
-	})
-
-	if err != nil {
-		return false, false, fmt.Errorf("unable to query grantee grants: %w", err)
-	}
-
-	var foundClaimGrant, foundDelegateGrant bool
-	for _, grant := range res.Grants {
-		if grant.Granter == granter && grant.Grantee == grantee {
-			if grant.Authorization.TypeUrl == "/cosmos.staking.v1beta1.MsgDelegate" {
-				foundDelegateGrant = true
-				if foundClaimGrant {
-					break
-				}
-			}
-			if grant.Authorization.TypeUrl == "/cosmos.distribution.v1beta1.MsgWithdrawDelegatorReward" {
-				foundClaimGrant = true
-				if foundDelegateGrant {
-					break
-				}
-			}
-		}
-	}
-
-	return foundClaimGrant, foundDelegateGrant, nil
 }

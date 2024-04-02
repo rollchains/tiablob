@@ -14,6 +14,29 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 )
 
+func (cc *CosmosProvider) SignAndBroadcast(
+	ctx context.Context,
+	chainID string,
+	gasPrices string,
+	gasAdjustment float64,
+	gasOverride uint64,
+	bech32Prefix string,
+	keyName string,
+	feeGranter sdk.AccAddress,
+	msgs []sdk.Msg,
+	memo string,
+) (*coretypes.ResultBroadcastTxCommit, error) {
+	walletState := cc.EnsureWalletState(keyName)
+
+	sequence, txBz, err := cc.Sign(ctx, walletState, chainID, gasPrices,
+		gasAdjustment, gasOverride, bech32Prefix, keyName, feeGranter, msgs, memo)
+	if err != nil {
+		return nil, err
+	}
+
+	return cc.Broadcast(ctx, sequence, walletState, txBz)
+}
+
 func (cc *CosmosProvider) Sign(
 	ctx context.Context,
 	walletState *WalletState,
@@ -23,6 +46,7 @@ func (cc *CosmosProvider) Sign(
 	gasOverride uint64,
 	bech32Prefix string,
 	keyName string,
+	feeGranter sdk.AccAddress,
 	msgs []sdk.Msg,
 	memo string,
 ) (uint64, []byte, error) {
@@ -46,10 +70,14 @@ func (cc *CosmosProvider) Sign(
 		WithSignMode(signing.SignMode(cc.cdc.TxConfig.SignModeHandler().DefaultMode())).
 		WithChainID(chainID).
 		WithGasPrices(gasPrices).
-		WithGasAdjustment(gasAdjustment).
 		WithAccountNumber(ac.GetAccountNumber()).
 		WithSequence(walletState.NextAccountSequence).
-		WithMemo(memo)
+		WithMemo(memo).
+		WithBech32Prefix(bech32Prefix)
+
+	if feeGranter != nil {
+		txf = txf.WithFeeGranter(feeGranter)
+	}
 
 	keyInfo, err := cc.keybase.Key(keyName)
 	if err != nil {
@@ -68,6 +96,8 @@ func (cc *CosmosProvider) Sign(
 		if err != nil {
 			return 0, nil, fmt.Errorf("failed to estimate gas: %w", err)
 		}
+
+		gas = uint64(float64(gas) * gasAdjustment)
 
 		txf = txf.WithGas(gas)
 	}

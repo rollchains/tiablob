@@ -14,9 +14,10 @@ import (
 )
 
 const (
-	CelestiaPublishKeyName = "blob"
-	celestiaBech32Prefix   = "celestia"
-	celestiaBlobPostMemo   = "Posted by tiablob https://rollchains.com"
+	CelestiaPublishKeyName  = "blob"
+	CelestiaFeegrantKeyName = "feegrant"
+	celestiaBech32Prefix    = "celestia"
+	celestiaBlobPostMemo    = "Posted by tiablob https://rollchains.com"
 )
 
 // postNextBlocks will post the next block (or chunk of blocks) above the last proven height to Celestia (does not include the block being proposed).
@@ -38,6 +39,9 @@ func (r *Relayer) postNextBlocks(ctx sdk.Context, n int) {
 		r.logger.Error("No Celestia key found, please add with `tiablob keys add` command")
 		return
 	}
+
+	// if not set, will not use feegrant
+	feeGranter, _ := r.provider.GetKeyAddress(CelestiaFeegrantKeyName)
 
 	blobs := make([]*blobtypes.Blob, n)
 
@@ -71,8 +75,11 @@ func (r *Relayer) postNextBlocks(ctx sdk.Context, n int) {
 		blobLens[i] = uint32(len(blob.Data))
 	}
 
-	// 12000 required for feegrant
-	gasLimit := blobtypes.DefaultEstimateGas(blobLens) + 12000
+	gasLimit := blobtypes.DefaultEstimateGas(blobLens)
+	if feeGranter != nil {
+		// 12000 required for feegrant
+		gasLimit = gasLimit + 12000
+	}
 
 	signer, err := r.provider.ShowAddress(CelestiaPublishKeyName, "celestia")
 	if err != nil {
@@ -99,6 +106,7 @@ func (r *Relayer) postNextBlocks(ctx sdk.Context, n int) {
 		gasLimit,
 		celestiaBech32Prefix,
 		CelestiaPublishKeyName,
+		feeGranter,
 		[]sdk.Msg{msg},
 		celestiaBlobPostMemo,
 	)
