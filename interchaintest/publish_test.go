@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"testing"
 
@@ -12,6 +13,8 @@ import (
 	"github.com/strangelove-ventures/interchaintest/v8/testutil"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
+
+	blocktypes "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
 func TestPublish(t *testing.T) {
@@ -56,7 +59,7 @@ func TestPublish(t *testing.T) {
 		Client:           client,
 		NetworkID:        network,
 		SkipPathCreation: true,
-		BlockDatabaseFile: interchaintest.DefaultBlockDatabaseFilepath(),
+		//BlockDatabaseFile: interchaintest.DefaultBlockDatabaseFilepath(),
 	}))
 	t.Cleanup(func() {
 		_ = ic.Close()
@@ -85,51 +88,62 @@ func TestPublish(t *testing.T) {
 	require.True(t, celestiaUserAmount.Equal(fundAmount), "Initial celestia user amount not expected")
 
 	celestiaNode := StartCelestiaNode(t, ctx, celestiaChain, client, network)
-	fmt.Println("Celestia node hostname: ", celestiaNode.HostName())
 
-	err = testutil.WaitForBlocks(ctx, 75, celestiaChain)
-	require.NoError(t, err, "failed to wait for 75 blocks")
+	celestiaNodeClient := NewCelestiaNodeClient(nil, celestiaNode, celestiaNodeHome)
 
-	/*valCelestiaAddrs := make([]string, len(chain.Validators))
-	for i, v := range chain.Validators {
-		stdout, stderr, err := v.ExecBin(ctx, "keys", "tiablob", "add")
-		require.NoError(t, err, "stdout: %s, stderr: %s", stdout, stderr)
-		t.Log("validator", i, string(stdout), string(stderr))
+	success := watchForPublishedBlocks(t, ctx, celestiaNodeClient, rollchainChain, celestiaChain, 50)
+	require.True(t, success, "failed to find all published blocks")
+}
 
-		stdout, stderr, err = v.ExecBin(ctx, "keys", "tiablob", "show")
-		require.NoError(t, err, "stdout: %s, stderr: %s", stdout, stderr)
+func watchForPublishedBlocks(
+	t *testing.T,
+	ctx context.Context,
+	celestiaNodeClient *CelestiaNodeClient,
+	rollchainChain *cosmos.CosmosChain,
+	celestiaChain *cosmos.CosmosChain,
+	publishedBlockCount int64,
+) bool {
+	// Run test to observe x blocks posted
+	rollchainBlocksSeen := int64(0)
+	rollchainHighestBlock := int64(0)
+	celestiaHeight := uint64(1)
 
-		valCelestiaAddrs[i] = strings.TrimSpace(string(stdout))
+	// setup time will allow publishedBlockCount to be used as a timeout
+	for i:=int64(0); i<publishedBlockCount; i++ {
+		err := testutil.WaitForBlocks(ctx, 1, rollchainChain)
+		require.NoError(t, err, "failed to wait for 1 block")
 
-		if i == 0 {
-			// Restore mnemonic into first val so that it can broadcast transactions
-			// celestia1dr3gwf5kulm4e4k0pctwzn0htw6wrvevdgjdlf
-			stdout, stderr, err := chain.Validators[0].ExecBin(ctx, "keys", "tiablob", "restore", "-f", "kick raven pave wild outdoor dismiss happy start lunch discover job evil code trim network emerge summer mad army vacant chest birth subject seek")
-			require.NoError(t, err, "stdout: %s, stderr: %s", stdout, stderr)
-			t.Log(string(stdout), string(stderr))
-		} else {
-			// Add feegranter address as offline key for all vals except the first one
-			stdout, stderr, err = v.ExecBin(ctx, "keys", "tiablob", "add", "-f", "--address", "celestia1dr3gwf5kulm4e4k0pctwzn0htw6wrvevdgjdlf")
-			require.NoError(t, err, "stdout: %s, stderr: %s", stdout, stderr)
+		celestiaLatestHeight, err := celestiaChain.Height(ctx)
+		require.NoError(t, err, "error getting celestia height")
+ 
+		for ; celestiaHeight < celestiaLatestHeight; celestiaHeight++ {
+			blobs, err := celestiaNodeClient.GetAllBlobs(ctx, celestiaHeight, "0x"+hex.EncodeToString([]byte("rc_demo")))
+			require.NoError(t, err, fmt.Sprintf("error getting all blobs at height: %d, %v", celestiaHeight, err))
+			t.Log("GetAllBlobs, celestia height: ", celestiaHeight)
+			if len(blobs) == 0 {
+				t.Log("No blobs found")
+			} else {
+				for j:=0; j<len(blobs); j++ {
+					var block blocktypes.Block
+					err = block.Unmarshal(blobs[j].Data)
+					if err != nil {
+						t.Log("Error unmarshalling block")
+					} else {
+						rollchainBlocksSeen++
+						if rollchainHighestBlock < block.Header.Height {
+							rollchainHighestBlock = block.Header.Height
+						}
+						t.Log("Block ", block.Header.Height, " found")
+					}
+				}
+			}
 		}
-
+		// Current expectation is that blocks will not miss being published, this will change once tiablob retry logic is added
+		require.Equal(t, rollchainBlocksSeen, rollchainHighestBlock, "rollchain published blocks missed")
+		if rollchainHighestBlock >= publishedBlockCount {
+			return true
+		}
 	}
 
-	// feegrant all validators
-	cmd := []string{"tx", "tiablob", "feegrant"}
-	cmd = append(cmd, valCelestiaAddrs...)
-	stdout, stderr, err := chain.Validators[0].ExecBin(ctx, cmd...)
-	require.NoError(t, err, "stdout: %s, stderr: %s", stdout, stderr)
-	t.Log(string(stdout), string(stderr))
-
-	// faucet funds to the user
-	users := interchaintest.GetAndFundTestUsers(t, ctx, "default", GenesisFundsAmount, chain)
-	user := users[0]
-
-	// balance check
-	balance, err := chain.GetBalance(ctx, user.FormattedAddress(), Denom)
-	require.NoError(t, err)
-	require.True(t, balance.Equal(GenesisFundsAmount), "user balance should be equal to genesis funds")
-
-	require.NoError(t, testutil.WaitForBlocks(ctx, 100, chain))*/
+	return false
 }
