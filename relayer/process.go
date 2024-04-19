@@ -11,6 +11,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	appns "github.com/rollchains/tiablob/celestia/namespace"
 	"github.com/rollchains/tiablob/relayer/cosmos"
+	"github.com/rollchains/tiablob/celestia-node/blob"
 )
 
 // Relayer is responsible for posting new blocks to Celestia and relaying block proofs from Celestia via the current proposer
@@ -25,17 +26,21 @@ type Relayer struct {
 
 	pollInterval time.Duration
 
-	blockProofCache      map[uint64][]byte
+	blockProofCache      map[uint64]*blob.Proof
 	blockProofCacheLimit int
 
 	provider  *cosmos.CosmosProvider
 	clientCtx client.Context
+	
+	nodeRpcUrl    string
+	nodeAuthToken string
 
 	celestiaChainID              string
 	celestiaNamespace            appns.Namespace
 	celestiaGasPrice             string
 	celestiaGasAdjustment        float64
 	celestiaPublishBlockInterval int
+	celestiaLastQueriedHeight    int64
 }
 
 // NewRelayer creates a new Relayer instance
@@ -48,7 +53,7 @@ func NewRelayer(
 ) (*Relayer, error) {
 	cfg := CelestiaConfigFromAppOpts(appOpts)
 
-	provider, err := cosmos.NewProvider(cfg.RpcURL, keyDir, cfg.RpcTimeout)
+	provider, err := cosmos.NewProvider(cfg.AppRpcURL, keyDir, cfg.AppRpcTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -66,8 +71,12 @@ func NewRelayer(
 		celestiaGasPrice:             cfg.GasPrice,
 		celestiaGasAdjustment:        cfg.GasAdjustment,
 		celestiaPublishBlockInterval: celestiaPublishBlockInterval,
+		celestiaLastQueriedHeight:    0, // Start at 0 for now, but we'll get this from the latest client state
 
-		blockProofCache:      make(map[uint64][]byte),
+		nodeRpcUrl:    cfg.NodeRpcURL,
+		nodeAuthToken: cfg.NodeAuthToken,
+
+		blockProofCache:      make(map[uint64]*blob.Proof),
 		blockProofCacheLimit: cfg.MaxFlushSize,
 	}, nil
 }

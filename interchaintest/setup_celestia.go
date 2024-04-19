@@ -77,8 +77,10 @@ func StartCelestiaNode(t *testing.T, ctx context.Context, celestiaChain *cosmos.
 		client, //docker client
 		network, // docker network
 		ibc.DockerImage{
-			Repository: "ghcr.io/strangelove-ventures/heighliner/celestia-node",
-			Version: "v0.13.1",
+			Repository: "celestia-node",
+			Version: "local",
+			//Repository: "ghcr.io/strangelove-ventures/heighliner/celestia-node",
+			//Version: "v0.13.1",
 			UidGid: "1025:1025",
 		},
 		celestiaNodeHome, // home dir
@@ -87,9 +89,11 @@ func StartCelestiaNode(t *testing.T, ctx context.Context, celestiaChain *cosmos.
 		[]string{"celestia", celestiaNodeType, "start", 
 			"--node.store", celestiaNodeHome,
 			"--gateway",
+			//"--keyring.accname", "celnode",
 			"--core.ip", celestiaVal0.HostName(),
 			"--gateway.addr", "0.0.0.0",
 			"--rpc.addr", "0.0.0.0",
+			"--rpc.skip-auth",
 		}, // start cmd
 		[]string{
 			fmt.Sprintf("CELESTIA_CUSTOM=%s:%s", celestiaChainID, genesisHash), 
@@ -110,6 +114,7 @@ func StartCelestiaNode(t *testing.T, ctx context.Context, celestiaChain *cosmos.
 			"celestia", celestiaNodeType, "init",
 			"--p2p.network", celestiaChainID,
 			"--node.store", celestiaNodeHome,
+			"--rpc.skip-auth",
 		}, // cmd
 		[]string{
 			fmt.Sprintf("CELESTIA_CUSTOM=%s:%s", celestiaChainID, genesisHash), 
@@ -119,6 +124,27 @@ func StartCelestiaNode(t *testing.T, ctx context.Context, celestiaChain *cosmos.
 		}, //env
 	)
 	require.NoError(t, err, "failed to init celestia-node")
+
+	/*_, _, err = sc.Exec(
+		ctx, 
+		[]string{
+			"sh",
+			"-c",
+			fmt.Sprintf(`echo %q | cel-key add celnode --recover --keyring-backend test --node.type %s --home %s --p2p.network %s`,
+			"kick raven pave wild outdoor dismiss happy start lunch discover job evil code trim network emerge summer mad army vacant chest birth subject seek",
+			celestiaNodeType,
+			celestiaNodeHome,
+			celestiaChainID,
+			),
+		}, // cmd
+		[]string{
+			fmt.Sprintf("CELESTIA_CUSTOM=%s:%s", celestiaChainID, genesisHash), 
+			fmt.Sprintf("NODE_STORE=%s", celestiaNodeHome), 
+			fmt.Sprintf("NODE_TYPE=%s", celestiaNodeType),
+			fmt.Sprintf("P2P_NETWORK=%s", celestiaChainID),
+		}, //env
+	)
+	require.NoError(t, err, "failed to init celestia-node")*/
 
 	err = sc.StartContainer(ctx)
 	require.NoError(t, err, "failed to start sidecar container")

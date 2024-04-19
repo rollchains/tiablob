@@ -168,7 +168,7 @@ $ %s tx tiablob feegrant celestia1jzv52ewect8ntvwjs2za087yzl6y3smf5etf3n
 
 			cfg := relayer.CelestiaConfigFromAppOpts(serverCtx.Viper)
 
-			provider, err := cosmos.NewProvider(cfg.RpcURL, filepath.Join(serverCtx.Config.RootDir, "keys"), cfg.RpcTimeout)
+			provider, err := cosmos.NewProvider(cfg.AppRpcURL, filepath.Join(serverCtx.Config.RootDir, "keys"), cfg.AppRpcTimeout)
 			if err != nil {
 				return fmt.Errorf("failed to create cosmos provider: %w", err)
 			}

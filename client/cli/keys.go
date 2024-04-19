@@ -64,7 +64,7 @@ $ %s keys tiablob add
 			cfg := relayer.CelestiaConfigFromAppOpts(serverCtx.Viper)
 
 			keyDir := filepath.Join(clientCtx.HomeDir, "keys")
-			provider, err := cosmos.NewProvider(cfg.RpcURL, keyDir, 0)
+			provider, err := cosmos.NewProvider(cfg.AppRpcURL, keyDir, 0)
 			if err != nil {
 				return err
 			}
