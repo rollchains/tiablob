@@ -10,6 +10,7 @@ import (
 const (
 	FlagAppRpcURL     = "celestia.app-rpc-url"
 	FlagAppRpcTimeout = "celestia.app-rpc-timeout"
+	FlagChainID       = "celestia.chain-id"
 	FlagGasPrices     = "celestia.gas-prices"
 	FlagGasAdjustment = "celestia.gas-adjustment"
 	FlagNodeRpcURL    = "celestia.node-rpc-url"
@@ -26,6 +27,9 @@ type CelestiaConfig struct {
 	// RPC Timeout for celestia-app
 	AppRpcTimeout time.Duration `mapstructure:"app-rpc-timeout"`
 
+	// Celestia chain ID
+	ChainID string `mapstructure:"chain-id"`
+	
 	// Gas price to pay for Celestia transactions
 	GasPrice string `mapstructure:"gas-prices"`
 
@@ -49,6 +53,7 @@ func CelestiaConfigFromAppOpts(appOpts servertypes.AppOptions) CelestiaConfig {
 	return CelestiaConfig{
 		AppRpcURL:          cast.ToString(appOpts.Get(FlagAppRpcURL)),
 		AppRpcTimeout:      cast.ToDuration(appOpts.Get(FlagAppRpcTimeout)),
+		ChainID:            cast.ToString(appOpts.Get(FlagChainID)),
 		GasPrice:           cast.ToString(appOpts.Get(FlagGasPrices)),
 		GasAdjustment:      cast.ToFloat64(appOpts.Get(FlagGasAdjustment)),
 		NodeRpcURL:         cast.ToString(appOpts.Get(FlagNodeRpcURL)),

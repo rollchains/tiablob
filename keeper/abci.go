@@ -1,11 +1,18 @@
 package keeper
 
 import (
+	"encoding/json"
+	//"fmt"
+	//"time"
+
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/mempool"
 	tiablobrelayer "github.com/rollchains/tiablob/relayer"
+
+	//"github.com/rollchains/tiablob/celestia-node/blob"
+	//"github.com/rollchains/tiablob/light-clients/celestia"
 )
 
 type ProofOfBlobProposalHandler struct {
@@ -27,10 +34,14 @@ func NewProofOfBlobProposalHandler(k *Keeper, r *tiablobrelayer.Relayer, mp memp
 }
 
 func (h *ProofOfBlobProposalHandler) PrepareProposal(ctx sdk.Context, req *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
-	injectTxs := h.relayer.Reconcile(ctx)
+	clientFound := h.keeper.IsClientCreated(ctx)
+	injectClientData := h.relayer.Reconcile(ctx, clientFound)
 
-	if len(injectTxs) > 0 {
-		req.Txs = append(injectTxs, req.Txs...)
+	if injectClientData.CreateClient != nil || injectClientData.UpdateClientAndProofs != nil {
+		injectClientDataBz, err := json.Marshal(injectClientData)
+		if err == nil {
+			req.Txs = append(req.Txs, injectClientDataBz)
+		}
 	}
 
 	return h.prepareProposalHandler(ctx, req)

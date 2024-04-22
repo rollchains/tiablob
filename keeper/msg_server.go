@@ -2,9 +2,7 @@ package keeper
 
 import (
 	"context"
-	"fmt"
 
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/rollchains/tiablob"
 )
 
@@ -38,7 +36,7 @@ func (s msgServer) SetCelestiaAddress(ctx context.Context, msg *tiablob.MsgSetCe
 	return new(tiablob.MsgSetCelestiaAddressResponse), nil
 }
 
-func (s msgServer) ProveBlock(ctx context.Context, msg *tiablob.MsgProveBlock) (*tiablob.MsgProveBlockResponse, error) {
+/*func (s msgServer) ProveBlock(ctx context.Context, msg *tiablob.MsgProveBlock) (*tiablob.MsgProveBlockResponse, error) {
 	valAddr, err := s.k.stakingKeeper.ValidatorAddressCodec().StringToBytes(msg.ValidatorAddress)
 	if err != nil {
 		return nil, sdkerrors.ErrInvalidAddress.Wrapf("invalid validator address: %s", err)
@@ -73,4 +71,4 @@ func (s msgServer) ProveBlock(ctx context.Context, msg *tiablob.MsgProveBlock) (
 	s.k.relayer.NotifyProvenHeight(msg.Height)
 
 	return new(tiablob.MsgProveBlockResponse), nil
-}
+}*/

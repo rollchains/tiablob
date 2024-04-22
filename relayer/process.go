@@ -12,6 +12,7 @@ import (
 	appns "github.com/rollchains/tiablob/celestia/namespace"
 	"github.com/rollchains/tiablob/relayer/cosmos"
 	"github.com/rollchains/tiablob/celestia-node/blob"
+	"github.com/rollchains/tiablob/light-clients/celestia"
 )
 
 // Relayer is responsible for posting new blocks to Celestia and relaying block proofs from Celestia via the current proposer
@@ -53,7 +54,7 @@ func NewRelayer(
 ) (*Relayer, error) {
 	cfg := CelestiaConfigFromAppOpts(appOpts)
 
-	provider, err := cosmos.NewProvider(cfg.AppRpcURL, keyDir, cfg.AppRpcTimeout)
+	provider, err := cosmos.NewProvider(cfg.AppRpcURL, keyDir, cfg.AppRpcTimeout, cfg.ChainID)
 	if err != nil {
 		return nil, err
 	}
@@ -68,6 +69,7 @@ func NewRelayer(
 
 		provider:                     provider,
 		celestiaNamespace:            celestiaNamespace,
+		celestiaChainID:              cfg.ChainID,
 		celestiaGasPrice:             cfg.GasPrice,
 		celestiaGasAdjustment:        cfg.GasAdjustment,
 		celestiaPublishBlockInterval: celestiaPublishBlockInterval,
@@ -97,13 +99,6 @@ func (r *Relayer) Start(
 	if err := r.provider.CreateKeystore(); err != nil {
 		return err
 	}
-
-	chainID, err := r.provider.QueryChainID(ctx)
-	if err != nil {
-		return fmt.Errorf("error querying celestia chain ID: %w", err)
-	}
-
-	r.celestiaChainID = chainID
 
 	timer := time.NewTimer(r.pollInterval)
 	defer timer.Stop()
@@ -144,14 +139,77 @@ func (r *Relayer) updateHeight(height uint64) {
 	}
 }
 
+type (
+	InjectClientData struct {
+		CreateClient *CreateClient
+		UpdateClientAndProofs []*UpdateClientAndProofs
+	}
+	CreateClient struct {
+		ClientState celestia.ClientState
+		ConsensusState celestia.ConsensusState
+	}
+	Proof struct {
+		Proof *blob.Proof
+		Height uint64
+		Commitment *blob.Commitment
+	}
+	UpdateClientAndProofs struct {
+		UpdateClient *celestia.ClientMessage
+		Proofs []*Proof
+	}
+)
+
 // Reconcile is intended to be called by the current proposing validator during PrepareProposal and will:
 // - check the cache (no fetches here to minimize duration) if there are any new block proofs to be relayed from Celestia
 // - if there are any block proofs to relay, generate a MsgUpdateClient along with the MsgProveBlock message(s) and return them in a tx for injection into the proposal.
 // - if the Celestia light client is within 1/3 of the trusting period and there are no block proofs to relay, generate a MsgUpdateClient to update the light client and return it in a tx.
 // - in a non-blocking goroutine, post the next block (or chunk of blocks) above the last proven height to Celestia (does not include the block being proposed).
-func (r *Relayer) Reconcile(ctx sdk.Context) [][]byte {
+func (r *Relayer) Reconcile(ctx sdk.Context, clientFound bool) InjectClientData {
 	go r.postNextBlocks(ctx, r.celestiaPublishBlockInterval)
 
+	var injectClientData InjectClientData
+	if !clientFound {
+		fmt.Println("Client not found, creating...")
+		injectClientData.CreateClient = r.CreateClient(ctx)
+	}
+
 	// TODO check cache for new block proofs to relay
-	return nil
+	return injectClientData
+}
+
+func (r *Relayer) CreateClient(ctx sdk.Context) *CreateClient {
+	chainID, err := r.provider.QueryChainID(ctx)
+	if err != nil {
+		fmt.Println("error querying chain id for create client")
+		return nil
+	}
+
+	latestHeight, err := r.provider.QueryLatestHeight(ctx)
+	if err != nil {
+		fmt.Println("error querying latest height for create client")
+		return nil
+	}
+
+	lightBlock, err := r.provider.QueryLightBlock(ctx, latestHeight)
+	if err != nil {
+		fmt.Println("error querying light block for create client, ", err)
+		return nil
+	}
+
+	fmt.Println("CreateClient, chainID:", chainID, "latest height:", latestHeight, "timestamp:", lightBlock.SignedHeader.Time)
+	return &CreateClient{
+		ClientState: *celestia.NewClientState(
+			chainID, // chainID
+			celestia.Fraction{Numerator: 2, Denominator: 3}, // trustLevel
+			time.Hour * 2, // trusting period
+			time.Hour * 3, // unbonding period
+			time.Second * 10, // max clock drift
+			celestia.Height{RevisionNumber: celestia.ParseChainID(chainID), RevisionHeight: uint64(latestHeight)}, // latest height
+		),
+		ConsensusState: *celestia.NewConsensusState(
+			lightBlock.SignedHeader.Time, // timestamp
+			lightBlock.SignedHeader.DataHash, // root
+			lightBlock.SignedHeader.NextValidatorsHash, // next val hash
+		),
+	}
 }

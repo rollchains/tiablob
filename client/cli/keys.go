@@ -64,7 +64,7 @@ $ %s keys tiablob add
 			cfg := relayer.CelestiaConfigFromAppOpts(serverCtx.Viper)
 
 			keyDir := filepath.Join(clientCtx.HomeDir, "keys")
-			provider, err := cosmos.NewProvider(cfg.AppRpcURL, keyDir, 0)
+			provider, err := cosmos.NewProvider(cfg.AppRpcURL, keyDir, 0, cfg.ChainID)
 			if err != nil {
 				return err
 			}
@@ -163,7 +163,7 @@ $ %s keys tiablob restore "pattern match caution ..."
 			}
 
 			keyDir := filepath.Join(clientCtx.HomeDir, "keys")
-			provider, err := cosmos.NewProvider("", keyDir, 0)
+			provider, err := cosmos.NewProvider("", keyDir, 0, "")
 			if err != nil {
 				return err
 			}
@@ -225,7 +225,7 @@ $ %s keys tiablob show
 			}
 
 			keyDir := filepath.Join(clientCtx.HomeDir, "keys")
-			provider, err := cosmos.NewProvider("", keyDir, 0)
+			provider, err := cosmos.NewProvider("", keyDir, 0, "")
 			if err != nil {
 				return err
 			}
@@ -272,7 +272,7 @@ $ %s keys tiablob delete
 			}
 
 			keyDir := filepath.Join(clientCtx.HomeDir, "keys")
-			provider, err := cosmos.NewProvider("", keyDir, 0)
+			provider, err := cosmos.NewProvider("", keyDir, 0, "")
 			if err != nil {
 				return err
 			}

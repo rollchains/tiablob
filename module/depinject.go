@@ -7,6 +7,7 @@ import (
 	"cosmossdk.io/core/appmodule"
 	"cosmossdk.io/core/store"
 	"cosmossdk.io/depinject"
+	storetypes "cosmossdk.io/store/types"
 
 	modulev1 "github.com/rollchains/tiablob/api/module/v1"
 	"github.com/rollchains/tiablob/keeper"
@@ -34,6 +35,8 @@ type ModuleInputs struct {
 	StoreService store.KVStoreService
 
 	StakingKeeper stakingkeeper.Keeper
+
+	storeKey    storetypes.StoreKey
 }
 
 type ModuleOutputs struct {
@@ -44,7 +47,7 @@ type ModuleOutputs struct {
 }
 
 func ProvideModule(in ModuleInputs) ModuleOutputs {
-	k := keeper.NewKeeper(in.Cdc, in.StoreService, &in.StakingKeeper)
+	k := keeper.NewKeeper(in.Cdc, in.StoreService, &in.StakingKeeper, in.storeKey)
 	m := NewAppModule(in.Cdc, k)
 
 	return ModuleOutputs{Module: m, Keeper: k}

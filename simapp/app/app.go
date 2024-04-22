@@ -719,6 +719,7 @@ func NewChainApp(
 		appCodec,
 		runtime.NewKVStoreService(keys[tiablob.StoreKey]),
 		app.StakingKeeper,
+		keys[tiablob.StoreKey],
 	)
 
 	app.TiaBlobRelayer, err = tiablobrelayer.NewRelayer(

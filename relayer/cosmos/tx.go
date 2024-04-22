@@ -12,6 +12,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
+
+	cometbfttypes "github.com/cometbft/cometbft/types"
 )
 
 func (cc *CosmosProvider) SignAndBroadcast(
@@ -171,6 +173,20 @@ func (cc *CosmosProvider) EstimateGas(ctx context.Context, txf tx.Factory, pubKe
 	}
 
 	return simRes.GasInfo.GasUsed, err
+}
+
+// QueryLightBlock returns the IBC compatible block header (TendermintIBCHeader) at a specific height.
+func (cc *CosmosProvider) QueryLightBlock(ctx context.Context, h int64) (*cometbfttypes.LightBlock, error) {
+	if h == 0 {
+		return nil, fmt.Errorf("height cannot be 0")
+	}
+
+	lightBlock, err := cc.lightProvider.LightBlock(ctx, h)
+	if err != nil {
+		return nil, err
+	}
+
+	return lightBlock, nil
 }
 
 // BuildSimTx creates an unsigned tx with an empty single signature and returns

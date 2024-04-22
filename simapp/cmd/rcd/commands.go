@@ -89,6 +89,7 @@ func initAppConfig() (string, interface{}) {
 		Celestia: &relayer.CelestiaConfig{
 			AppRpcURL:          "https://rpc-mocha.pops.one:443", // TODO remove hardcoded URL
 			AppRpcTimeout:      30 * time.Second,
+			ChainID:            "celestia-1",
 			GasPrice:           "0.01utia",
 			GasAdjustment:      1.0,
 			NodeRpcURL:         "http://127.0.0.1:26658",
@@ -107,6 +108,9 @@ func initAppConfig() (string, interface{}) {
 
 	# RPC Timeout for transaction broadcasts and queries to celestia-app node
 	app-rpc-timeout = "30s"
+
+	# Celestia chain id
+	chain-id = "celestia-1"
 
 	# Gas price to pay for celestia transactions
 	gas-prices = "0.01utia"

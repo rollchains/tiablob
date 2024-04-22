@@ -6,6 +6,9 @@ import (
 	"sync"
 	"time"
 
+	provtypes "github.com/cometbft/cometbft/light/provider"
+	prov "github.com/cometbft/cometbft/light/provider/http"
+
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	gogogrpc "github.com/cosmos/gogoproto/grpc"
 
@@ -24,6 +27,7 @@ var accountSeqRegex = regexp.MustCompile("account sequence mismatch, expected ([
 type CosmosProvider struct {
 	cdc       Codec
 	rpcClient RPCClient
+	lightProvider provtypes.Provider
 	keybase   keyring.Keyring
 
 	keyDir string
@@ -60,8 +64,14 @@ func (cc *CosmosProvider) EnsureWalletState(address string) *WalletState {
 }
 
 // NewProvider validates the CosmosProviderConfig, instantiates a ChainClient and then instantiates a CosmosProvider
-func NewProvider(rpcURL string, keyDir string, timeout time.Duration) (*CosmosProvider, error) {
+func NewProvider(rpcURL string, keyDir string, timeout time.Duration, chainID string) (*CosmosProvider, error) {
 	rpcClient, err := client.NewClient(rpcURL, timeout)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: add cfg item for celestia chain id
+	lightprovider, err := prov.New(chainID, rpcURL)
 	if err != nil {
 		return nil, err
 	}
@@ -69,6 +79,7 @@ func NewProvider(rpcURL string, keyDir string, timeout time.Duration) (*CosmosPr
 	cp := &CosmosProvider{
 		cdc:            makeCodec(ModuleBasics),
 		rpcClient:      NewRPCClient(rpcClient),
+		lightProvider:  lightprovider,
 		keyDir:         keyDir,
 		walletStateMap: make(map[string]*WalletState),
 	}
