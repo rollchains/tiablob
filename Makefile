@@ -25,7 +25,7 @@ local-image:
 ifeq (,$(shell which heighliner))
 	echo 'heighliner' binary not found. Consider running `make get-heighliner`
 else
-	heighliner build -c rollchain --local -f chains.yaml
+	heighliner build -c rollchain --local -f chains.yaml --go-version 1.22.1
 endif
 
 ###################

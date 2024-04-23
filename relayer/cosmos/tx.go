@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+	coretypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
@@ -13,79 +14,55 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 )
 
-func (cc *CosmosProvider) BuildUnsignedTxForAddress(
-	ctx context.Context,
-	chainID string,
-	gasPrices string,
-	gasAdjustment float64,
-	address string,
-	msgs []sdk.Msg,
-	memo string,
-) ([]byte, error) {
-
-	var txf tx.Factory
-
-	ac, err := cc.AccountInfo(ctx, address)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get account info for address %s: %w", address, err)
-	}
-
-	txf = txf.
-		WithKeybase(cc.keybase).
-		WithTxConfig(cc.cdc.TxConfig).
-		WithSignMode(signing.SignMode(cc.cdc.TxConfig.SignModeHandler().DefaultMode())).
-		WithChainID(chainID).
-		WithGasPrices(gasPrices).
-		WithGasAdjustment(gasAdjustment).
-		WithAccountNumber(ac.GetAccountNumber()).
-		WithSequence(ac.GetSequence()).
-		WithMemo(memo)
-
-	gas, err := cc.EstimateGas(ctx, txf, ac.GetPubKey(), msgs...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to estimate gas: %w", err)
-	}
-
-	txf = txf.WithGas(gas)
-
-	txb, err := txf.BuildUnsignedTx(msgs...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to build unsigned tx: %w", err)
-	}
-
-	unsignedTxBz, err := cc.EncodeTxJSON(txb)
-	if err != nil {
-		return nil, fmt.Errorf("failed to encode unsigned tx: %w", err)
-	}
-
-	return unsignedTxBz, nil
-}
-
 func (cc *CosmosProvider) SignAndBroadcast(
 	ctx context.Context,
 	chainID string,
 	gasPrices string,
 	gasAdjustment float64,
+	gasOverride uint64,
 	bech32Prefix string,
 	keyName string,
+	feeGranter sdk.AccAddress,
 	msgs []sdk.Msg,
 	memo string,
-) error {
+) (*coretypes.ResultBroadcastTxCommit, error) {
+	walletState := cc.EnsureWalletState(keyName)
 
+	sequence, txBz, err := cc.Sign(ctx, walletState, chainID, gasPrices,
+		gasAdjustment, gasOverride, bech32Prefix, keyName, feeGranter, msgs, memo)
+	if err != nil {
+		return nil, err
+	}
+
+	return cc.Broadcast(ctx, sequence, walletState, txBz)
+}
+
+func (cc *CosmosProvider) Sign(
+	ctx context.Context,
+	walletState *WalletState,
+	chainID string,
+	gasPrices string,
+	gasAdjustment float64,
+	gasOverride uint64,
+	bech32Prefix string,
+	keyName string,
+	feeGranter sdk.AccAddress,
+	msgs []sdk.Msg,
+	memo string,
+) (uint64, []byte, error) {
 	var txf tx.Factory
 
 	acc, err := cc.ShowAddress(keyName, bech32Prefix)
 	if err != nil {
-		return fmt.Errorf("failed to get key address for key %s: %w", keyName, err)
+		return 0, nil, fmt.Errorf("failed to get key address for key %s: %w", keyName, err)
 	}
-
-	cc.broadcastMu.Lock()
-	defer cc.broadcastMu.Unlock()
 
 	ac, err := cc.AccountInfo(ctx, acc)
 	if err != nil {
-		return fmt.Errorf("failed to get account info for address %s: %w", acc, err)
+		return 0, nil, fmt.Errorf("failed to get account info for address %s: %w", acc, err)
 	}
+
+	walletState.updateNextAccountSequence(ac.GetSequence())
 
 	txf = txf.
 		WithKeybase(cc.keybase).
@@ -93,57 +70,78 @@ func (cc *CosmosProvider) SignAndBroadcast(
 		WithSignMode(signing.SignMode(cc.cdc.TxConfig.SignModeHandler().DefaultMode())).
 		WithChainID(chainID).
 		WithGasPrices(gasPrices).
-		WithGasAdjustment(gasAdjustment).
 		WithAccountNumber(ac.GetAccountNumber()).
-		WithSequence(ac.GetSequence()).
-		WithMemo(memo)
+		WithSequence(walletState.NextAccountSequence).
+		WithMemo(memo).
+		WithBech32Prefix(bech32Prefix)
+
+	if feeGranter != nil {
+		txf = txf.WithFeeGranter(feeGranter)
+	}
 
 	keyInfo, err := cc.keybase.Key(keyName)
 	if err != nil {
-		return fmt.Errorf("failed to get key info for key %s: %w", keyName, err)
+		return 0, nil, fmt.Errorf("failed to get key info for key %s: %w", keyName, err)
 	}
 
 	pubKey, err := keyInfo.GetPubKey()
 	if err != nil {
-		return fmt.Errorf("failed to get pubkey for key %s: %w", keyName, err)
+		return 0, nil, fmt.Errorf("failed to get pubkey for key %s: %w", keyName, err)
 	}
 
-	gas, err := cc.EstimateGas(ctx, txf, pubKey, msgs...)
-	if err != nil {
-		return fmt.Errorf("failed to estimate gas: %w", err)
-	}
+	if gasOverride > 0 {
+		txf = txf.WithGas(gasOverride)
+	} else {
+		gas, err := cc.EstimateGas(ctx, txf, pubKey, msgs...)
+		if err != nil {
+			return 0, nil, fmt.Errorf("failed to estimate gas: %w", err)
+		}
 
-	txf = txf.WithGas(gas)
+		gas = uint64(float64(gas) * gasAdjustment)
+
+		txf = txf.WithGas(gas)
+	}
 
 	txb, err := txf.BuildUnsignedTx(msgs...)
 	if err != nil {
-		return fmt.Errorf("failed to build unsigned tx: %w", err)
+		return 0, nil, fmt.Errorf("failed to build unsigned tx: %w", err)
 	}
 
 	if err := tx.Sign(ctx, txf, keyName, txb, false); err != nil {
-		return err
+		return 0, nil, err
 	}
 
 	txBz, err := cc.cdc.TxConfig.TxEncoder()(txb.GetTx())
 	if err != nil {
-		return fmt.Errorf("failed to encode tx for broadcast: %w", err)
+		return 0, nil, fmt.Errorf("failed to encode tx for broadcast: %w", err)
 	}
 
+	return txf.Sequence(), txBz, nil
+}
+
+func (cc *CosmosProvider) Broadcast(
+	ctx context.Context,
+	sequence uint64,
+	walletState *WalletState,
+	txBz []byte,
+) (*coretypes.ResultBroadcastTxCommit, error) {
 	// Broadcast the transaction.
 	res, err := cc.rpcClient.BroadcastTxCommit(ctx, txBz)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if res.CheckTx.Code != 0 {
-		return fmt.Errorf("failed to broadcast, CheckTx failed: %d - %s - %s - %s", res.CheckTx.Code, res.CheckTx.Codespace, res.CheckTx.Log, string(res.CheckTx.Data))
+		return res, fmt.Errorf("failed to broadcast, CheckTx failed: %d - %s - %s - %s", res.CheckTx.Code, res.CheckTx.Codespace, res.CheckTx.Log, string(res.CheckTx.Data))
 	}
 
 	if res.TxResult.Code != 0 {
-		return fmt.Errorf("failed to broadcast, Tx execution failed: %d - %s - %s - %s", res.TxResult.Code, res.TxResult.Codespace, res.TxResult.Log, string(res.TxResult.Data))
+		return res, fmt.Errorf("failed to broadcast, Tx execution failed: %d - %s - %s - %s", res.TxResult.Code, res.TxResult.Codespace, res.TxResult.Log, string(res.TxResult.Data))
 	}
 
-	return nil
+	walletState.updateNextAccountSequence(sequence + 1)
+
+	return res, nil
 }
 
 func (cc *CosmosProvider) EncodeTxJSON(txb client.TxBuilder) ([]byte, error) {

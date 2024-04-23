@@ -13,12 +13,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 
-
 	sdkmath "cosmossdk.io/math" // spawntag:poa (Tagging with poa so if it is removed, this module is removed from import too)
 	poaante "github.com/strangelove-ventures/poa/ante"
 
-	globalfeeante "github.com/reecepbcups/globalfee/x/globalfee/ante"
-	globalfeekeeper "github.com/reecepbcups/globalfee/x/globalfee/keeper"
+	globalfeeante "github.com/strangelove-ventures/globalfee/x/globalfee/ante"
+	globalfeekeeper "github.com/strangelove-ventures/globalfee/x/globalfee/keeper"
 )
 
 // HandlerOptions extend the SDK's AnteHandler options by requiring the IBC
@@ -26,8 +25,8 @@ import (
 type HandlerOptions struct {
 	ante.HandlerOptions
 
-	IBCKeeper             *keeper.Keeper
-	CircuitKeeper         *circuitkeeper.Keeper
+	IBCKeeper     *keeper.Keeper
+	CircuitKeeper *circuitkeeper.Keeper
 
 	GlobalFeeKeeper      globalfeekeeper.Keeper
 	BypassMinFeeMsgTypes []string

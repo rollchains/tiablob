@@ -1,7 +1,6 @@
 package app
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -9,7 +8,6 @@ import (
 	"path/filepath"
 	"sort"
 	"sync"
-	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
@@ -39,6 +37,7 @@ import (
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 	ibckeeper "github.com/cosmos/ibc-go/v8/modules/core/keeper"
 	ibctm "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
+	appns "github.com/rollchains/tiablob/celestia/namespace"
 	"github.com/spf13/cast"
 
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
@@ -139,9 +138,9 @@ import (
 	poakeeper "github.com/strangelove-ventures/poa/keeper"
 	poamodule "github.com/strangelove-ventures/poa/module"
 
-	globalfee "github.com/reecepbcups/globalfee/x/globalfee"
-	globalfeekeeper "github.com/reecepbcups/globalfee/x/globalfee/keeper"
-	globalfeetypes "github.com/reecepbcups/globalfee/x/globalfee/types"
+	globalfee "github.com/strangelove-ventures/globalfee/x/globalfee"
+	globalfeekeeper "github.com/strangelove-ventures/globalfee/x/globalfee/keeper"
+	globalfeetypes "github.com/strangelove-ventures/globalfee/x/globalfee/types"
 
 	"github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward"
 	packetforwardkeeper "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward/keeper"
@@ -153,11 +152,14 @@ import (
 	tiablobrelayer "github.com/rollchains/tiablob/relayer"
 )
 
-const appName = "rollchain"
+const (
+	appName           = "rollchain"
+	NodeDir           = ".rollchain"
+	Bech32Prefix      = "rc"
+	celestiaNamespace = "rc_demo"
 
-var (
-	NodeDir      = ".rollchain"
-	Bech32Prefix = "rc"
+	// publish blocks to celestia every n rollchain blocks.
+	publishToCelestiaBlockInterval = 10
 )
 
 // These constants are derived from the above variables.
@@ -623,7 +625,7 @@ func NewChainApp(
 		runtime.NewKVStoreService(keys[poa.StoreKey]),
 		app.StakingKeeper,
 		app.SlashingKeeper,
-		authcodec.NewBech32Codec(sdk.Bech32PrefixValAddr),
+		app.BankKeeper,
 		logger,
 	)
 
@@ -719,27 +721,12 @@ func NewChainApp(
 		app.StakingKeeper,
 	)
 
-	// TODO move this to OnPostSetup for StartCommand on v0.51
-	// latestProvenHeight, err := app.TiaBlobKeeper.GetProvenHeight(context.TODO())
-	// if err != nil {
-	// 	panic(err)
-	// }
-
-	// appInfo, err := app.Info(nil)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// latestCommitHeight := uint64(appInfo.LastBlockHeight)
-
-	var latestProvenHeight, latestCommitHeight uint64
-
 	app.TiaBlobRelayer, err = tiablobrelayer.NewRelayer(
-		"https://rpc.celestia.strange.love:443", // Celestia RPC URL. TODO config var
+		logger,
+		appOpts,
+		appns.MustNewV0([]byte(celestiaNamespace)),
 		filepath.Join(homePath, "keys"),
-		latestProvenHeight,
-		latestCommitHeight,
-		3*time.Second, // query Celestia for new block proofs this often. TODO config var
-		32,            // only flush at most this many block proofs in an injected tx per block proposal. TODO config var
+		publishToCelestiaBlockInterval,
 	)
 	if err != nil {
 		panic(err)
@@ -748,10 +735,8 @@ func NewChainApp(
 	// must be done after relayer is created
 	app.TiaBlobKeeper.SetRelayer(app.TiaBlobRelayer)
 
-	go app.TiaBlobRelayer.Start(context.Background())
-
 	// Proof-of-blob proposal handling
-	tiaBlobProposalHandler := tiablobkeeper.NewProofOfBlobProposalHandler(app.TiaBlobKeeper, bApp.Mempool(), bApp)
+	tiaBlobProposalHandler := tiablobkeeper.NewProofOfBlobProposalHandler(app.TiaBlobKeeper, app.TiaBlobRelayer, bApp.Mempool(), bApp)
 	bApp.SetPrepareProposal(tiaBlobProposalHandler.PrepareProposal)
 	bApp.SetProcessProposal(tiaBlobProposalHandler.ProcessProposal)
 
@@ -1105,7 +1090,29 @@ func (app *ChainApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain) (*
 		panic(err)
 	}
 	response, err := app.ModuleManager.InitGenesis(ctx, app.appCodec, genesisState)
-	return response, err
+	if err != nil {
+		panic(err)
+	}
+
+	// TODO this only works when starting from genesis, need to use v0.51 hook on OnPostStart
+	latestProvenHeight, err := app.TiaBlobKeeper.GetProvenHeight(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	appInfo, err := app.Info(nil)
+	if err != nil {
+		panic(err)
+	}
+	latestCommitHeight := uint64(appInfo.LastBlockHeight)
+
+	go app.TiaBlobRelayer.Start(
+		ctx.Context(),
+		latestProvenHeight,
+		latestCommitHeight,
+	)
+
+	return response, nil
 }
 
 // LoadHeight loads a particular height
@@ -1250,6 +1257,8 @@ func (app *ChainApp) RegisterTendermintService(clientCtx client.Context) {
 }
 
 func (app *ChainApp) RegisterNodeService(clientCtx client.Context, cfg config.Config) {
+	app.TiaBlobRelayer.SetClientContext(clientCtx)
+
 	nodeservice.RegisterNodeService(clientCtx, app.GRPCQueryRouter(), cfg)
 }
 

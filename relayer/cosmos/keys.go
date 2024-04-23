@@ -8,6 +8,7 @@ import (
 	ckeys "github.com/cosmos/cosmos-sdk/client/keys"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/cosmos/go-bip39"
@@ -39,12 +40,16 @@ func KeyringAlgoOptions() keyring.Option {
 
 // CreateKeystore initializes a new instance of a keyring at the specified path in the local filesystem.
 func (cc *CosmosProvider) CreateKeystore() error {
-	keybase, err := keyring.New("restaker", "test", cc.keyDir, rand.Reader, cc.cdc.Marshaler, KeyringAlgoOptions())
+	keybase, err := keyring.New("tiablob", "test", cc.keyDir, rand.Reader, cc.cdc.Marshaler, KeyringAlgoOptions())
 	if err != nil {
 		return err
 	}
 	cc.keybase = keybase
 	return nil
+}
+
+func (cc *CosmosProvider) LoadKeystore(keyring keyring.Keyring) {
+	cc.keybase = keyring
 }
 
 // KeystoreCreated returns true if there is an existing keystore instance at the specified path, it returns false otherwise.
@@ -124,6 +129,36 @@ func (cc *CosmosProvider) KeyAddOrRestore(keyName string, coinType uint32, signi
 	}
 
 	return &KeyOutput{Mnemonic: mnemonicStr, Account: addr}, nil
+}
+
+// SaveOfflineKey persists a public key to the keystore with the specified name.
+func (cc *CosmosProvider) SaveOfflineKey(keyName string, pubKey cryptotypes.PubKey) (*KeyOutput, error) {
+	info, err := cc.keybase.SaveOfflineKey(keyName, pubKey)
+	if err != nil {
+		return nil, err
+	}
+
+	addr, err := info.GetAddress()
+	if err != nil {
+		return nil, err
+	}
+
+	return &KeyOutput{Account: addr}, nil
+}
+
+// SaveLedgerKey persists a ledger key to the keystore with the specified name.
+func (cc *CosmosProvider) SaveLedgerKey(keyName string, coinType uint32, bech32Prefix string) (*KeyOutput, error) {
+	info, err := cc.keybase.SaveLedgerKey(keyName, hd.Secp256k1, bech32Prefix, coinType, 0, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	addr, err := info.GetAddress()
+	if err != nil {
+		return nil, err
+	}
+
+	return &KeyOutput{Account: addr}, nil
 }
 
 // ShowAddress retrieves a key by name from the keystore and returns the bech32 encoded string representation of that key.
@@ -218,20 +253,6 @@ func CreateMnemonic() (string, error) {
 		return "", err
 	}
 	return mnemonic, nil
-}
-
-func (cc *CosmosProvider) GetKeyAddressForKey(key string) (sdk.AccAddress, error) {
-	info, err := cc.keybase.Key(key)
-	if err != nil {
-		return nil, err
-	}
-
-	addr, err := info.GetAddress()
-	if err != nil {
-		return nil, err
-	}
-
-	return addr, nil
 }
 
 func (cc *CosmosProvider) KeyFromKeyOrAddress(keyOrAddress string) (string, error) {

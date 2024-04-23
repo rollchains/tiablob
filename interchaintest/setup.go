@@ -9,7 +9,7 @@ import (
 	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types" // spawntag:globalfee
 
-	globalfee "github.com/reecepbcups/globalfee/x/globalfee/types"
+	globalfee "github.com/strangelove-ventures/globalfee/x/globalfee/types"
 )
 
 var (
@@ -41,7 +41,6 @@ var (
 		cosmos.NewGenesisKV("app_state.poa.params.admins", []string{"rc10d07y265gmmuvt4z0w9aw880jnsr700jymjvfq", "rc1hj5fveer5cjtn4wd6wstzugjfdxzl0xpc4nmns"}),
 		// globalfee: set minimum fee requirements
 		cosmos.NewGenesisKV("app_state.globalfee.params.minimum_gas_prices", sdk.DecCoins{GasCoin}),
-
 	}
 
 	DefaultChainConfig = ibc.ChainConfig{

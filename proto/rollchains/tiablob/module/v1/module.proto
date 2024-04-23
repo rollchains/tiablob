@@ -10,8 +10,4 @@ message Module {
   option (cosmos.app.v1alpha1.module) = {
     go_import : "github.com/rollchains/tiablob"
   };
-
-  // admins defines the custom module admins.
-  // if not set, defaults to the governance module.
-  repeated string admins = 1;
 }
