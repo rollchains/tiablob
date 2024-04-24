@@ -17,25 +17,25 @@ import (
 // ClientState from Tendermint tracks the current validator set, latest height,
 // and a possible frozen height.
 type ClientState struct {
-	ChainId    string   `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
-	TrustLevel Fraction `protobuf:"bytes,2,opt,name=trust_level,json=trustLevel,proto3" json:"trust_level"`
+	ChainId    string   `json:"chain_id,omitempty"`
+	TrustLevel Fraction `json:"trust_level"`
 	// duration of the period since the LatestTimestamp during which the
 	// submitted headers are valid for upgrade
-	TrustingPeriod time.Duration `protobuf:"bytes,3,opt,name=trusting_period,json=trustingPeriod,proto3,stdduration" json:"trusting_period"`
+	TrustingPeriod time.Duration `json:"trusting_period"`
 	// duration of the staking unbonding period
-	UnbondingPeriod time.Duration `protobuf:"bytes,4,opt,name=unbonding_period,json=unbondingPeriod,proto3,stdduration" json:"unbonding_period"`
+	UnbondingPeriod time.Duration `json:"unbonding_period"`
 	// defines how much new (untrusted) header's Time can drift into the future.
-	MaxClockDrift time.Duration `protobuf:"bytes,5,opt,name=max_clock_drift,json=maxClockDrift,proto3,stdduration" json:"max_clock_drift"`
+	MaxClockDrift time.Duration `json:"max_clock_drift"`
 	// Block height when the client was frozen due to a misbehaviour
-	FrozenHeight Height `protobuf:"bytes,6,opt,name=frozen_height,json=frozenHeight,proto3" json:"frozen_height"`
+	FrozenHeight Height `json:"frozen_height"`
 	// Latest height the client was updated to
-	LatestHeight Height `protobuf:"bytes,7,opt,name=latest_height,json=latestHeight,proto3" json:"latest_height"`
+	LatestHeight Height `json:"latest_height"`
 	// Proof specifications used in verifying counterparty state
 }
 
 type Fraction struct {
-	Numerator   uint64 `protobuf:"varint,1,opt,name=numerator,proto3" json:"numerator,omitempty"`
-	Denominator uint64 `protobuf:"varint,2,opt,name=denominator,proto3" json:"denominator,omitempty"`
+	Numerator   uint64 `json:"numerator,omitempty"`
+	Denominator uint64 `json:"denominator,omitempty"`
 }
 
 var ModuleName = "celestia-da-light-client"

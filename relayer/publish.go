@@ -7,7 +7,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/rollchains/tiablob/celestia/appconsts"
 	blobtypes "github.com/rollchains/tiablob/celestia/blob/types"
 	tmtypes "github.com/tendermint/tendermint/types"
@@ -45,17 +44,21 @@ func (r *Relayer) postNextBlocks(ctx sdk.Context, n int) {
 
 	blobs := make([]*blobtypes.Blob, n)
 
-	txClient := txtypes.NewServiceClient(r.clientCtx)
-
 	for i := 0; i < n; i++ {
 		h := height - int64(n) + int64(i)
-		res, err := txClient.GetBlockWithTxs(ctx, &txtypes.GetBlockWithTxsRequest{Height: h})
+		res, err := r.provider.GetLocalBlockAtHeight(ctx, h)
 		if err != nil {
-			r.logger.Error("Error getting block", "error", err)
+			r.logger.Error("Error getting block", "height:", h, "error", err)
 			return
 		}
 
-		blockBz, err := res.Block.Marshal()
+		blockProto, err := res.Block.ToProto()
+		if err != nil {
+			r.logger.Error("Error protoing block", "error", err)
+			return
+		}
+
+		blockBz, err := blockProto.Marshal()
 		if err != nil {
 			r.logger.Error("Error marshaling block", "error", err)
 			return

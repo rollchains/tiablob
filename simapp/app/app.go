@@ -741,6 +741,7 @@ func NewChainApp(
 	bApp.SetPrepareProposal(tiaBlobProposalHandler.PrepareProposal)
 	bApp.SetProcessProposal(tiaBlobProposalHandler.ProcessProposal)
 
+
 	// --- Module Options ---
 
 	// NOTE: we may consider parsing `appOpts` inside module constructors. For the moment
@@ -1062,7 +1063,11 @@ func (app *ChainApp) setPostHandler() {
 func (app *ChainApp) Name() string { return app.BaseApp.Name() }
 
 // PreBlocker application updates every pre block
-func (app *ChainApp) PreBlocker(ctx sdk.Context, _ *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
+func (app *ChainApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
+	err := app.TiaBlobKeeper.PreBlocker(ctx, req)
+	if err != nil {
+		return nil, err
+	}
 	return app.ModuleManager.PreBlock(ctx)
 }
 

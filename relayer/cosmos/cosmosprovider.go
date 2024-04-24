@@ -26,6 +26,7 @@ var accountSeqRegex = regexp.MustCompile("account sequence mismatch, expected ([
 
 type CosmosProvider struct {
 	cdc       Codec
+	localRpcClient RPCClient
 	rpcClient RPCClient
 	lightProvider provtypes.Provider
 	keybase   keyring.Keyring
@@ -70,6 +71,11 @@ func NewProvider(rpcURL string, keyDir string, timeout time.Duration, chainID st
 		return nil, err
 	}
 
+	localRpcClient, err := client.NewClient("http://127.0.0.1:26657", timeout)
+	if err != nil {
+		return nil, err
+	}
+
 	// TODO: add cfg item for celestia chain id
 	lightprovider, err := prov.New(chainID, rpcURL)
 	if err != nil {
@@ -78,6 +84,7 @@ func NewProvider(rpcURL string, keyDir string, timeout time.Duration, chainID st
 
 	cp := &CosmosProvider{
 		cdc:            makeCodec(ModuleBasics),
+		localRpcClient: NewRPCClient(localRpcClient),
 		rpcClient:      NewRPCClient(rpcClient),
 		lightProvider:  lightprovider,
 		keyDir:         keyDir,

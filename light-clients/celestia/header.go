@@ -14,11 +14,13 @@ type ClientMessage interface {
 	ValidateBasic() error
 }
 
+var _ ClientMessage = (*Header)(nil)
+
 type Header struct {
-	*types2.SignedHeader `protobuf:"bytes,1,opt,name=signed_header,json=signedHeader,proto3,embedded=signed_header" json:"signed_header,omitempty"`
-	ValidatorSet         *types2.ValidatorSet `protobuf:"bytes,2,opt,name=validator_set,json=validatorSet,proto3" json:"validator_set,omitempty"`
-	TrustedHeight        Height         `protobuf:"bytes,3,opt,name=trusted_height,json=trustedHeight,proto3" json:"trusted_height"`
-	TrustedValidators    *types2.ValidatorSet `protobuf:"bytes,4,opt,name=trusted_validators,json=trustedValidators,proto3" json:"trusted_validators,omitempty"`
+	*types2.SignedHeader `json:"signed_header,omitempty"`
+	ValidatorSet         *types2.ValidatorSet `json:"validator_set,omitempty"`
+	TrustedHeight        Height         `json:"trusted_height"`
+	TrustedValidators    *types2.ValidatorSet `json:"trusted_validators,omitempty"`
 }
 
 // ConsensusState returns the updated consensus state associated with the header

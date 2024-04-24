@@ -10,11 +10,11 @@ import (
 )
 
 type RowProof struct {
-	RowRoots [][]byte        `protobuf:"bytes,1,rep,name=row_roots,json=rowRoots,proto3" json:"row_roots,omitempty"`
-	Proofs   []*crypto.Proof `protobuf:"bytes,2,rep,name=proofs,proto3" json:"proofs,omitempty"`
-	Root     []byte          `protobuf:"bytes,3,opt,name=root,proto3" json:"root,omitempty"`
-	StartRow uint32          `protobuf:"varint,4,opt,name=start_row,json=startRow,proto3" json:"start_row,omitempty"`
-	EndRow   uint32          `protobuf:"varint,5,opt,name=end_row,json=endRow,proto3" json:"end_row,omitempty"`
+	RowRoots [][]byte        `json:"row_roots,omitempty"`
+	Proofs   []*crypto.Proof `json:"proofs,omitempty"`
+	Root     []byte          `json:"root,omitempty"`
+	StartRow uint32          `json:"start_row,omitempty"`
+	EndRow   uint32          `json:"end_row,omitempty"`
 }
 
 // RowProof is a Merkle proof that a set of rows exist in a Merkle tree with a

@@ -56,6 +56,15 @@ func (cc *CosmosProvider) GetBlockAtHeight(ctx context.Context, height int64) (*
 	return block, nil
 }
 
+// GetBlockAtHeight queries the block at a given height
+func (cc *CosmosProvider) GetLocalBlockAtHeight(ctx context.Context, height int64) (*coretypes.ResultBlock, error) {
+	block, err := cc.localRpcClient.Block(ctx, &height)
+	if err != nil {
+		return nil, fmt.Errorf("error querying block at height %d: %w", height, err)
+	}
+	return block, nil
+}
+
 func (cc *CosmosProvider) AccountInfo(ctx context.Context, address string) (authtypes.AccountI, error) {
 	res, err := authtypes.NewQueryClient(cc).Account(ctx, &authtypes.QueryAccountRequest{
 		Address: address,

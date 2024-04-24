@@ -12,9 +12,9 @@ import (
 
 type Misbehaviour struct {
 	// ClientID is deprecated
-	ClientId string  `protobuf:"bytes,1,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"` // Deprecated: Do not use.
-	Header1  *Header `protobuf:"bytes,2,opt,name=header_1,json=header1,proto3" json:"header_1,omitempty"`
-	Header2  *Header `protobuf:"bytes,3,opt,name=header_2,json=header2,proto3" json:"header_2,omitempty"`
+	ClientId string  `json:"client_id,omitempty"` // Deprecated: Do not use.
+	Header1  *Header `json:"header_1,omitempty"`
+	Header2  *Header `json:"header_2,omitempty"`
 }
 
 // FrozenHeight is same for all misbehaviour

@@ -12,11 +12,11 @@ import (
 )
 
 type ShareProof struct {
-	Data             [][]byte    `protobuf:"bytes,1,rep,name=data,proto3" json:"data,omitempty"`
-	ShareProofs      []*NMTProof `protobuf:"bytes,2,rep,name=share_proofs,json=shareProofs,proto3" json:"share_proofs,omitempty"`
-	NamespaceId      []byte      `protobuf:"bytes,3,opt,name=namespace_id,json=namespaceId,proto3" json:"namespace_id,omitempty"`
-	RowProof         *RowProof   `protobuf:"bytes,4,opt,name=row_proof,json=rowProof,proto3" json:"row_proof,omitempty"`
-	NamespaceVersion uint32      `protobuf:"varint,5,opt,name=namespace_version,json=namespaceVersion,proto3" json:"namespace_version,omitempty"`
+	Data             [][]byte    `json:"data,omitempty"`
+	ShareProofs      []*NMTProof `json:"share_proofs,omitempty"`
+	NamespaceId      []byte      `json:"namespace_id,omitempty"`
+	RowProof         *RowProof   `json:"row_proof,omitempty"`
+	NamespaceVersion uint32      `json:"namespace_version,omitempty"`
 }
 
 // ShareProof is an NMT proof that a set of shares exist in a set of rows and a
@@ -41,20 +41,20 @@ type shareProof struct {
 // where that namespace would be.
 type NMTProof struct {
 	// Start index of this proof.
-	Start int32 `protobuf:"varint,1,opt,name=start,proto3" json:"start,omitempty"`
+	Start int32 `json:"start,omitempty"`
 	// End index of this proof.
-	End int32 `protobuf:"varint,2,opt,name=end,proto3" json:"end,omitempty"`
+	End int32 `json:"end,omitempty"`
 	// Nodes that together with the corresponding leaf values can be used to
 	// recompute the root and verify this proof. Nodes should consist of the max
 	// and min namespaces along with the actual hash, resulting in each being 48
 	// bytes each
-	Nodes [][]byte `protobuf:"bytes,3,rep,name=nodes,proto3" json:"nodes,omitempty"`
+	Nodes [][]byte `json:"nodes,omitempty"`
 	// leafHash are nil if the namespace is present in the NMT. In case the
 	// namespace to be proved is in the min/max range of the tree but absent, this
 	// will contain the leaf hash necessary to verify the proof of absence. Leaf
 	// hashes should consist of the namespace along with the actual hash,
 	// resulting 40 bytes total.
-	LeafHash []byte `protobuf:"bytes,4,opt,name=leaf_hash,json=leafHash,proto3" json:"leaf_hash,omitempty"`
+	LeafHash []byte `json:"leaf_hash,omitempty"`
 }
 
 func (sp shareProof) ToProto() ShareProof {

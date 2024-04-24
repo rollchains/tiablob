@@ -12,9 +12,9 @@ import (
 
 type Height struct {
 	// the revision that the client is currently on
-	RevisionNumber uint64 `protobuf:"varint,1,opt,name=revision_number,json=revisionNumber,proto3" json:"revision_number,omitempty"`
+	RevisionNumber uint64 `json:"revision_number,omitempty"`
 	// the height within the given revision
-	RevisionHeight uint64 `protobuf:"varint,2,opt,name=revision_height,json=revisionHeight,proto3" json:"revision_height,omitempty"`
+	RevisionHeight uint64 `json:"revision_height,omitempty"`
 }
 
 // IsRevisionFormat checks if a chainID is in the format required for parsing revisions

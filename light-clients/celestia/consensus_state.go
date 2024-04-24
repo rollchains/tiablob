@@ -13,11 +13,11 @@ import (
 type ConsensusState struct {
 	// timestamp that corresponds to the block height in which the ConsensusState
 	// was stored.
-	Timestamp time.Time `protobuf:"bytes,1,opt,name=timestamp,proto3,stdtime" json:"timestamp"`
+	Timestamp time.Time `json:"timestamp"`
 	// commitment root (i.e app hash)
-	Root               []byte  `protobuf:"bytes,2,opt,name=root,proto3" json:"root"` // okay as bytes?
+	Root               []byte  `json:"root"` // okay as bytes?
 	//Root               types1.MerkleRoot                                `protobuf:"bytes,2,opt,name=root,proto3" json:"root"`
-	NextValidatorsHash bytes.HexBytes `protobuf:"bytes,3,opt,name=next_validators_hash,json=nextValidatorsHash,proto3,casttype=github.com/cometbft/cometbft/libs/bytes.HexBytes" json:"next_validators_hash,omitempty"`
+	NextValidatorsHash bytes.HexBytes `json:"next_validators_hash,omitempty"`
 }
 
 // SentinelRoot is used as a stand-in root value for the consensus state set at the upgrade height

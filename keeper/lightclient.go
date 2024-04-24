@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"encoding/json"
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -15,29 +14,15 @@ var (
 	keyClientStore = []byte("client_store")
 )
 
-func (k Keeper) IsClientCreated(ctx sdk.Context) bool {
+func (k Keeper) GetClientState(ctx sdk.Context) (*celestia.ClientState, bool) {
 	clientStore := prefix.NewStore(ctx.KVStore(k.storeKey), keyClientStore)
 
-	_, found := celestia.GetClientState(clientStore)
-
-	return found
+	return celestia.GetClientState(clientStore)
 }
 
-func(k Keeper) CreateClient(ctx sdk.Context, clientStateBz, consensusStateBz []byte) error {
-	var clientState celestia.ClientState
-	err := json.Unmarshal(clientStateBz, &clientState)
-	if err != nil {
-		return fmt.Errorf("invalid client, %v", err)
-	}
-
+func(k Keeper) CreateClient(ctx sdk.Context, clientState celestia.ClientState, consensusState celestia.ConsensusState) error {
 	if err := clientState.Validate(); err != nil {
 		return err
-	}
-
-	var consensusState celestia.ConsensusState
-	err = json.Unmarshal(consensusStateBz, &consensusState)
-	if err != nil {
-		return fmt.Errorf("invalid consensus state, %v", err)
 	}
 
 	clientStore := prefix.NewStore(ctx.KVStore(k.storeKey), keyClientStore)
@@ -52,6 +37,9 @@ func(k Keeper) CreateClient(ctx sdk.Context, clientStateBz, consensusStateBz []b
 
 	initialHeight := clientState.LatestHeight
 	fmt.Println("Client create at height:", initialHeight)
+
+	// TODO: temp solution for now...
+	k.relayer.SetLatestClientState(&clientState)
 
 	return nil
 }
