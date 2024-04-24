@@ -30,9 +30,9 @@ After the imports, declare the constant variables required by `tiablob.
 const (
     // ...
 
-    // namespace identifier for this rollchain on Celestia
-    // TODO: Change me
-	celestiaNamespace = "rc_demo" 
+	// namespace identifier for this rollchain on Celestia
+	// TODO: Change me
+	celestiaNamespace = "rc_demo"
 
 	// publish blocks to celestia every n blocks.
 	publishToCelestiaBlockInterval = 10
@@ -45,11 +45,11 @@ Inside of the `ChainApp` struct, the struct which satisfies the cosmos-sdk `runt
 
 ```golang
 type ChainApp struct {
-    // ...
+	// ...
 	// Rollchains Celestia Publish
 	TiaBlobKeeper  *tiablobkeeper.Keeper
 	TiaBlobRelayer *tiablobrelayer.Relayer
-    // ...
+	// ...
 }
 ```
 
@@ -160,15 +160,17 @@ func (app *ChainApp) FinalizeBlock(req *abci.RequestFinalizeBlock) (*abci.Respon
 
 6. Integrate relayer startup
 
-The relayer needs to be informed of the latest proven height from the application on startup, and then started. Inside `InitChainer`, add the following logic after the error handling of the `InitGenesis` call.
-
-ROLLCHAINS TODO: UPDATE THIS WHEN `OnPostStart` hook passes `app` parameter for proper relayer startup.
+The relayer needs to query blocks using the client context in order to package them and publish to Celestia. The relayer also needs to be started with some initial values that must be queried from the app after the app has started. Add the following in `RegisterNodeService`.
 
 ```golang
-func (app *ChainApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
-    // ...
+func (app *ChainApp) RegisterNodeService(clientCtx client.Context, cfg config.Config) {
+	nodeservice.RegisterNodeService(clientCtx, app.GRPCQueryRouter(), cfg)
 
-    // TODO this only works when starting from genesis, need to use v0.51 hook on OnPostStart
+	app.TiaBlobRelayer.SetClientContext(clientCtx)
+
+	ctx := app.NewContext(false)
+
+	// TODO: Do these steps in PostSetup and PostSetupStandalone in SDK v0.51+ since app is accessible
 	latestProvenHeight, err := app.TiaBlobKeeper.GetProvenHeight(ctx)
 	if err != nil {
 		panic(err)
@@ -181,25 +183,11 @@ func (app *ChainApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain) (*
 	latestCommitHeight := uint64(appInfo.LastBlockHeight)
 
 	go app.TiaBlobRelayer.Start(
-		ctx.Context(),
+		ctx,
 		latestProvenHeight,
 		latestCommitHeight,
 	)
-
-    return response, nil
-}
-```
-
-7. Connect client context to relayer
-
-The relayer needs to query blocks using the client context in order to package them and publish to Celestia. Add the following line in `RegisterNodeService`.
-
-```golang
-func (app *ChainApp) RegisterNodeService(clientCtx client.Context, cfg config.Config) {
-    // Rollchains tiabloc relayer needs this to query block data.
-	app.TiaBlobRelayer.SetClientContext(clientCtx)
-
-	nodeservice.RegisterNodeService(clientCtx, app.GRPCQueryRouter(), cfg)
+	// END TODO
 }
 ```
 
