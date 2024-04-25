@@ -5,7 +5,6 @@ import (
 	"errors"
 	"io"
 	"os"
-	"time"
 
 	cmtcfg "github.com/cometbft/cometbft/config"
 	dbm "github.com/cosmos/cosmos-db"
@@ -85,47 +84,11 @@ func initAppConfig() (string, interface{}) {
 	// srvCfg.BaseConfig.IAVLDisableFastNode = true // disable fastnode by default
 
 	customAppConfig := CustomAppConfig{
-		Config: *srvCfg,
-		Celestia: &relayer.CelestiaConfig{
-			AppRpcURL:          "https://rpc-mocha.pops.one:443", // TODO remove hardcoded URL
-			AppRpcTimeout:      30 * time.Second,
-			GasPrice:           "0.01utia",
-			GasAdjustment:      1.0,
-			NodeRpcURL:         "http://127.0.0.1:26658",
-			NodeAuthToken:      "auth-token",
-			ProofQueryInterval: 12 * time.Second,
-			MaxFlushSize:       32,
-		},
+		Config:   *srvCfg,
+		Celestia: &relayer.DefaultCelestiaConfig,
 	}
 
-	customAppTemplate := serverconfig.DefaultConfigTemplate + `
-
-	[celestia]
-	# RPC URL of celestia-app node for posting block data
-	# TODO remove hardcoded URL
-	app-rpc-url = "https://rpc-mocha.pops.one:443"
-
-	# RPC Timeout for transaction broadcasts and queries to celestia-app node
-	app-rpc-timeout = "30s"
-
-	# Gas price to pay for celestia transactions
-	gas-prices = "0.01utia"
-
-	# Gas adjustment for celestia transactions
-	gas-adjustment = 1.0
-
-	# RPC URL of celestia-node for querying proofs
-	node-rpc-url = "http://127.0.0.1:26658"
-
-	# Auth token for celestia-node RPC
-	node-auth-token = "auth-token"
-
-	# Query celestia for new block proofs this often
-	proof-query-interval = "12s"
-
-	# Only flush at most this many block proofs in an injected tx per block proposal
-	max-flush-size = 32
-	`
+	customAppTemplate := serverconfig.DefaultConfigTemplate + relayer.DefaultConfigTemplate
 
 	return customAppTemplate, customAppConfig
 }
