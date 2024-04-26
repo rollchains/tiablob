@@ -3,11 +3,11 @@ package keeper
 import (
 	"fmt"
 
+	"cosmossdk.io/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	celestiatypes "github.com/tendermint/tendermint/types"
 
 	"github.com/rollchains/tiablob/light-clients/celestia"
-
-	"cosmossdk.io/store/prefix"
 )
 
 var (
@@ -86,6 +86,27 @@ func (k Keeper) UpdateClient(ctx sdk.Context, clientMsg celestia.ClientMessage) 
 	}
 
 	_ = clientState.UpdateState(ctx, clientStore, clientMsg)
+
+	return nil
+}
+
+func (k Keeper) VerifyMembership(ctx sdk.Context, height uint64, proof *celestiatypes.ShareProof) error {
+	clientStore := prefix.NewStore(ctx.KVStore(k.storeKey), keyClientStore)
+
+	clientState, found := celestia.GetClientState(clientStore)
+	if !found {
+		return fmt.Errorf("client state not found in update client")
+	}
+
+	if status := clientState.Status(ctx, clientStore); status != celestia.Active {
+		return fmt.Errorf("client not active, cannot update client with status %s", status)
+	}
+	
+	cHeight := celestia.NewHeight(celestia.ParseChainID(clientState.ChainId), height)
+	err := clientState.VerifyMembership(ctx, clientStore, cHeight, proof)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

@@ -159,7 +159,7 @@ const (
 	celestiaNamespace = "rc_demo"
 
 	// publish blocks to celestia every n rollchain blocks.
-	publishToCelestiaBlockInterval = 10
+	publishToCelestiaBlockInterval = 5 // smaller size == faster testing
 )
 
 // These constants are derived from the above variables.

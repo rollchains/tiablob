@@ -92,7 +92,7 @@ func TestPublish(t *testing.T) {
 
 	celestiaNodeClient := NewCelestiaNodeClient(nil, celestiaNode, celestiaNodeHome)
 
-	success := watchForPublishedBlocks(t, ctx, celestiaNodeClient, rollchainChain, celestiaChain, 50)
+	success := watchForPublishedBlocks(t, ctx, celestiaNodeClient, rollchainChain, celestiaChain, 20)
 	require.True(t, success, "failed to find all published blocks")
 }
 

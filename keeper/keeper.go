@@ -20,6 +20,8 @@ type Keeper struct {
 	ProvenHeight collections.Item[uint64]
 
 	storeKey    storetypes2.StoreKey
+
+	cdc codec.BinaryCodec
 }
 
 func NewKeeper(
@@ -38,6 +40,8 @@ func NewKeeper(
 		ProvenHeight: collections.NewItem(sb, tiablob.ProvenHeightKey, "proven_height", collections.Uint64Value),
 
 		storeKey: key,
+
+		cdc: cdc,
 	}
 }
 

@@ -16,6 +16,9 @@ import (
 	"google.golang.org/grpc/encoding/proto"
 
 	client "github.com/strangelove-ventures/cometbft-client/client"
+
+	corerpc "github.com/tendermint/tendermint/rpc/client/http"
+	cometrpc "github.com/cometbft/cometbft/rpc/client/http"
 )
 
 var _ gogogrpc.ClientConn = &CosmosProvider{}
@@ -26,9 +29,10 @@ var accountSeqRegex = regexp.MustCompile("account sequence mismatch, expected ([
 
 type CosmosProvider struct {
 	cdc       Codec
-	localRpcClient RPCClient
+	localRpcClient *cometrpc.HTTP
 	rpcClient RPCClient
 	lightProvider provtypes.Provider
+	coreRpcClient *corerpc.HTTP
 	keybase   keyring.Keyring
 
 	keyDir string
@@ -71,7 +75,13 @@ func NewProvider(rpcURL string, keyDir string, timeout time.Duration, chainID st
 		return nil, err
 	}
 
-	localRpcClient, err := client.NewClient("http://127.0.0.1:26657", timeout)
+	/*localRpcClient, err := client.NewClient("http://127.0.0.1:26657", timeout)
+	if err != nil {
+		return nil, err
+	}*/
+
+	// Client wrapper seems to have issues with getting/copying the block. Validate basic does not succeed with it.
+	localRpcClient, err := cometrpc.NewWithTimeout("http://127.0.0.1:26657", "/websocket", uint(timeout.Seconds()))
 	if err != nil {
 		return nil, err
 	}
@@ -82,11 +92,18 @@ func NewProvider(rpcURL string, keyDir string, timeout time.Duration, chainID st
 		return nil, err
 	}
 
+	coreRpcClient, err := corerpc.NewWithTimeout(rpcURL, "/websocket", uint(timeout.Seconds()))
+	if err != nil {
+		return nil, err
+	}
+
 	cp := &CosmosProvider{
 		cdc:            makeCodec(ModuleBasics),
-		localRpcClient: NewRPCClient(localRpcClient),
+		localRpcClient: localRpcClient,
+		//localRpcClient: NewRPCClient(localRpcClient),
 		rpcClient:      NewRPCClient(rpcClient),
 		lightProvider:  lightprovider,
+		coreRpcClient:  coreRpcClient,
 		keyDir:         keyDir,
 		walletStateMap: make(map[string]*WalletState),
 	}

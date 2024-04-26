@@ -1,7 +1,7 @@
 package celestia
 
 import (
-	"encoding/json"
+	//"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -12,6 +12,8 @@ import (
 	"github.com/cometbft/cometbft/light"
 	cmttypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	celestiatypes "github.com/tendermint/tendermint/types"
 )
 
 // ClientState from Tendermint tracks the current validator set, latest height,
@@ -203,32 +205,21 @@ func (cs ClientState) Initialize(ctx sdk.Context, clientStore storetypes.KVStore
 // in a Merkle tree with a given data root.
 // TODO: Revise and look into delay periods for this.
 // TODO: Validate key path and value against the shareProof extracted from proof bytes.
-func (cs *ClientState) VerifyMembership(ctx sdk.Context, clientStore storetypes.KVStore, height Height, delayTimePeriod uint64, delayBlockPeriod uint64, proof []byte, value []byte) error {
+func (cs *ClientState) VerifyMembership(ctx sdk.Context, clientStore storetypes.KVStore, height Height, proof *celestiatypes.ShareProof) error {
 	if cs.LatestHeight.LT(height) {
 		return fmt.Errorf("Invalid height, client state height < proof height (%d < %d), please ensure the client has been updated", cs.LatestHeight, height)
 	}
 
-	if err := verifyDelayPeriodPassed(ctx, clientStore, height, delayTimePeriod, delayBlockPeriod); err != nil {
-		return err
-	}
-
-	var shareProofProto ShareProof
-	err := json.Unmarshal(proof, &shareProofProto)
-	if err != nil {
-		return fmt.Errorf("Invalid proof, could not unmarshal share proof: %v", err)
-	}
-
-	shareProof, err := shareProofFromProto(&shareProofProto)
-	if err != nil {
-		return err
-	}
+	//if err := verifyDelayPeriodPassed(ctx, clientStore, height, delayTimePeriod, delayBlockPeriod); err != nil {
+	//	return err
+	//}
 
 	consensusState, found := GetConsensusState(clientStore, height)
 	if !found {
 		return fmt.Errorf("error consensus state not found, please ensure the proof was constructed against a height that exists on the client")
 	}
 
-	return shareProof.Validate(consensusState.GetRoot())
+	return proof.Validate(consensusState.GetRoot())
 }
 
 // verifyDelayPeriodPassed will ensure that at least delayTimePeriod amount of time and delayBlockPeriod number of blocks have passed

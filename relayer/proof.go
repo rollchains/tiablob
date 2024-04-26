@@ -2,15 +2,24 @@ package relayer
 
 import (
 	"context"
+
 	"fmt"
-	"reflect"
 	"strings"
 	cn "github.com/rollchains/tiablob/relayer/celestia-node"
-	blocktypes "github.com/cometbft/cometbft/proto/tendermint/types"
+	protoblocktypes "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/rollchains/tiablob/celestia-node/share"
-	"github.com/rollchains/tiablob/light-clients/celestia"
 	"github.com/rollchains/tiablob/celestia-node/blob"
 )
+
+func (r *Relayer) GetCachedProofs() []*Proof {
+	proofs := []*Proof{}
+
+	for checkHeight := r.latestProvenHeight + 1; r.blockProofCache[checkHeight] != nil; checkHeight++ {
+		proofs = append(proofs, r.blockProofCache[checkHeight])
+	}
+
+	return proofs
+}
 
 // checkForNewBlockProofs will query Celestia for new block proofs and cache them to be included in the next proposal that this validator proposes.
 func (r *Relayer) checkForNewBlockProofs(ctx context.Context) {
@@ -27,6 +36,7 @@ func (r *Relayer) checkForNewBlockProofs(ctx context.Context) {
 		return
 	}
 
+	squareSize := uint64(0)
 	for r.celestiaLastQueriedHeight < celestiaLatestHeight {
 		// get the namespace blobs from that height
 		queryHeight := uint64(r.celestiaLastQueriedHeight+1)
@@ -40,15 +50,20 @@ func (r *Relayer) checkForNewBlockProofs(ctx context.Context) {
 			return
 		}
 		if len(blobs) > 0 {
-			r.consensusStateCache[queryHeight] = r.GetLightClientHeader(ctx, queryHeight)
-		}
-		for _, blob := range blobs {
-			proof, blockHeight, err := r.GetBlobProof(ctx, celestiaNodeClient, blob, queryHeight)
+			r.celestiaHeaderCache[queryHeight] = r.FetchNewHeader(ctx, queryHeight)
+			block, err := r.provider.GetCelestiaBlockAtHeight(ctx, int64(queryHeight))
 			if err != nil {
+				fmt.Println("Error querying celestia block")
 				return
 			}
-			if blockHeight > 0 {
-				r.blockProofCache[blockHeight] = proof
+			squareSize = block.Block.Data.SquareSize
+			fmt.Println("Square size:", squareSize)
+		}
+		for _, mBlob := range blobs {
+			// TODO: we can aggregate adjacent blobs and prove with a single proof, fall back to individual blobs when not possible
+			err = r.GetBlobProof(ctx, celestiaNodeClient, mBlob, queryHeight, squareSize)
+			if err != nil {
+				return
 			}
 		}
 		r.celestiaLastQueriedHeight++
@@ -59,95 +74,82 @@ func (r *Relayer) checkForNewBlockProofs(ctx context.Context) {
 
 // Returns nil, nil if blob in namespace is not ours
 // Returns an error if we need to quit
-func (r Relayer) GetBlobProof(ctx context.Context, celestiaNodeClient *cn.Client, blob *blob.Blob, queryHeight uint64) (*Proof, uint64, error) {
+func (r *Relayer) GetBlobProof(ctx context.Context, celestiaNodeClient *cn.Client, mBlob *blob.Blob, queryHeight uint64, squareSize uint64) error {
 	// Check that the blob matches our block
-	var blobBlock blocktypes.Block
-	err := blobBlock.Unmarshal(blob.GetData())
+	var blobBlockProto protoblocktypes.Block
+	err := blobBlockProto.Unmarshal(mBlob.GetData())
 	if err != nil {
 		r.logger.Error(fmt.Sprintf("Error unmatshalling blob data at height: %d, %v", queryHeight, err))
-		return nil, 0, nil
+		return nil
 	}
+
+	rollchainBlockHeight := blobBlockProto.Header.Height
 
 	// Cannot use txClient.GetBlockWithTxs since it tries to decode the txs. This API is broken when using the same tx
 	// injection method as vote extensions. https://docs.cosmos.network/v0.50/build/abci/vote-extensions#vote-extension-propagation
 	// "FinalizeBlock will ignore any byte slice that doesn't implement an sdk.Tx, so any injected vote extensions will safely be ignored in FinalizeBlock"
 	// "Some existing Cosmos SDK core APIs may need to be modified and thus broken."
-	expectedBlock, err := r.provider.GetLocalBlockAtHeight(ctx, blobBlock.Header.Height)
+	expectedBlock, err := r.provider.GetLocalBlockAtHeight(ctx, rollchainBlockHeight)
 	if err != nil {
-		r.logger.Error("Error getting block at celestia height:", queryHeight, "chain height", blobBlock.Header.Height, "err", err)
-		return nil, 0, nil
-	}
-	// Just verify hashes for now, but expand this, maybe checksum it?
-	if !reflect.DeepEqual(blobBlock.Header.AppHash, expectedBlock.Block.Header.AppHash) {
-		r.logger.Error("App hash mismatch")
-		return nil, 0, nil
-	}
-	// Get proof
-	// TODO: should we get the proof at the latest height?
-	proof, err := celestiaNodeClient.Blob.GetProof(ctx, queryHeight, r.celestiaNamespace.Bytes(), blob.Commitment)
-	if err != nil {
-		r.logger.Error(fmt.Sprintf("Error on GetProof at height: %d, %v", queryHeight, err))
-		return nil, 0, err 
-	}
-	included, err := celestiaNodeClient.Blob.Included(ctx, queryHeight, r.celestiaNamespace.Bytes(), proof, blob.Commitment)
-	if err != nil {
-		r.logger.Error("Err on included")
-		return nil, 0, err
-	}
-	if !included {
-		r.logger.Error("Not included")
-		return nil, 0, fmt.Errorf("Blob not included")
+		r.logger.Error("Error getting block at celestia height:", queryHeight, "rollchain height", rollchainBlockHeight, "err", err)
+		return nil
 	}
 
-	fmt.Println("Proof added for height: ", blobBlock.Header.Height)
-	return &Proof{
-		Proof: proof,
-		Height: queryHeight,
-		Commitment: &blob.Commitment,
-	}, uint64(blobBlock.Header.Height), nil
+	blockProto, err := expectedBlock.Block.ToProto()
+	if err != nil {
+		r.logger.Error("error expected block to proto", err.Error())
+		return nil
+	}
+	
+	blockProtoBz, err := blockProto.Marshal()
+	if err != nil {
+		r.logger.Error("error blockProto marshal", err.Error())
+		return nil
+	}
+
+	// Replace blob data with our data for proof verification
+	mBlob.Data = blockProtoBz
+
+	shares, err := blob.BlobsToShares(mBlob)
+	if err != nil {
+		r.logger.Error("error BlobsToShares")
+		return nil
+	}
+
+	shareIndex := GetShareIndex(uint64(mBlob.Index()), squareSize)
+
+	// Get all shares from celestia node, confirm our shares are present
+	proverShareProof, err := r.provider.ProveShares(ctx, queryHeight, shareIndex, shareIndex+uint64(len(shares)))
+	if err != nil {
+		r.logger.Error("error calling ProveShares", err.Error())
+		return nil
+	}
+
+	proverShareProof.Data = shares // Replace with retrieved shares
+	err = proverShareProof.Validate(r.celestiaHeaderCache[queryHeight].SignedHeader.Header.DataHash)
+	if err != nil {
+		r.logger.Error("failed verify membership, err", err.Error())
+		return nil
+	}
+
+	fmt.Println("Proof added for height: ", rollchainBlockHeight)
+	
+	proverShareProof.Data = nil // Only include proof
+	mBlob.Data = nil // Remove block
+	r.blockProofCache[uint64(rollchainBlockHeight)] = &Proof{
+		ShareProof: proverShareProof,
+		Blob: mBlob,
+		CelestiaHeight: queryHeight,
+		RollchainHeight: uint64(rollchainBlockHeight),
+	}
+
+	return nil
 }
 
-func (r Relayer) GetLightClientHeader(ctx context.Context, queryHeight uint64) *celestia.Header {
-	newLightBlock, err := r.provider.QueryLightBlock(ctx, int64(queryHeight))
-	if err != nil {
-		r.logger.Error("error querying light block for proofs, height:", queryHeight)
-		return nil
+func GetShareIndex(edsIndex uint64, squareSize uint64) uint64 {
+	shareIndex := edsIndex
+	if edsIndex > squareSize {
+		shareIndex = (edsIndex - (edsIndex % squareSize)) / 2 + (edsIndex % squareSize)
 	}
-
-	var trustedHeight celestia.Height
-	if r.latestClientState != nil {
-		trustedHeight = r.latestClientState.LatestHeight
-	} else {
-		trustedHeight = celestia.NewHeight(1, 1)
-	}
-	if r.latestClientState == nil {
-		r.logger.Error("Client state is not set")
-		return nil
-	}
-
-	trustedValidatorsInBlock, err := r.provider.QueryLightBlock(ctx, int64(trustedHeight.GetRevisionHeight()+1))
-	if err != nil {
-		r.logger.Error("error querying trusted light block, height:", trustedHeight)
-		return nil
-	}
-
-	valSet, err := newLightBlock.ValidatorSet.ToProto()
-	if err != nil {
-		r.logger.Error("error new light block to val set proto")
-		return nil
-	}
-
-	trustedValSet, err := trustedValidatorsInBlock.ValidatorSet.ToProto()
-	if err != nil {
-		r.logger.Error("error trusted validators in block to val set proto")
-		return nil
-	}
-
-	fmt.Println("Adding light client header, trustedHeight:", trustedHeight, "new height:", newLightBlock.SignedHeader.Height)
-	return &celestia.Header{
-		SignedHeader: newLightBlock.SignedHeader.ToProto(),
-		ValidatorSet: valSet,
-		TrustedHeight: trustedHeight,
-		TrustedValidators: trustedValSet,
-	}
+	return shareIndex
 }
