@@ -29,7 +29,7 @@ type CelestiaConfig struct {
 
 	// Celestia chain ID
 	ChainID string `mapstructure:"chain-id"`
-	
+
 	// Gas price to pay for Celestia transactions
 	GasPrice string `mapstructure:"gas-prices"`
 

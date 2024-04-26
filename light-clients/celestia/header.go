@@ -19,7 +19,7 @@ var _ ClientMessage = (*Header)(nil)
 type Header struct {
 	*types2.SignedHeader `json:"signed_header,omitempty"`
 	ValidatorSet         *types2.ValidatorSet `json:"validator_set,omitempty"`
-	TrustedHeight        Height         `json:"trusted_height"`
+	TrustedHeight        Height               `json:"trusted_height"`
 	TrustedValidators    *types2.ValidatorSet `json:"trusted_validators,omitempty"`
 }
 

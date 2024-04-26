@@ -18,7 +18,7 @@ import (
 )
 
 func TestPublish(t *testing.T) {
-	celestiaAppHostname := fmt.Sprintf("%s-val-0-%s", celestiaChainID, t.Name()) // celestia-1-val-0-TestPublish
+	celestiaAppHostname := fmt.Sprintf("%s-val-0-%s", celestiaChainID, t.Name())            // celestia-1-val-0-TestPublish
 	celestiaNodeHostname := fmt.Sprintf("%s-celestia-node-0-%s", celestiaChainID, t.Name()) // celestia-1-celestia-node-0-TestPublish
 
 	rollchainChainSpec := DefaultChainSpec //nolint:copylockss
@@ -27,7 +27,7 @@ func TestPublish(t *testing.T) {
 	rollchainChainSpec.ConfigFileOverrides = testutil.Toml{
 		"config/app.toml": testutil.Toml{
 			"celestia": testutil.Toml{
-				"app-rpc-url": fmt.Sprintf("http://%s:26657", celestiaAppHostname),
+				"app-rpc-url":  fmt.Sprintf("http://%s:26657", celestiaAppHostname),
 				"node-rpc-url": fmt.Sprintf("http://%s:26658", celestiaNodeHostname),
 			},
 		},
@@ -48,8 +48,8 @@ func TestPublish(t *testing.T) {
 		AddChain(rollchainChain).
 		AddChain(celestiaChain, ibc.WalletAmount{
 			Address: "celestia1dr3gwf5kulm4e4k0pctwzn0htw6wrvevdgjdlf",
-			Amount: math.NewInt(100_000_000_000), // 100,000 tia
-			Denom: celestiaChainSpec.Denom,
+			Amount:  math.NewInt(100_000_000_000), // 100,000 tia
+			Denom:   celestiaChainSpec.Denom,
 		})
 
 	ctx := context.Background()
@@ -66,7 +66,7 @@ func TestPublish(t *testing.T) {
 		_ = ic.Close()
 	})
 
-	for i:=0; i < nv; i++ {
+	for i := 0; i < nv; i++ {
 		// celestia1dr3gwf5kulm4e4k0pctwzn0htw6wrvevdgjdlf
 		stdout, stderr, err := rollchainChain.Validators[i].ExecBin(ctx, "keys", "tiablob", "restore", "kick raven pave wild outdoor dismiss happy start lunch discover job evil code trim network emerge summer mad army vacant chest birth subject seek")
 		require.NoError(t, err, "stdout: %s, stderr: %s", stdout, stderr)
@@ -110,13 +110,13 @@ func watchForPublishedBlocks(
 	celestiaHeight := uint64(1)
 
 	// setup time will allow publishedBlockCount to be used as a timeout
-	for i:=int64(0); i<publishedBlockCount; i++ {
+	for i := int64(0); i < publishedBlockCount; i++ {
 		err := testutil.WaitForBlocks(ctx, 1, rollchainChain)
 		require.NoError(t, err, "failed to wait for 1 block")
 
 		celestiaLatestHeight, err := celestiaChain.Height(ctx)
 		require.NoError(t, err, "error getting celestia height")
- 
+
 		for ; celestiaHeight < celestiaLatestHeight; celestiaHeight++ {
 			blobs, err := celestiaNodeClient.GetAllBlobs(ctx, celestiaHeight, "0x"+hex.EncodeToString([]byte("rc_demo")))
 			require.NoError(t, err, fmt.Sprintf("error getting all blobs at height: %d, %v", celestiaHeight, err))
@@ -124,7 +124,7 @@ func watchForPublishedBlocks(
 			if len(blobs) == 0 {
 				t.Log("No blobs found")
 			} else {
-				for j:=0; j<len(blobs); j++ {
+				for j := 0; j < len(blobs); j++ {
 					var block blocktypes.Block
 					err = block.Unmarshal(blobs[j].Data)
 					if err != nil {

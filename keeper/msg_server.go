@@ -28,10 +28,12 @@ func (s msgServer) SetCelestiaAddress(ctx context.Context, msg *tiablob.MsgSetCe
 		return nil, err
 	}
 
-	s.k.SetValidatorCelestiaAddress(ctx, tiablob.Validator{
+	if err = s.k.SetValidatorCelestiaAddress(ctx, tiablob.Validator{
 		ValidatorAddress: msg.ValidatorAddress,
 		CelestiaAddress:  msg.CelestiaAddress,
-	})
+	}); err != nil {
+		return nil, err
+	}
 
 	return new(tiablob.MsgSetCelestiaAddressResponse), nil
 }

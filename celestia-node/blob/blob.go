@@ -8,9 +8,9 @@ import (
 
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
+	"github.com/celestiaorg/nmt"
 	"github.com/rollchains/tiablob/celestia/appconsts"
 	"github.com/rollchains/tiablob/celestia/blob/types"
-	"github.com/celestiaorg/nmt"
 
 	"github.com/rollchains/tiablob/celestia-node/share"
 )

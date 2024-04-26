@@ -38,7 +38,7 @@ func (cs *ClientState) VerifyClientMessage(
 // - header timestamp is past the trusting period in relation to the consensus state
 // - header timestamp is less than or equal to the consensus state timestamp
 func (cs *ClientState) verifyHeader(
-	ctx sdk.Context, clientStore storetypes.KVStore, 
+	ctx sdk.Context, clientStore storetypes.KVStore,
 	header *Header,
 ) error {
 	currentTimestamp := ctx.BlockTime()

@@ -2,6 +2,7 @@ package relayer
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -49,6 +50,7 @@ func (r *Relayer) NotifyProvenHeight(height uint64) {
 // updateHeight is called when the provenHeight has changed
 func (r *Relayer) updateHeight(height uint64) {
 	if height > r.latestProvenHeight {
+		fmt.Println("Latest proven height:", height)
 		r.latestProvenHeight = height
 		r.pruneCache(height)
 	}
@@ -68,13 +70,13 @@ func (r *Relayer) pruneCache(provenHeight uint64) {
 }
 
 // Reconcile is intended to be called by the current proposing validator during PrepareProposal and will:
-// - call a non-blocking gorouting to post the next block (or chunk of blocks) above the last proven height to Celestia (does
-//      not include the block being proposed).
-// - if state does not have a client, the proposer will inject a new client (client state & consensus state)
-// - check the proofs cache (no fetches here to minimize duration) if there are any new block proofs to be relayed from Celestia
-// - if there are any block proofs to relay, it will add any headers (update clients) that are also cached
-// - if the Celestia light client is within 1/3 of the trusting period and there are no block proofs to relay, generate a
-//      MsgUpdateClient to update the light client and return it in a tx.
+//   - call a non-blocking gorouting to post the next block (or chunk of blocks) above the last proven height to Celestia (does
+//     not include the block being proposed).
+//   - if state does not have a client, the proposer will inject a new client (client state & consensus state)
+//   - check the proofs cache (no fetches here to minimize duration) if there are any new block proofs to be relayed from Celestia
+//   - if there are any block proofs to relay, it will add any headers (update clients) that are also cached
+//   - if the Celestia light client is within 1/3 of the trusting period and there are no block proofs to relay, generate a
+//     MsgUpdateClient to update the light client and return it in a tx.
 func (r *Relayer) Reconcile(ctx sdk.Context, clientFound bool) InjectClientData {
 	go r.postNextBlocks(ctx, r.celestiaPublishBlockInterval)
 
@@ -90,4 +92,3 @@ func (r *Relayer) Reconcile(ctx sdk.Context, clientFound bool) InjectClientData 
 
 	return injectClientData
 }
-

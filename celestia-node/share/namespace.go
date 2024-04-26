@@ -5,8 +5,8 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	appns "github.com/rollchains/tiablob/celestia/namespace"
 	"github.com/celestiaorg/nmt/namespace"
+	appns "github.com/rollchains/tiablob/celestia/namespace"
 )
 
 // NamespaceSize is a system-wide size for NMT namespaces.

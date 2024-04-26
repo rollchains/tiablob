@@ -14,7 +14,6 @@ import (
 	coretypes "github.com/cometbft/cometbft/rpc/core/types"
 )
 
-
 // Relayer is responsible for posting new blocks to Celestia and relaying block proofs from Celestia via the current proposer
 type Relayer struct {
 	logger log.Logger
@@ -35,7 +34,7 @@ type Relayer struct {
 	clientCtx client.Context
 
 	latestClientState *celestia.ClientState
-	
+
 	nodeRpcUrl    string
 	nodeAuthToken string
 

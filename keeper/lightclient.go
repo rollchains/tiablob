@@ -20,7 +20,7 @@ func (k Keeper) GetClientState(ctx sdk.Context) (*celestia.ClientState, bool) {
 	return celestia.GetClientState(clientStore)
 }
 
-func(k Keeper) CreateClient(ctx sdk.Context, clientState celestia.ClientState, consensusState celestia.ConsensusState) error {
+func (k Keeper) CreateClient(ctx sdk.Context, clientState celestia.ClientState, consensusState celestia.ConsensusState) error {
 	if err := clientState.Validate(); err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ func(k Keeper) CreateClient(ctx sdk.Context, clientState celestia.ClientState, c
 
 func (k Keeper) CanUpdateClient(ctx sdk.Context, clientMsg celestia.ClientMessage) (bool, error) {
 	clientStore := prefix.NewStore(ctx.KVStore(k.storeKey), keyClientStore)
-	
+
 	clientState, found := celestia.GetClientState(clientStore)
 	if !found {
 		return false, fmt.Errorf("client state not found in update client")
@@ -65,7 +65,7 @@ func (k Keeper) CanUpdateClient(ctx sdk.Context, clientMsg celestia.ClientMessag
 
 func (k Keeper) UpdateClient(ctx sdk.Context, clientMsg celestia.ClientMessage) error {
 	clientStore := prefix.NewStore(ctx.KVStore(k.storeKey), keyClientStore)
-	
+
 	clientState, found := celestia.GetClientState(clientStore)
 	if !found {
 		return fmt.Errorf("client state not found in update client")
@@ -101,7 +101,7 @@ func (k Keeper) VerifyMembership(ctx sdk.Context, height uint64, proof *celestia
 	if status := clientState.Status(ctx, clientStore); status != celestia.Active {
 		return fmt.Errorf("client not active, cannot update client with status %s", status)
 	}
-	
+
 	cHeight := celestia.NewHeight(celestia.ParseChainID(clientState.ChainId), height)
 	err := clientState.VerifyMembership(ctx, clientStore, cHeight, proof)
 	if err != nil {

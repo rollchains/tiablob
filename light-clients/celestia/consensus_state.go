@@ -4,18 +4,17 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/cometbft/cometbft/libs/bytes"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
 	cmttypes "github.com/cometbft/cometbft/types"
-	"github.com/cometbft/cometbft/libs/bytes"
 )
-
 
 type ConsensusState struct {
 	// timestamp that corresponds to the block height in which the ConsensusState
 	// was stored.
 	Timestamp time.Time `json:"timestamp"`
 	// commitment root (i.e app hash)
-	Root               []byte  `json:"root"` // okay as bytes?
+	Root []byte `json:"root"` // okay as bytes?
 	//Root               types1.MerkleRoot                                `protobuf:"bytes,2,opt,name=root,proto3" json:"root"`
 	NextValidatorsHash bytes.HexBytes `json:"next_validators_hash,omitempty"`
 }

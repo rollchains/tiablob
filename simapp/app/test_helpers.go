@@ -41,14 +41,13 @@ import (
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-
 )
 
 // SetupOptions defines arguments that are passed into `ChainApp` constructor.
 type SetupOptions struct {
-	Logger   log.Logger
-	DB       *dbm.MemDB
-	AppOpts  servertypes.AppOptions
+	Logger  log.Logger
+	DB      *dbm.MemDB
+	AppOpts servertypes.AppOptions
 }
 
 func setup(
@@ -279,7 +278,6 @@ func initAccountWithCoins(app *ChainApp, ctx sdk.Context, addr sdk.AccAddress, c
 		panic(err)
 	}
 }
-
 
 // NewTestNetworkFixture returns a new ChainApp AppConstructor for network simulation tests
 func NewTestNetworkFixture() network.TestFixture {

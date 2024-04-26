@@ -6,17 +6,16 @@ import (
 	"github.com/rollchains/tiablob/light-clients/celestia"
 )
 
-func (r *Relayer) GetCachedHeaders() []*Header{
+func (r *Relayer) GetCachedHeaders() []*Header {
 	clientsMap := make(map[uint64]*Header)
-
 	for checkHeight := r.latestProvenHeight + 1; r.blockProofCache[checkHeight] != nil; checkHeight++ {
 		proof := r.blockProofCache[checkHeight]
 		if r.celestiaHeaderCache[proof.CelestiaHeight] != nil {
 			clientsMap[proof.CelestiaHeight] = r.celestiaHeaderCache[proof.CelestiaHeight]
 		}
 	}
-	
-	clients := []*Header{}
+
+	var clients []*Header
 	for _, header := range clientsMap {
 		clients = append(clients, header)
 	}
@@ -27,7 +26,7 @@ func (r *Relayer) GetCachedHeaders() []*Header{
 func (r *Relayer) FetchNewHeader(ctx context.Context, queryHeight uint64) *Header {
 	newLightBlock, err := r.provider.QueryLightBlock(ctx, int64(queryHeight))
 	if err != nil {
-		r.logger.Error("error querying light block for proofs, height:", queryHeight)
+		r.logger.Error("error querying light block for proofs", "height", queryHeight)
 		return nil
 	}
 
@@ -44,7 +43,7 @@ func (r *Relayer) FetchNewHeader(ctx context.Context, queryHeight uint64) *Heade
 
 	trustedValidatorsInBlock, err := r.provider.QueryLightBlock(ctx, int64(trustedHeight.GetRevisionHeight()+1))
 	if err != nil {
-		r.logger.Error("error querying trusted light block, height:", trustedHeight)
+		r.logger.Error("error querying trusted light block", "height", trustedHeight)
 		return nil
 	}
 
@@ -73,9 +72,9 @@ func (r *Relayer) FetchNewHeader(ctx context.Context, queryHeight uint64) *Heade
 	}
 
 	return &Header{
-		SignedHeader: newLightBlock.SignedHeader.ToProto(),
-		ValidatorSet: valSetBz,
-		TrustedHeight: trustedHeight,
+		SignedHeader:      newLightBlock.SignedHeader.ToProto(),
+		ValidatorSet:      valSetBz,
+		TrustedHeight:     trustedHeight,
 		TrustedValidators: trustedValSetBz,
 	}
 }

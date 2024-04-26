@@ -8,9 +8,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/mempool"
-	tiablobrelayer "github.com/rollchains/tiablob/relayer"
 	"github.com/rollchains/tiablob/celestia-node/blob"
 	"github.com/rollchains/tiablob/light-clients/celestia"
+	tiablobrelayer "github.com/rollchains/tiablob/relayer"
 
 	prototypes "github.com/cometbft/cometbft/proto/tendermint/types"
 )
@@ -43,7 +43,7 @@ func (h *ProofOfBlobProposalHandler) PrepareProposal(ctx sdk.Context, req *abci.
 	}
 	injectClientData := h.relayer.Reconcile(ctx, clientFound)
 
-	if injectClientData.CreateClient != nil || len(injectClientData.Headers) != 0 || len(injectClientData.Proofs) != 0 {
+	if !injectClientData.IsEmpty() {
 		injectClientDataBz, err := json.Marshal(injectClientData)
 		if err == nil {
 			resp.Txs = append(resp.Txs, injectClientDataBz)
@@ -58,9 +58,8 @@ func (h *ProofOfBlobProposalHandler) ProcessProposal(ctx sdk.Context, req *abci.
 	if injectedClientData != nil {
 		req.Txs = req.Txs[:len(req.Txs)-1] // Pop the injected data for the default handler
 		if injectedClientData.CreateClient != nil {
-			valid := h.relayer.ValidateNewClient(ctx, injectedClientData.CreateClient)
-			if !valid {
-				return nil, fmt.Errorf("invalid new client")
+			if err := h.relayer.ValidateNewClient(ctx, injectedClientData.CreateClient); err != nil {
+				return nil, fmt.Errorf("invalid new client, %v", err)
 			}
 		}
 		if injectedClientData.Headers != nil && !h.keeper.ProcessVerifyNewClients(ctx, injectedClientData.Headers) {
@@ -120,9 +119,9 @@ func (k Keeper) ProcessVerifyNewClients(ctx sdk.Context, clients []*tiablobrelay
 			return false
 		}
 		client2 := celestia.Header{
-			SignedHeader: client.SignedHeader,
-			ValidatorSet: &valSet,
-			TrustedHeight: client.TrustedHeight,
+			SignedHeader:      client.SignedHeader,
+			ValidatorSet:      &valSet,
+			TrustedHeight:     client.TrustedHeight,
 			TrustedValidators: &trustedValSet,
 		}
 		valid, err := k.CanUpdateClient(ctx, &client2)
@@ -151,36 +150,36 @@ func (k Keeper) ProcessVerifyProofs(ctx sdk.Context, clients []*tiablobrelayer.H
 	}
 	// Do we need to sort proofs first?
 	for _, proof := range proofs {
-		if proof.RollchainHeight != provenHeight + 1 {
+		if proof.RollchainHeight != provenHeight+1 {
 			fmt.Println("process: not a proof for provenHeight + 1, provenHeight+1:", provenHeight+1, "height:", proof.RollchainHeight)
 			return false
 		}
 		// Form blob
 		// State sync will need to sync from a snapshot + the unproven blocks
-		block,  err := k.relayer.GetLocalBlockAtHeight(ctx, int64(proof.RollchainHeight))
+		block, err := k.relayer.GetLocalBlockAtHeight(ctx, int64(proof.RollchainHeight))
 		if err != nil {
 			fmt.Println("Error getting block at rollchain height", proof.RollchainHeight, "err", err)
 			//r.logger.Error("Error getting block at rollchain height", proof.RollchainHeight, "err", err)
 			return false
 		}
-	
+
 		blockProto, err := block.Block.ToProto()
 		if err != nil {
 			fmt.Println("error expected block to proto", err.Error())
 			//r.logger.Error("error expected block to proto", err.Error())
 			return false
 		}
-		
+
 		blockProtoBz, err := blockProto.Marshal()
 		if err != nil {
 			fmt.Println("error blockProto marshal", err.Error())
 			//r.logger.Error("error blockProto marshal", err.Error())
 			return false
 		}
-	
+
 		// Replace blob data with our data for proof verification
 		proof.Blob.Data = blockProtoBz
-	
+
 		// Populate proof with data
 		proof.ShareProof.Data, err = blob.BlobsToShares(proof.Blob)
 		if err != nil {
@@ -210,7 +209,6 @@ func (k Keeper) ProcessVerifyProofs(ctx sdk.Context, clients []*tiablobrelayer.H
 	return true
 }
 
-
 func (k *Keeper) PreblockerUpdateStates(ctx sdk.Context, clients []*tiablobrelayer.Header) error {
 	for _, client := range clients {
 		var valSet prototypes.ValidatorSet
@@ -226,9 +224,9 @@ func (k *Keeper) PreblockerUpdateStates(ctx sdk.Context, clients []*tiablobrelay
 			return err
 		}
 		client2 := celestia.Header{
-			SignedHeader: client.SignedHeader,
-			ValidatorSet: &valSet,
-			TrustedHeight: client.TrustedHeight,
+			SignedHeader:      client.SignedHeader,
+			ValidatorSet:      &valSet,
+			TrustedHeight:     client.TrustedHeight,
 			TrustedValidators: &trustedValSet,
 		}
 		err = k.UpdateClient(ctx, &client2)
@@ -249,37 +247,37 @@ func (k *Keeper) PreblockerVerifyProofs(ctx sdk.Context, proofs []*tiablobrelaye
 			fmt.Println("unable to get proven height", err)
 			return
 		}
-		if proof.RollchainHeight != provenHeight + 1 {
+		if proof.RollchainHeight != provenHeight+1 {
 			fmt.Println("preblocker: not a proof for provenHeight + 1, provenHeight+1:", provenHeight+1, "height:", proof.RollchainHeight)
 			return
 		}
 
 		// Form blob
 		// State sync will need to sync from a snapshot + the unproven blocks
-		block,  err := k.relayer.GetLocalBlockAtHeight(ctx, int64(proof.RollchainHeight))
+		block, err := k.relayer.GetLocalBlockAtHeight(ctx, int64(proof.RollchainHeight))
 		if err != nil {
 			fmt.Println("Error getting block at rollchain height", proof.RollchainHeight, "err", err)
 			//r.logger.Error("Error getting block at rollchain height", proof.RollchainHeight, "err", err)
 			return
 		}
-	
+
 		blockProto, err := block.Block.ToProto()
 		if err != nil {
 			fmt.Println("error expected block to proto", err.Error())
 			//r.logger.Error("error expected block to proto", err.Error())
 			return
 		}
-		
+
 		blockProtoBz, err := blockProto.Marshal()
 		if err != nil {
 			fmt.Println("error blockProto marshal", err.Error())
 			//r.logger.Error("error blockProto marshal", err.Error())
 			return
 		}
-	
+
 		// Replace blob data with our data for proof verification
 		proof.Blob.Data = blockProtoBz
-	
+
 		// Populate proof with data
 		proof.ShareProof.Data, err = blob.BlobsToShares(proof.Blob)
 		if err != nil {

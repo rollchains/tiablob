@@ -5,10 +5,10 @@ import (
 
 	"cosmossdk.io/collections"
 	storetypes "cosmossdk.io/core/store"
+	storetypes2 "cosmossdk.io/store/types"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	"github.com/rollchains/tiablob"
 	tiablobrelayer "github.com/rollchains/tiablob/relayer"
-	storetypes2 "cosmossdk.io/store/types"
 )
 
 type Keeper struct {
@@ -19,7 +19,7 @@ type Keeper struct {
 	ClientID     collections.Item[string]
 	ProvenHeight collections.Item[uint64]
 
-	storeKey    storetypes2.StoreKey
+	storeKey storetypes2.StoreKey
 
 	cdc codec.BinaryCodec
 }

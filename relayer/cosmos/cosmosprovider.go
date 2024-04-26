@@ -17,8 +17,8 @@ import (
 
 	client "github.com/strangelove-ventures/cometbft-client/client"
 
-	corerpc "github.com/tendermint/tendermint/rpc/client/http"
 	cometrpc "github.com/cometbft/cometbft/rpc/client/http"
+	celestiarpc "github.com/tendermint/tendermint/rpc/client/http"
 )
 
 var _ gogogrpc.ClientConn = &CosmosProvider{}
@@ -28,12 +28,12 @@ var protoCodec = encoding.GetCodec(proto.Name)
 var accountSeqRegex = regexp.MustCompile("account sequence mismatch, expected ([0-9]+), got ([0-9]+)")
 
 type CosmosProvider struct {
-	cdc       Codec
-	localRpcClient *cometrpc.HTTP
-	rpcClient RPCClient
-	lightProvider provtypes.Provider
-	coreRpcClient *corerpc.HTTP
-	keybase   keyring.Keyring
+	cdc               Codec
+	localRpcClient    *cometrpc.HTTP
+	rpcClient         RPCClient
+	lightProvider     provtypes.Provider
+	celestiaRpcClient *celestiarpc.HTTP
+	keybase           keyring.Keyring
 
 	keyDir string
 
@@ -92,20 +92,20 @@ func NewProvider(rpcURL string, keyDir string, timeout time.Duration, chainID st
 		return nil, err
 	}
 
-	coreRpcClient, err := corerpc.NewWithTimeout(rpcURL, "/websocket", uint(timeout.Seconds()))
+	// Celestia client for their specific APIs, should we just use this instead of the client wrapper?
+	celestiaRpcClient, err := celestiarpc.NewWithTimeout(rpcURL, "/websocket", uint(timeout.Seconds()))
 	if err != nil {
 		return nil, err
 	}
 
 	cp := &CosmosProvider{
-		cdc:            makeCodec(ModuleBasics),
-		localRpcClient: localRpcClient,
-		//localRpcClient: NewRPCClient(localRpcClient),
-		rpcClient:      NewRPCClient(rpcClient),
-		lightProvider:  lightprovider,
-		coreRpcClient:  coreRpcClient,
-		keyDir:         keyDir,
-		walletStateMap: make(map[string]*WalletState),
+		cdc:               makeCodec(ModuleBasics),
+		localRpcClient:    localRpcClient,
+		rpcClient:         NewRPCClient(rpcClient),
+		lightProvider:     lightprovider,
+		celestiaRpcClient: celestiaRpcClient,
+		keyDir:            keyDir,
+		walletStateMap:    make(map[string]*WalletState),
 	}
 
 	return cp, nil

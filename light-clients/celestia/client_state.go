@@ -46,7 +46,7 @@ var ModuleName = "celestia-da-light-client"
 func NewClientState(
 	chainID string, trustLevel Fraction,
 	trustingPeriod, ubdPeriod, maxClockDrift time.Duration,
-	latestHeight Height, 
+	latestHeight Height,
 ) *ClientState {
 	return &ClientState{
 		ChainId:         chainID,
@@ -220,42 +220,4 @@ func (cs *ClientState) VerifyMembership(ctx sdk.Context, clientStore storetypes.
 	}
 
 	return proof.Validate(consensusState.GetRoot())
-}
-
-// verifyDelayPeriodPassed will ensure that at least delayTimePeriod amount of time and delayBlockPeriod number of blocks have passed
-// since consensus state was submitted before allowing verification to continue.
-func verifyDelayPeriodPassed(ctx sdk.Context, store storetypes.KVStore, proofHeight Height, delayTimePeriod, delayBlockPeriod uint64) error {
-	if delayTimePeriod != 0 {
-		// check that executing chain's timestamp has passed consensusState's processed time + delay time period
-		processedTime, ok := GetProcessedTime(store, proofHeight)
-		if !ok {
-			return fmt.Errorf("error, processed time not found for ehight: %s", proofHeight)
-		}
-
-		currentTimestamp := uint64(ctx.BlockTime().UnixNano())
-		validTime := processedTime + delayTimePeriod
-
-		// NOTE: delay time period is inclusive, so if currentTimestamp is validTime, then we return no error
-		if currentTimestamp < validTime {
-			return fmt.Errorf("error, delay period not passed, cannot verify packet until time; %d, current time: %d", validTime, currentTimestamp)
-		}
-	}
-
-	if delayBlockPeriod != 0 {
-		// check that executing chain's height has passed consensusState's processed height + delay block period
-		processedHeight, ok := GetProcessedHeight(store, proofHeight)
-		if !ok {
-			return fmt.Errorf("error, processed height not found for height: %s", proofHeight)
-		}
-
-		currentHeight := GetSelfHeight(ctx)
-		validHeight := NewHeight(processedHeight.GetRevisionNumber(), processedHeight.GetRevisionHeight()+delayBlockPeriod)
-
-		// NOTE: delay block period is inclusive, so if currentHeight is validHeight, then we return no error
-		if currentHeight.LT(validHeight) {
-			return fmt.Errorf("error, delay period not passed, cannot verify packet until height: %s, current height: %s", validHeight, currentHeight)
-		}
-	}
-
-	return nil
 }

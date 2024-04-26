@@ -10,8 +10,8 @@ import (
 	querytypes "github.com/cosmos/cosmos-sdk/types/query"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
-	celestiatypes "github.com/tendermint/tendermint/types"
 	celestiacoretypes "github.com/tendermint/tendermint/rpc/core/types"
+	celestiatypes "github.com/tendermint/tendermint/types"
 )
 
 func defaultPageRequest() *querytypes.PageRequest {
@@ -93,7 +93,7 @@ func (cc *CosmosProvider) QueryChainID(ctx context.Context) (string, error) {
 }
 
 func (cc *CosmosProvider) ProveShares(ctx context.Context, height uint64, startShare uint64, endShare uint64) (*celestiatypes.ShareProof, error) {
-	res, err := cc.coreRpcClient.ProveShares(ctx, height, startShare, endShare)
+	res, err := cc.celestiaRpcClient.ProveShares(ctx, height, startShare, endShare)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func (cc *CosmosProvider) ProveShares(ctx context.Context, height uint64, startS
 
 // GetBlockAtHeight queries the block at a given height
 func (cc *CosmosProvider) GetCelestiaBlockAtHeight(ctx context.Context, height int64) (*celestiacoretypes.ResultBlock, error) {
-	block, err := cc.coreRpcClient.Block(ctx, &height)
+	block, err := cc.celestiaRpcClient.Block(ctx, &height)
 	if err != nil {
 		return nil, fmt.Errorf("error querying block at height %d: %w", height, err)
 	}

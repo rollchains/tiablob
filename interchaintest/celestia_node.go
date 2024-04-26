@@ -12,14 +12,14 @@ import (
 type CelestiaNodeClient struct {
 	log *zap.Logger
 
-	sc *cosmos.SidecarProcess
+	sc        *cosmos.SidecarProcess
 	nodeStore string
 }
 
 func NewCelestiaNodeClient(log *zap.Logger, sc *cosmos.SidecarProcess, nodeStore string) *CelestiaNodeClient {
 	return &CelestiaNodeClient{
-		log: log,
-		sc: sc,
+		log:       log,
+		sc:        sc,
 		nodeStore: nodeStore,
 	}
 }
@@ -35,7 +35,7 @@ func (n *CelestiaNodeClient) GetAllBlobs(ctx context.Context, height uint64, nam
 	if err != nil {
 		return nil, err
 	}
-	
+
 	var blobs jsonGetAllBlobs
 	err = json.Unmarshal(stdout, &blobs)
 	if err != nil {

@@ -36,7 +36,7 @@ type ModuleInputs struct {
 
 	StakingKeeper stakingkeeper.Keeper
 
-	storeKey    storetypes.StoreKey
+	storeKey storetypes.StoreKey
 }
 
 type ModuleOutputs struct {
