@@ -77,18 +77,18 @@ func (r *Relayer) pruneCache(provenHeight uint64) {
 //   - if there are any block proofs to relay, it will add any headers (update clients) that are also cached
 //   - if the Celestia light client is within 1/3 of the trusting period and there are no block proofs to relay, generate a
 //     MsgUpdateClient to update the light client and return it in a tx.
-func (r *Relayer) Reconcile(ctx sdk.Context, clientFound bool) InjectClientData {
+func (r *Relayer) Reconcile(ctx sdk.Context, clientFound bool) InjectedData {
 	go r.postNextBlocks(ctx, r.celestiaPublishBlockInterval)
 
-	var injectClientData InjectClientData
+	var injectData InjectedData
 	if !clientFound {
-		injectClientData.CreateClient = r.CreateClient(ctx)
+		injectData.CreateClient = r.CreateClient(ctx)
 	}
 
-	injectClientData.Proofs = r.GetCachedProofs()
-	injectClientData.Headers = r.GetCachedHeaders()
+	injectData.Proofs = r.GetCachedProofs()
+	injectData.Headers = r.GetCachedHeaders()
 
 	// TODO: check if the light client is within 1/3 of the trusting period, if so, add header
 
-	return injectClientData
+	return injectData
 }

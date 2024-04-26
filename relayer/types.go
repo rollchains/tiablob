@@ -1,23 +1,36 @@
 package relayer
 
 import (
+	"encoding/json"
+
 	types2 "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/rollchains/tiablob/celestia-node/blob"
 	"github.com/rollchains/tiablob/light-clients/celestia"
 	celestiatypes "github.com/tendermint/tendermint/types"
 )
 
-type InjectClientData struct {
+type InjectedData struct {
 	CreateClient *CreateClient `json:"create_client,omitempty"`
 	Headers      []*Header     `json:"headers,omitempty"`
 	Proofs       []*Proof      `json:"proofs,omitempty"`
 }
 
-func (d InjectClientData) IsEmpty() bool {
+func (d InjectedData) IsEmpty() bool {
 	if d.CreateClient != nil || len(d.Headers) != 0 || len(d.Proofs) != 0 {
 		return false
 	}
 	return true
+}
+
+func GetInjectedData(txs [][]byte) *InjectedData {
+	if len(txs) != 0 {
+		var injectedData InjectedData
+		err := json.Unmarshal(txs[len(txs)-1], &injectedData)
+		if err == nil {
+			return &injectedData
+		}
+	}
+	return nil
 }
 
 type CreateClient struct {
