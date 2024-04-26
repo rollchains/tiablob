@@ -107,7 +107,7 @@ func watchForPublishedBlocks(
 	// Run test to observe x blocks posted
 	rollchainBlocksSeen := int64(0)
 	rollchainHighestBlock := int64(0)
-	celestiaHeight := uint64(1)
+	celestiaHeight := int64(1)
 
 	// setup time will allow publishedBlockCount to be used as a timeout
 	for i := int64(0); i < publishedBlockCount; i++ {
@@ -118,7 +118,7 @@ func watchForPublishedBlocks(
 		require.NoError(t, err, "error getting celestia height")
 
 		for ; celestiaHeight < celestiaLatestHeight; celestiaHeight++ {
-			blobs, err := celestiaNodeClient.GetAllBlobs(ctx, celestiaHeight, "0x"+hex.EncodeToString([]byte("rc_demo")))
+			blobs, err := celestiaNodeClient.GetAllBlobs(ctx, uint64(celestiaHeight), "0x"+hex.EncodeToString([]byte("rc_demo")))
 			require.NoError(t, err, fmt.Sprintf("error getting all blobs at height: %d, %v", celestiaHeight, err))
 			t.Log("GetAllBlobs, celestia height: ", celestiaHeight)
 			if len(blobs) == 0 {

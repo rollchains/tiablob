@@ -153,9 +153,11 @@ import (
 )
 
 const (
-	appName           = "rollchain"
-	NodeDir           = ".rollchain"
-	Bech32Prefix      = "rc"
+	appName      = "rollchain"
+	NodeDir      = ".rollchain"
+	Bech32Prefix = "rc"
+	// namespace identifier for this rollchain on Celestia
+	// TODO: Change me
 	celestiaNamespace = "rc_demo"
 
 	// publish blocks to celestia every n rollchain blocks.
@@ -242,7 +244,7 @@ type ChainApp struct {
 	ICAHostKeeper       icahostkeeper.Keeper
 	TransferKeeper      ibctransferkeeper.Keeper
 
-	// Rollchains proof-of-blob
+	// Rollchains Celestia Publish
 	TiaBlobKeeper  *tiablobkeeper.Keeper
 	TiaBlobRelayer *tiablobrelayer.Relayer
 
@@ -1099,24 +1101,6 @@ func (app *ChainApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain) (*
 		panic(err)
 	}
 
-	// TODO this only works when starting from genesis, need to use v0.51 hook on OnPostStart
-	latestProvenHeight, err := app.TiaBlobKeeper.GetProvenHeight(ctx)
-	if err != nil {
-		panic(err)
-	}
-
-	appInfo, err := app.Info(nil)
-	if err != nil {
-		panic(err)
-	}
-	latestCommitHeight := uint64(appInfo.LastBlockHeight)
-
-	go app.TiaBlobRelayer.Start(
-		ctx.Context(),
-		latestProvenHeight,
-		latestCommitHeight,
-	)
-
 	return response, nil
 }
 
@@ -1262,9 +1246,30 @@ func (app *ChainApp) RegisterTendermintService(clientCtx client.Context) {
 }
 
 func (app *ChainApp) RegisterNodeService(clientCtx client.Context, cfg config.Config) {
+	nodeservice.RegisterNodeService(clientCtx, app.GRPCQueryRouter(), cfg)
+
 	app.TiaBlobRelayer.SetClientContext(clientCtx)
 
-	nodeservice.RegisterNodeService(clientCtx, app.GRPCQueryRouter(), cfg)
+	ctx := app.NewContext(false)
+
+	// TODO: Do these steps in PostSetup and PostSetupStandalone in SDK v0.51+ since app is accessible
+	latestProvenHeight, err := app.TiaBlobKeeper.GetProvenHeight(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	appInfo, err := app.Info(nil)
+	if err != nil {
+		panic(err)
+	}
+	latestCommitHeight := uint64(appInfo.LastBlockHeight)
+
+	go app.TiaBlobRelayer.Start(
+		ctx,
+		latestProvenHeight,
+		latestCommitHeight,
+	)
+	// END TODO
 }
 
 // GetMaccPerms returns a copy of the module account permissions

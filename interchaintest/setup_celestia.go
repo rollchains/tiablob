@@ -7,7 +7,6 @@ import (
 
 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	blobtypes "github.com/rollchains/tiablob/celestia/blob/types"
-
 	"github.com/strangelove-ventures/interchaintest/v8"
 	"github.com/strangelove-ventures/interchaintest/v8/chain/cosmos"
 	"github.com/strangelove-ventures/interchaintest/v8/ibc"
@@ -21,8 +20,18 @@ var (
 	numCelestiaFullNodes = 0
 	celestiaCoinDecimals = int64(6)
 	celestiaChainID      = "celestia-1"
-	celestiaNodeHome     = "/var/cosmos-chain/celestia-node"
-	celestiaNodeType     = "bridge"
+	celestiaAppImage     = ibc.DockerImage{
+		Repository: "ghcr.io/strangelove-ventures/heighliner/celestia",
+		Version:    "v1.8.0",
+		UidGid:     "1025:1025",
+	}
+	celestiaNodeHome  = "/var/cosmos-chain/celestia-node"
+	celestiaNodeType  = "bridge"
+	celestiaNodeImage = ibc.DockerImage{
+		Repository: "ghcr.io/strangelove-ventures/heighliner/celestia-node",
+		Version:    "v0.13.4",
+		UidGid:     "1025:1025",
+	}
 
 	CelestiaChainConfig = ibc.ChainConfig{
 		Name:           "celestia",
@@ -41,11 +50,8 @@ var (
 		ChainID:             celestiaChainID,
 		Bin:                 "celestia-appd",
 		Images: []ibc.DockerImage{
-			{
-				Repository: "ghcr.io/strangelove-ventures/heighliner/celestia",
-				Version:    "v1.8.0",
-				UidGid:     "1025:1025",
-			},
+			celestiaAppImage,
+			celestiaNodeImage,
 		},
 		Bech32Prefix:  "celestia",
 		CoinType:      "118",
@@ -64,7 +70,6 @@ var (
 
 func StartCelestiaNode(t *testing.T, ctx context.Context, celestiaChain *cosmos.CosmosChain, client *client.Client, network string) *cosmos.SidecarProcess {
 	celestiaVal0 := celestiaChain.GetNode()
-
 	genesisHash := getGenesisBlockHash(t, ctx, celestiaVal0)
 	fmt.Println("genesisHash: ", genesisHash)
 
@@ -76,20 +81,13 @@ func StartCelestiaNode(t *testing.T, ctx context.Context, celestiaChain *cosmos.
 		t.Name(),        // testName
 		client,          //docker client
 		network,         // docker network
-		ibc.DockerImage{
-			Repository: "celestia-node",
-			Version:    "local",
-			//Repository: "ghcr.io/strangelove-ventures/heighliner/celestia-node",
-			//Version: "v0.13.1",
-			UidGid: "1025:1025",
-		},
+		celestiaNodeImage,
 		celestiaNodeHome, // home dir
 		0,                // index
 		[]string{"26650", "26658", "26659", "2121"}, // ports
 		[]string{"celestia", celestiaNodeType, "start",
 			"--node.store", celestiaNodeHome,
 			"--gateway",
-			//"--keyring.accname", "celnode",
 			"--core.ip", celestiaVal0.HostName(),
 			"--gateway.addr", "0.0.0.0",
 			"--rpc.addr", "0.0.0.0",
@@ -124,27 +122,6 @@ func StartCelestiaNode(t *testing.T, ctx context.Context, celestiaChain *cosmos.
 		}, //env
 	)
 	require.NoError(t, err, "failed to init celestia-node")
-
-	/*_, _, err = sc.Exec(
-		ctx,
-		[]string{
-			"sh",
-			"-c",
-			fmt.Sprintf(`echo %q | cel-key add celnode --recover --keyring-backend test --node.type %s --home %s --p2p.network %s`,
-			"kick raven pave wild outdoor dismiss happy start lunch discover job evil code trim network emerge summer mad army vacant chest birth subject seek",
-			celestiaNodeType,
-			celestiaNodeHome,
-			celestiaChainID,
-			),
-		}, // cmd
-		[]string{
-			fmt.Sprintf("CELESTIA_CUSTOM=%s:%s", celestiaChainID, genesisHash),
-			fmt.Sprintf("NODE_STORE=%s", celestiaNodeHome),
-			fmt.Sprintf("NODE_TYPE=%s", celestiaNodeType),
-			fmt.Sprintf("P2P_NETWORK=%s", celestiaChainID),
-		}, //env
-	)
-	require.NoError(t, err, "failed to init celestia-node")*/
 
 	err = sc.StartContainer(ctx)
 	require.NoError(t, err, "failed to start sidecar container")
