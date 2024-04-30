@@ -180,16 +180,10 @@ func (cs ClientState) Initialize(ctx sdk.Context, cdc codec.BinaryCodec, clientS
 // VerifyMembership is a generic proof verification method which verifies an NMT proof
 // that a set of shares exist in a set of rows and a Merkle proof that those rows exist
 // in a Merkle tree with a given data root.
-// TODO: Revise and look into delay periods for this.
-// TODO: Validate key path and value against the shareProof extracted from proof bytes.
 func (cs *ClientState) VerifyMembership(ctx sdk.Context, clientStore storetypes.KVStore, cdc codec.BinaryCodec, height Height, proof *ShareProof) error {
 	if cs.LatestHeight.LT(height) {
 		return fmt.Errorf("Invalid height, client state height < proof height (%d < %d), please ensure the client has been updated", cs.LatestHeight, height)
 	}
-
-	//if err := verifyDelayPeriodPassed(ctx, clientStore, height, delayTimePeriod, delayBlockPeriod); err != nil {
-	//	return err
-	//}
 
 	shareProof, err := ShareProofFromProto(proof)
 	if err != nil {

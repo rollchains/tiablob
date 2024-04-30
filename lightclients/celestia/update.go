@@ -128,7 +128,7 @@ func (cs *ClientState) verifyHeader(
 // UpdateState must only be used to update within a single revision, thus header revision number and trusted height's revision
 // number must be the same. To update to a new revision, use a separate upgrade path
 // UpdateState will prune the oldest consensus state if it is expired.
-func (cs ClientState) UpdateState(ctx sdk.Context, cdc codec.BinaryCodec, clientStore storetypes.KVStore, clientMsg ClientMessage) []Height {
+func (cs *ClientState) UpdateState(ctx sdk.Context, cdc codec.BinaryCodec, clientStore storetypes.KVStore, clientMsg ClientMessage) []Height {
 	header, ok := clientMsg.(*Header)
 	if !ok {
 		panic(fmt.Errorf("expected type %T, got %T", &Header{}, clientMsg))
@@ -154,7 +154,7 @@ func (cs ClientState) UpdateState(ctx sdk.Context, cdc codec.BinaryCodec, client
 	}
 
 	// set client state, consensus state and associated metadata
-	setClientState(clientStore, cdc, &cs)
+	setClientState(clientStore, cdc, cs)
 	setConsensusState(clientStore, cdc, consensusState, header.GetHeight())
 	setConsensusMetadata(ctx, clientStore, header.GetHeight())
 

@@ -34,7 +34,6 @@ func(k Keeper) CreateClient(ctx sdk.Context, clientState celestia.ClientState, c
 		return fmt.Errorf("client not active, cannot create client with status %s", status)
 	}
 
-	// TODO: temp solution for now...
 	k.relayer.SetLatestClientState(&clientState)
 
 	return nil
@@ -82,6 +81,8 @@ func (k Keeper) UpdateClient(ctx sdk.Context, clientMsg celestia.ClientMessage) 
 	}
 
 	_ = clientState.UpdateState(ctx, k.cdc, clientStore, clientMsg)
+
+	k.relayer.SetLatestClientState(clientState)
 
 	return nil
 }

@@ -30,16 +30,11 @@ func (r *Relayer) FetchNewHeader(ctx context.Context, queryHeight uint64) *celes
 		return nil
 	}
 
-	var trustedHeight celestia.Height
-	if r.latestClientState != nil {
-		trustedHeight = r.latestClientState.LatestHeight
-	} else {
-		trustedHeight = celestia.NewHeight(1, 1)
-	}
 	if r.latestClientState == nil {
 		r.logger.Error("Client state is not set")
 		return nil
 	}
+	trustedHeight := r.latestClientState.LatestHeight
 
 	trustedValidatorsInBlock, err := r.provider.QueryLightBlock(ctx, int64(trustedHeight.GetRevisionHeight()+1))
 	if err != nil {

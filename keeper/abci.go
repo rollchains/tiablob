@@ -31,11 +31,8 @@ func NewProofOfBlobProposalHandler(k *Keeper, r *tiablobrelayer.Relayer, mp memp
 func (h *ProofOfBlobProposalHandler) PrepareProposal(ctx sdk.Context, req *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
 	resp, err := h.prepareProposalHandler(ctx, req)
 
-	clientState, clientFound := h.keeper.GetClientState(ctx)
-	if clientFound {
-		// Don't like this, but works for now
-		h.keeper.relayer.SetLatestClientState(clientState)
-	}
+	_, clientFound := h.keeper.GetClientState(ctx)
+
 	// TODO: return headers and proofs, get client state from above
 	injectData := h.relayer.Reconcile(ctx, clientFound)
 
