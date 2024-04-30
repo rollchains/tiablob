@@ -1,7 +1,7 @@
 package keeper
 
 import (
-	"encoding/json"
+	"fmt"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -36,12 +36,19 @@ func (h *ProofOfBlobProposalHandler) PrepareProposal(ctx sdk.Context, req *abci.
 		// Don't like this, but works for now
 		h.keeper.relayer.SetLatestClientState(clientState)
 	}
+	// TODO: return headers and proofs, get client state from above
 	injectData := h.relayer.Reconcile(ctx, clientFound)
 
 	if !injectData.IsEmpty() {
-		injectDataBz, err := json.Marshal(injectData)
+		var injectDataProto InjectedData
+		injectDataProto.CreateClient = injectData.CreateClient
+		injectDataProto.Headers = injectData.Headers
+		injectDataProto.Proofs = injectData.Proofs
+		injectDataBz, err := h.keeper.cdc.Marshal(&injectDataProto)
 		if err == nil {
 			resp.Txs = append(resp.Txs, injectDataBz)
+		} else{
+			fmt.Println("Error marshal inject data in prepare proposal")
 		}
 	}
 
@@ -49,7 +56,7 @@ func (h *ProofOfBlobProposalHandler) PrepareProposal(ctx sdk.Context, req *abci.
 }
 
 func (h *ProofOfBlobProposalHandler) ProcessProposal(ctx sdk.Context, req *abci.RequestProcessProposal) (*abci.ResponseProcessProposal, error) {
-	injectedData := tiablobrelayer.GetInjectedData(req.Txs)
+	injectedData := h.keeper.GetInjectedData(req.Txs)
 	if injectedData != nil {
 		req.Txs = req.Txs[:len(req.Txs)-1] // Pop the injected data for the default handler
 		if err := h.keeper.ProcessCreateClient(ctx, injectedData.CreateClient); err != nil {
@@ -66,7 +73,7 @@ func (h *ProofOfBlobProposalHandler) ProcessProposal(ctx sdk.Context, req *abci.
 }
 
 func (k *Keeper) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlock) error {
-	injectedData := tiablobrelayer.GetInjectedData(req.Txs)
+	injectedData := k.GetInjectedData(req.Txs)
 	if injectedData != nil {
 		if err := k.PreblockerCreateClient(ctx, injectedData.CreateClient); err != nil {
 			return err
@@ -81,4 +88,13 @@ func (k *Keeper) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlock) err
 	return nil
 }
 
-
+func (k *Keeper) GetInjectedData(txs [][]byte) *InjectedData {
+	if len(txs) != 0 {
+		var injectedData InjectedData
+		err := k.cdc.Unmarshal(txs[len(txs)-1], &injectedData)
+		if err == nil {
+			return &injectedData
+		}
+	}
+	return nil
+}

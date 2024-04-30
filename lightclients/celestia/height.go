@@ -10,13 +10,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-type Height struct {
-	// the revision that the client is currently on
-	RevisionNumber uint64 `json:"revision_number,omitempty"`
-	// the height within the given revision
-	RevisionHeight uint64 `json:"revision_height,omitempty"`
-}
-
 // IsRevisionFormat checks if a chainID is in the format required for parsing revisions
 // The chainID must be in the form: `{chainID}-{revision}`.
 // 24-host may enforce stricter checks on chainID

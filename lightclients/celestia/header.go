@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	types2 "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttypes "github.com/cometbft/cometbft/types"
 )
 
@@ -15,13 +14,6 @@ type ClientMessage interface {
 }
 
 var _ ClientMessage = (*Header)(nil)
-
-type Header struct {
-	*types2.SignedHeader `json:"signed_header,omitempty"`
-	ValidatorSet         *types2.ValidatorSet `json:"validator_set,omitempty"`
-	TrustedHeight        Height               `json:"trusted_height"`
-	TrustedValidators    *types2.ValidatorSet `json:"trusted_validators,omitempty"`
-}
 
 // ConsensusState returns the updated consensus state associated with the header
 func (h Header) ConsensusState() *ConsensusState {

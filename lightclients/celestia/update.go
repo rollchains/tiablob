@@ -2,12 +2,12 @@ package celestia
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 
 	errorsmod "cosmossdk.io/errors"
 	storetypes "cosmossdk.io/store/types"
 
+	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/cometbft/cometbft/light"
@@ -16,14 +16,14 @@ import (
 
 // VerifyClientMessage checks if the clientMessage is of type Header or Misbehaviour and verifies the message
 func (cs *ClientState) VerifyClientMessage(
-	ctx sdk.Context, clientStore storetypes.KVStore,
+	ctx sdk.Context, cdc codec.BinaryCodec, clientStore storetypes.KVStore,
 	clientMsg ClientMessage,
 ) error {
 	switch msg := clientMsg.(type) {
 	case *Header:
-		return cs.verifyHeader(ctx, clientStore, msg)
+		return cs.verifyHeader(ctx, clientStore, cdc, msg)
 	case *Misbehaviour:
-		return cs.verifyMisbehaviour(ctx, clientStore, msg)
+		return cs.verifyMisbehaviour(ctx, clientStore, cdc, msg)
 	default:
 		return fmt.Errorf("invalid client type")
 	}
@@ -38,13 +38,13 @@ func (cs *ClientState) VerifyClientMessage(
 // - header timestamp is past the trusting period in relation to the consensus state
 // - header timestamp is less than or equal to the consensus state timestamp
 func (cs *ClientState) verifyHeader(
-	ctx sdk.Context, clientStore storetypes.KVStore,
+	ctx sdk.Context, clientStore storetypes.KVStore, cdc codec.BinaryCodec,
 	header *Header,
 ) error {
 	currentTimestamp := ctx.BlockTime()
 
 	// Retrieve trusted consensus states for each Header in misbehaviour
-	consState, found := GetConsensusState(clientStore, header.TrustedHeight)
+	consState, found := GetConsensusState(clientStore, cdc, header.TrustedHeight)
 	if !found {
 		return fmt.Errorf("consensus state not found, could not get trusted consensus state from clientStore for Header at TrustedHeight: %s", header.TrustedHeight)
 	}
@@ -128,16 +128,16 @@ func (cs *ClientState) verifyHeader(
 // UpdateState must only be used to update within a single revision, thus header revision number and trusted height's revision
 // number must be the same. To update to a new revision, use a separate upgrade path
 // UpdateState will prune the oldest consensus state if it is expired.
-func (cs ClientState) UpdateState(ctx sdk.Context, clientStore storetypes.KVStore, clientMsg ClientMessage) []Height {
+func (cs ClientState) UpdateState(ctx sdk.Context, cdc codec.BinaryCodec, clientStore storetypes.KVStore, clientMsg ClientMessage) []Height {
 	header, ok := clientMsg.(*Header)
 	if !ok {
 		panic(fmt.Errorf("expected type %T, got %T", &Header{}, clientMsg))
 	}
 
-	cs.pruneOldestConsensusState(ctx, clientStore)
+	cs.pruneOldestConsensusState(ctx, cdc, clientStore)
 
 	// check for duplicate update
-	if _, found := GetConsensusState(clientStore, header.GetHeight()); found {
+	if _, found := GetConsensusState(clientStore, cdc, header.GetHeight()); found {
 		// perform no-op
 		return []Height{header.GetHeight()}
 	}
@@ -154,8 +154,8 @@ func (cs ClientState) UpdateState(ctx sdk.Context, clientStore storetypes.KVStor
 	}
 
 	// set client state, consensus state and associated metadata
-	setClientState(clientStore, &cs)
-	setConsensusState(clientStore, consensusState, header.GetHeight())
+	setClientState(clientStore, cdc, &cs)
+	setConsensusState(clientStore, cdc, consensusState, header.GetHeight())
 	setConsensusMetadata(ctx, clientStore, header.GetHeight())
 
 	return []Height{height}
@@ -164,7 +164,7 @@ func (cs ClientState) UpdateState(ctx sdk.Context, clientStore storetypes.KVStor
 // pruneOldestConsensusState will retrieve the earliest consensus state for this clientID and check if it is expired. If it is,
 // that consensus state will be pruned from store along with all associated metadata. This will prevent the client store from
 // becoming bloated with expired consensus states that can no longer be used for updates and packet verification.
-func (cs ClientState) pruneOldestConsensusState(ctx sdk.Context, clientStore storetypes.KVStore) {
+func (cs ClientState) pruneOldestConsensusState(ctx sdk.Context, cdc codec.BinaryCodec, clientStore storetypes.KVStore) {
 	// Check the earliest consensus state to see if it is expired, if so then set the prune height
 	// so that we can delete consensus state and all associated metadata.
 	var (
@@ -172,7 +172,7 @@ func (cs ClientState) pruneOldestConsensusState(ctx sdk.Context, clientStore sto
 	)
 
 	pruneCb := func(height Height) bool {
-		consState, found := GetConsensusState(clientStore, height)
+		consState, found := GetConsensusState(clientStore, cdc, height)
 		// this error should never occur
 		if !found {
 			panic(fmt.Errorf("consensus state not found, failed to retrieve consensus state at height: %s", height))
@@ -196,15 +196,16 @@ func (cs ClientState) pruneOldestConsensusState(ctx sdk.Context, clientStore sto
 
 // UpdateStateOnMisbehaviour updates state upon misbehaviour, freezing the ClientState. This method should only be called when misbehaviour is detected
 // as it does not perform any misbehaviour checks.
-func (cs ClientState) UpdateStateOnMisbehaviour(ctx sdk.Context, clientStore storetypes.KVStore, _ ClientMessage) {
+func (cs ClientState) UpdateStateOnMisbehaviour(ctx sdk.Context, cdc codec.BinaryCodec, clientStore storetypes.KVStore, _ ClientMessage) {
 	cs.FrozenHeight = FrozenHeight
 
-	bz, err := json.Marshal(&cs)
+
+	csBz, err := cdc.Marshal(&cs)
 	if err != nil {
-		panic("error on client state marshal in update state on misbehaviour")
+		panic(fmt.Errorf("failed to encode client state in update state on misbehaviour: %w", err))
 	}
 
-	clientStore.Set(ClientStateKey(), bz)
+	clientStore.Set(ClientStateKey(), csBz)
 }
 
 // checkTrustedHeader checks that consensus state matches trusted fields of Header

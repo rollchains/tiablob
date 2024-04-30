@@ -1,0 +1,13 @@
+syntax = "proto3";
+package rollchains.tiablob.v1;
+
+import "gogoproto/gogo.proto";
+import "rollchains/tiablob/lightclients/celestia/v1/celestia.proto";
+
+option go_package = "github.com/rollchains/tiablob/keeper";
+
+message InjectedData {
+    .rollchains.tiablob.lightclients.celestia.v1.CreateClient create_client = 1;
+    repeated rollchains.tiablob.lightclients.celestia.v1.Header headers = 2;
+    repeated rollchains.tiablob.lightclients.celestia.v1.BlobProof proofs = 3;
+}

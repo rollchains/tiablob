@@ -1,7 +1,6 @@
 package celestia
 
 import (
-	//"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -11,34 +10,10 @@ import (
 
 	"github.com/cometbft/cometbft/light"
 	cmttypes "github.com/cometbft/cometbft/types"
+	
+	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	celestiatypes "github.com/tendermint/tendermint/types"
 )
-
-// ClientState from Tendermint tracks the current validator set, latest height,
-// and a possible frozen height.
-type ClientState struct {
-	ChainId    string   `json:"chain_id,omitempty"`
-	TrustLevel Fraction `json:"trust_level"`
-	// duration of the period since the LatestTimestamp during which the
-	// submitted headers are valid for upgrade
-	TrustingPeriod time.Duration `json:"trusting_period"`
-	// duration of the staking unbonding period
-	UnbondingPeriod time.Duration `json:"unbonding_period"`
-	// defines how much new (untrusted) header's Time can drift into the future.
-	MaxClockDrift time.Duration `json:"max_clock_drift"`
-	// Block height when the client was frozen due to a misbehaviour
-	FrozenHeight Height `json:"frozen_height"`
-	// Latest height the client was updated to
-	LatestHeight Height `json:"latest_height"`
-	// Proof specifications used in verifying counterparty state
-}
-
-type Fraction struct {
-	Numerator   uint64 `json:"numerator,omitempty"`
-	Denominator uint64 `json:"denominator,omitempty"`
-}
 
 var ModuleName = "celestia-da-light-client"
 
@@ -73,10 +48,11 @@ func (*ClientState) ClientType() string {
 func (ClientState) GetTimestampAtHeight(
 	ctx sdk.Context,
 	clientStore storetypes.KVStore,
+	cdc codec.BinaryCodec,
 	height Height,
 ) (uint64, error) {
 	// get consensus state at height from clientStore to check for expiry
-	consState, found := GetConsensusState(clientStore, height)
+	consState, found := GetConsensusState(clientStore, cdc, height)
 	if !found {
 		return 0, fmt.Errorf("Consensus state not found, height: %s", height)
 	}
@@ -103,13 +79,14 @@ const (
 func (cs ClientState) Status(
 	ctx sdk.Context,
 	clientStore storetypes.KVStore,
+	cdc codec.BinaryCodec,
 ) Status {
 	if !cs.FrozenHeight.IsZero() {
 		return Frozen
 	}
 
 	// get latest consensus state from clientStore to check for expiry
-	consState, found := GetConsensusState(clientStore, cs.LatestHeight)
+	consState, found := GetConsensusState(clientStore, cdc, cs.LatestHeight)
 	if !found {
 		// if the client state does not have an associated consensus state for its latest height
 		// then it must be expired
@@ -192,9 +169,9 @@ func (cs ClientState) ZeroCustomFields() *ClientState {
 
 // Initialize checks that the initial consensus state is an 07-tendermint consensus state and
 // sets the client state, consensus state and associated metadata in the provided client store.
-func (cs ClientState) Initialize(ctx sdk.Context, clientStore storetypes.KVStore, consensusState *ConsensusState) error {
-	setClientState(clientStore, &cs)
-	setConsensusState(clientStore, consensusState, cs.LatestHeight)
+func (cs ClientState) Initialize(ctx sdk.Context, cdc codec.BinaryCodec, clientStore storetypes.KVStore, consensusState *ConsensusState) error {
+	setClientState(clientStore, cdc, &cs)
+	setConsensusState(clientStore, cdc, consensusState, cs.LatestHeight)
 	setConsensusMetadata(ctx, clientStore, cs.LatestHeight)
 
 	return nil
@@ -205,7 +182,7 @@ func (cs ClientState) Initialize(ctx sdk.Context, clientStore storetypes.KVStore
 // in a Merkle tree with a given data root.
 // TODO: Revise and look into delay periods for this.
 // TODO: Validate key path and value against the shareProof extracted from proof bytes.
-func (cs *ClientState) VerifyMembership(ctx sdk.Context, clientStore storetypes.KVStore, height Height, proof *celestiatypes.ShareProof) error {
+func (cs *ClientState) VerifyMembership(ctx sdk.Context, clientStore storetypes.KVStore, cdc codec.BinaryCodec, height Height, proof *ShareProof) error {
 	if cs.LatestHeight.LT(height) {
 		return fmt.Errorf("Invalid height, client state height < proof height (%d < %d), please ensure the client has been updated", cs.LatestHeight, height)
 	}
@@ -214,10 +191,15 @@ func (cs *ClientState) VerifyMembership(ctx sdk.Context, clientStore storetypes.
 	//	return err
 	//}
 
-	consensusState, found := GetConsensusState(clientStore, height)
+	shareProof, err := ShareProofFromProto(proof)
+	if err != nil {
+		return err
+	}
+
+	consensusState, found := GetConsensusState(clientStore, cdc, height)
 	if !found {
 		return fmt.Errorf("error consensus state not found, please ensure the proof was constructed against a height that exists on the client")
 	}
 
-	return proof.Validate(consensusState.GetRoot())
+	return shareProof.Validate(consensusState.GetRoot())
 }

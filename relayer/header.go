@@ -3,11 +3,11 @@ package relayer
 import (
 	"context"
 
-	"github.com/rollchains/tiablob/light-clients/celestia"
+	"github.com/rollchains/tiablob/lightclients/celestia"
 )
 
-func (r *Relayer) GetCachedHeaders() []*Header {
-	clientsMap := make(map[uint64]*Header)
+func (r *Relayer) GetCachedHeaders() []*celestia.Header {
+	clientsMap := make(map[uint64]*celestia.Header)
 	for checkHeight := r.latestProvenHeight + 1; r.blockProofCache[checkHeight] != nil; checkHeight++ {
 		proof := r.blockProofCache[checkHeight]
 		if r.celestiaHeaderCache[proof.CelestiaHeight] != nil {
@@ -15,7 +15,7 @@ func (r *Relayer) GetCachedHeaders() []*Header {
 		}
 	}
 
-	var clients []*Header
+	var clients []*celestia.Header
 	for _, header := range clientsMap {
 		clients = append(clients, header)
 	}
@@ -23,7 +23,7 @@ func (r *Relayer) GetCachedHeaders() []*Header {
 	return clients
 }
 
-func (r *Relayer) FetchNewHeader(ctx context.Context, queryHeight uint64) *Header {
+func (r *Relayer) FetchNewHeader(ctx context.Context, queryHeight uint64) *celestia.Header {
 	newLightBlock, err := r.provider.QueryLightBlock(ctx, int64(queryHeight))
 	if err != nil {
 		r.logger.Error("error querying light block for proofs", "height", queryHeight)
@@ -53,28 +53,16 @@ func (r *Relayer) FetchNewHeader(ctx context.Context, queryHeight uint64) *Heade
 		return nil
 	}
 
-	valSetBz, err := valSet.Marshal()
-	if err != nil {
-		r.logger.Error("error val set marshal")
-		return nil
-	}
-
 	trustedValSet, err := trustedValidatorsInBlock.ValidatorSet.ToProto()
 	if err != nil {
 		r.logger.Error("error trusted validators in block to val set proto")
 		return nil
 	}
 
-	trustedValSetBz, err := trustedValSet.Marshal()
-	if err != nil {
-		r.logger.Error("error trusted val set marshal")
-		return nil
-	}
-
-	return &Header{
+	return &celestia.Header{
 		SignedHeader:      newLightBlock.SignedHeader.ToProto(),
-		ValidatorSet:      valSetBz,
+		ValidatorSet:      valSet,
 		TrustedHeight:     trustedHeight,
-		TrustedValidators: trustedValSetBz,
+		TrustedValidators: trustedValSet,
 	}
 }

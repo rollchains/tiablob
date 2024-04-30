@@ -3,14 +3,14 @@ package celestia
 import (
 	"bytes"
 	"encoding/binary"
-	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
 
 	"cosmossdk.io/store/prefix"
 	storetypes "cosmossdk.io/store/types"
-
+	
+	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -43,54 +43,51 @@ var (
 )
 
 // setClientState stores the client state
-func setClientState(clientStore storetypes.KVStore, clientState *ClientState) {
+func setClientState(clientStore storetypes.KVStore, cdc codec.BinaryCodec, clientState *ClientState) {
 	key := ClientStateKey()
-	//val := clienttypes.MustMarshalClientState(cdc, clientState)
-	val, err := json.Marshal(clientState)
+	val, err := cdc.Marshal(clientState)
 	if err != nil {
-		panic("Error client state marshal")
+		panic(fmt.Errorf("failed to encode client state: %w", err))
 	}
 	clientStore.Set(key, val)
 }
 
 // getClientState retrieves the client state from the store using the provided KVStore and codec.
 // It returns the unmarshaled ClientState and a boolean indicating if the state was found.
-func GetClientState(store storetypes.KVStore) (*ClientState, bool) {
+func GetClientState(store storetypes.KVStore, cdc codec.BinaryCodec) (*ClientState, bool) {
 	bz := store.Get(ClientStateKey())
 	if len(bz) == 0 {
 		return nil, false
 	}
 
 	var clientState ClientState
-	err := json.Unmarshal(bz, &clientState)
-	if err != nil {
-		panic("Error client state unmarshal")
+	if err := cdc.Unmarshal(bz, &clientState); err != nil {
+		panic(fmt.Errorf("failed to decode client state: %w", err))
 	}
 	return &clientState, true
 }
 
 // setConsensusState stores the consensus state at the given height.
-func setConsensusState(clientStore storetypes.KVStore, consensusState *ConsensusState, height Height) {
+func setConsensusState(clientStore storetypes.KVStore, cdc codec.BinaryCodec, consensusState *ConsensusState, height Height) {
 	key := ConsensusStateKey(height)
-	val, err := json.Marshal(consensusState)
+	val, err := cdc.Marshal(consensusState)
 	if err != nil {
-		panic("Error consensus state marshal")
+		panic(fmt.Errorf("failed to encode consensus state: %w", err))
 	}
 	clientStore.Set(key, val)
 }
 
 // GetConsensusState retrieves the consensus state from the client prefixed store.
 // If the ConsensusState does not exist in state for the provided height a nil value and false boolean flag is returned
-func GetConsensusState(store storetypes.KVStore, height Height) (*ConsensusState, bool) {
+func GetConsensusState(store storetypes.KVStore, cdc codec.BinaryCodec, height Height) (*ConsensusState, bool) {
 	bz := store.Get(ConsensusStateKey(height))
 	if len(bz) == 0 {
 		return nil, false
 	}
 
 	var consensusState ConsensusState
-	err := json.Unmarshal(bz, &consensusState)
-	if err != nil {
-		panic("Error consensus state unmarshal")
+	if err := cdc.Unmarshal(bz, &consensusState); err != nil {
+		panic(fmt.Errorf("failed to decode consensus state: %w", err))
 	}
 	return &consensusState, true
 }
@@ -223,7 +220,7 @@ func IterateConsensusStateAscending(clientStore storetypes.KVStore, cb func(heig
 // The Iterator returns a storetypes.Iterator which iterates from start (inclusive) to end (exclusive).
 // If the starting height exists in store, we need to call iterator.Next() to get the next consenus state.
 // Otherwise, the iterator is already at the next consensus state so we can call iterator.Value() immediately.
-func GetNextConsensusState(clientStore storetypes.KVStore, height Height) (*ConsensusState, bool) {
+func GetNextConsensusState(clientStore storetypes.KVStore, cdc codec.BinaryCodec, height Height) (*ConsensusState, bool) {
 	iterateStore := prefix.NewStore(clientStore, []byte(KeyIterateConsensusStatePrefix))
 	iterator := iterateStore.Iterator(bigEndianHeightBytes(height), nil)
 	defer iterator.Close()
@@ -242,13 +239,13 @@ func GetNextConsensusState(clientStore storetypes.KVStore, height Height) (*Cons
 
 	csKey := iterator.Value()
 
-	return getTmConsensusState(clientStore, csKey)
+	return getTmConsensusState(clientStore, cdc, csKey)
 }
 
 // GetPreviousConsensusState returns the highest consensus state that is lower than the given height.
 // The Iterator returns a storetypes.Iterator which iterates from the end (exclusive) to start (inclusive).
 // Thus to get previous consensus state we call iterator.Value() immediately.
-func GetPreviousConsensusState(clientStore storetypes.KVStore, height Height) (*ConsensusState, bool) {
+func GetPreviousConsensusState(clientStore storetypes.KVStore, cdc codec.BinaryCodec, height Height) (*ConsensusState, bool) {
 	iterateStore := prefix.NewStore(clientStore, []byte(KeyIterateConsensusStatePrefix))
 	iterator := iterateStore.ReverseIterator(nil, bigEndianHeightBytes(height))
 	defer iterator.Close()
@@ -259,7 +256,7 @@ func GetPreviousConsensusState(clientStore storetypes.KVStore, height Height) (*
 
 	csKey := iterator.Value()
 
-	return getTmConsensusState(clientStore, csKey)
+	return getTmConsensusState(clientStore, cdc, csKey)
 }
 
 // PruneAllExpiredConsensusStates iterates over all consensus states for a given
@@ -267,12 +264,12 @@ func GetPreviousConsensusState(clientStore storetypes.KVStore, height Height) (*
 // is deleted. The number of consensus states pruned is returned.
 func PruneAllExpiredConsensusStates(
 	ctx sdk.Context, clientStore storetypes.KVStore,
-	clientState *ClientState,
+	cdc codec.BinaryCodec, clientState *ClientState,
 ) int {
 	var heights []Height
 
 	pruneCb := func(height Height) bool {
-		consState, found := GetConsensusState(clientStore, height)
+		consState, found := GetConsensusState(clientStore, cdc, height)
 		if !found { // consensus state should always be found
 			return true
 		}
@@ -295,15 +292,14 @@ func PruneAllExpiredConsensusStates(
 }
 
 // Helper function for GetNextConsensusState and GetPreviousConsensusState
-func getTmConsensusState(clientStore storetypes.KVStore, key []byte) (*ConsensusState, bool) {
+func getTmConsensusState(clientStore storetypes.KVStore, cdc codec.BinaryCodec, key []byte) (*ConsensusState, bool) {
 	bz := clientStore.Get(key)
 	if len(bz) == 0 {
 		return nil, false
 	}
 
 	var consensusState ConsensusState
-	err := json.Unmarshal(bz, &consensusState)
-	if err != nil {
+	if err := cdc.Unmarshal(bz, &consensusState); err != nil {
 		return nil, false
 	}
 

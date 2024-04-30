@@ -8,7 +8,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	appns "github.com/rollchains/tiablob/celestia/namespace"
-	"github.com/rollchains/tiablob/light-clients/celestia"
+	"github.com/rollchains/tiablob/lightclients/celestia"
 	"github.com/rollchains/tiablob/relayer/cosmos"
 
 	coretypes "github.com/cometbft/cometbft/rpc/core/types"
@@ -26,9 +26,9 @@ type Relayer struct {
 
 	pollInterval time.Duration
 
-	blockProofCache      map[uint64]*Proof
+	blockProofCache      map[uint64]*celestia.BlobProof
 	blockProofCacheLimit int
-	celestiaHeaderCache  map[uint64]*Header
+	celestiaHeaderCache  map[uint64]*celestia.Header
 
 	provider  *cosmos.CosmosProvider
 	clientCtx client.Context
@@ -80,9 +80,9 @@ func NewRelayer(
 		nodeRpcUrl:    cfg.NodeRpcURL,
 		nodeAuthToken: cfg.NodeAuthToken,
 
-		blockProofCache:      make(map[uint64]*Proof),
+		blockProofCache:      make(map[uint64]*celestia.BlobProof),
 		blockProofCacheLimit: cfg.MaxFlushSize,
-		celestiaHeaderCache:  make(map[uint64]*Header),
+		celestiaHeaderCache:  make(map[uint64]*celestia.Header),
 	}, nil
 }
 

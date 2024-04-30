@@ -5,13 +5,10 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/rollchains/tiablob/celestia-node/blob"
-	"github.com/rollchains/tiablob/light-clients/celestia"
-	tiablobrelayer "github.com/rollchains/tiablob/relayer"
-
-	prototypes "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/rollchains/tiablob/lightclients/celestia"
 )
 
-func (k *Keeper) PreblockerCreateClient(ctx sdk.Context, createClient *tiablobrelayer.CreateClient) error {
+func (k *Keeper) PreblockerCreateClient(ctx sdk.Context, createClient *celestia.CreateClient) error {
 	if createClient != nil {
 		if err := k.CreateClient(ctx, createClient.ClientState, createClient.ConsensusState); err != nil {
 			return fmt.Errorf("preblocker create client, %v", err)
@@ -20,26 +17,10 @@ func (k *Keeper) PreblockerCreateClient(ctx sdk.Context, createClient *tiablobre
 	return nil
 }
 
-func (k *Keeper) PreblockerHeaders(ctx sdk.Context, headers []*tiablobrelayer.Header) error {
+func (k *Keeper) PreblockerHeaders(ctx sdk.Context, headers []*celestia.Header) error {
 	if headers != nil {
 		for _, header := range headers {
-			var valSet prototypes.ValidatorSet
-			if err := k.cdc.Unmarshal(header.ValidatorSet, &valSet); err != nil {
-				return fmt.Errorf("preblocker headers, val set unmarshal, %v", err)
-			}
-			
-			var trustedValSet prototypes.ValidatorSet
-			if err := k.cdc.Unmarshal(header.TrustedValidators, &trustedValSet); err != nil {
-				return fmt.Errorf("preblocker headers, trusted val set unmarshal, %v", err)
-			}
-			
-			cHeader := celestia.Header{
-				SignedHeader:      header.SignedHeader,
-				ValidatorSet:      &valSet,
-				TrustedHeight:     header.TrustedHeight,
-				TrustedValidators: &trustedValSet,
-			}
-			if err := k.UpdateClient(ctx, &cHeader); err != nil {
+			if err := k.UpdateClient(ctx, header); err != nil {
 				return fmt.Errorf("preblocker headers, update client, %v", err)
 			}
 		}
@@ -47,7 +28,7 @@ func (k *Keeper) PreblockerHeaders(ctx sdk.Context, headers []*tiablobrelayer.He
 	return nil
 }
 
-func (k *Keeper) PreblockerProofs(ctx sdk.Context, proofs []*tiablobrelayer.Proof) error {
+func (k *Keeper) PreblockerProofs(ctx sdk.Context, proofs []*celestia.BlobProof) error {
 	if proofs != nil {
 		defer k.NotifyProvenHeight(ctx)
 		for _, proof := range proofs {
@@ -76,17 +57,21 @@ func (k *Keeper) PreblockerProofs(ctx sdk.Context, proofs []*tiablobrelayer.Proo
 				return fmt.Errorf("preblocker proofs, block proto marshal, %v", err)
 			}
 
-			// Replace blob data with our data for proof verification
+			// Replace blob data with our data for proof verification, do this before convert
 			proof.Blob.Data = blockProtoBz
+			mBlob, err := celestia.BlobFromProto(&proof.Blob)
+			if err != nil {
+				return fmt.Errorf("preblocker proofs, blob from proto, %v", err)
+			}
 
 			// Populate proof with data
-			proof.ShareProof.Data, err = blob.BlobsToShares(proof.Blob)
+			proof.ShareProof.Data, err = blob.BlobsToShares(mBlob)
 			if err != nil {
 				return fmt.Errorf("preblocker proofs, blobs to shares, %v", err)
 			}
 
 			// the update state/client was not provided, try for existing consensus state
-			err = k.VerifyMembership(ctx, proof.CelestiaHeight, proof.ShareProof)
+			err = k.VerifyMembership(ctx, proof.CelestiaHeight, &proof.ShareProof)
 			if err != nil {
 				return fmt.Errorf("preblocker proofs, verify membership, %v", err)
 			}

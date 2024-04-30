@@ -5,9 +5,8 @@ import (
 
 	"cosmossdk.io/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	celestiatypes "github.com/tendermint/tendermint/types"
 
-	"github.com/rollchains/tiablob/light-clients/celestia"
+	"github.com/rollchains/tiablob/lightclients/celestia"
 )
 
 var (
@@ -17,7 +16,7 @@ var (
 func (k Keeper) GetClientState(ctx sdk.Context) (*celestia.ClientState, bool) {
 	clientStore := prefix.NewStore(ctx.KVStore(k.storeKey), keyClientStore)
 
-	return celestia.GetClientState(clientStore)
+	return celestia.GetClientState(clientStore, k.cdc)
 }
 
 func(k Keeper) CreateClient(ctx sdk.Context, clientState celestia.ClientState, consensusState celestia.ConsensusState) error {
@@ -27,11 +26,11 @@ func(k Keeper) CreateClient(ctx sdk.Context, clientState celestia.ClientState, c
 
 	clientStore := prefix.NewStore(ctx.KVStore(k.storeKey), keyClientStore)
 
-	if err := clientState.Initialize(ctx, clientStore, &consensusState); err != nil {
+	if err := clientState.Initialize(ctx, k.cdc, clientStore, &consensusState); err != nil {
 		return err
 	}
 
-	if status := clientState.Status(ctx, clientStore); status != celestia.Active {
+	if status := clientState.Status(ctx, clientStore, k.cdc); status != celestia.Active {
 		return fmt.Errorf("client not active, cannot create client with status %s", status)
 	}
 
@@ -44,16 +43,16 @@ func(k Keeper) CreateClient(ctx sdk.Context, clientState celestia.ClientState, c
 func (k Keeper) CanUpdateClient(ctx sdk.Context, clientMsg celestia.ClientMessage) error {
 	clientStore := prefix.NewStore(ctx.KVStore(k.storeKey), keyClientStore)
 	
-	clientState, found := celestia.GetClientState(clientStore)
+	clientState, found := celestia.GetClientState(clientStore, k.cdc)
 	if !found {
 		return fmt.Errorf("client state not found in update client")
 	}
 
-	if status := clientState.Status(ctx, clientStore); status != celestia.Active {
+	if status := clientState.Status(ctx, clientStore, k.cdc); status != celestia.Active {
 		return fmt.Errorf("client not active, cannot update client with status %s", status)
 	}
 
-	if err := clientState.VerifyClientMessage(ctx, clientStore, clientMsg); err != nil {
+	if err := clientState.VerifyClientMessage(ctx, k.cdc, clientStore, clientMsg); err != nil {
 		return err
 	}
 
@@ -63,44 +62,44 @@ func (k Keeper) CanUpdateClient(ctx sdk.Context, clientMsg celestia.ClientMessag
 func (k Keeper) UpdateClient(ctx sdk.Context, clientMsg celestia.ClientMessage) error {
 	clientStore := prefix.NewStore(ctx.KVStore(k.storeKey), keyClientStore)
 	
-	clientState, found := celestia.GetClientState(clientStore)
+	clientState, found := celestia.GetClientState(clientStore, k.cdc)
 	if !found {
 		return fmt.Errorf("client state not found in update client")
 	}
 
-	if status := clientState.Status(ctx, clientStore); status != celestia.Active {
+	if status := clientState.Status(ctx, clientStore, k.cdc); status != celestia.Active {
 		return fmt.Errorf("client not active, cannot update client with status %s", status)
 	}
 
-	if err := clientState.VerifyClientMessage(ctx, clientStore, clientMsg); err != nil {
+	if err := clientState.VerifyClientMessage(ctx, k.cdc, clientStore, clientMsg); err != nil {
 		return err
 	}
 
-	foundMisbehaviour := clientState.CheckForMisbehaviour(ctx, clientStore, clientMsg)
+	foundMisbehaviour := clientState.CheckForMisbehaviour(ctx, k.cdc, clientStore, clientMsg)
 	if foundMisbehaviour {
-		clientState.UpdateStateOnMisbehaviour(ctx, clientStore, clientMsg)
+		clientState.UpdateStateOnMisbehaviour(ctx, k.cdc, clientStore, clientMsg)
 		return nil
 	}
 
-	_ = clientState.UpdateState(ctx, clientStore, clientMsg)
+	_ = clientState.UpdateState(ctx, k.cdc, clientStore, clientMsg)
 
 	return nil
 }
 
-func (k Keeper) VerifyMembership(ctx sdk.Context, height uint64, proof *celestiatypes.ShareProof) error {
+func (k Keeper) VerifyMembership(ctx sdk.Context, height uint64, proof *celestia.ShareProof) error {
 	clientStore := prefix.NewStore(ctx.KVStore(k.storeKey), keyClientStore)
 
-	clientState, found := celestia.GetClientState(clientStore)
+	clientState, found := celestia.GetClientState(clientStore, k.cdc)
 	if !found {
 		return fmt.Errorf("client state not found in update client")
 	}
 
-	if status := clientState.Status(ctx, clientStore); status != celestia.Active {
+	if status := clientState.Status(ctx, clientStore, k.cdc); status != celestia.Active {
 		return fmt.Errorf("client not active, cannot update client with status %s", status)
 	}
 	
 	cHeight := celestia.NewHeight(celestia.ParseChainID(clientState.ChainId), height)
-	err := clientState.VerifyMembership(ctx, clientStore, cHeight, proof)
+	err := clientState.VerifyMembership(ctx, clientStore, k.cdc, cHeight, proof)
 	if err != nil {
 		return err
 	}

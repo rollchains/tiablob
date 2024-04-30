@@ -9,6 +9,7 @@ import (
 	errorsmod "cosmossdk.io/errors"
 	storetypes "cosmossdk.io/store/types"
 
+	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	cmttypes "github.com/cometbft/cometbft/types"
@@ -16,7 +17,7 @@ import (
 
 // CheckForMisbehaviour detects duplicate height misbehaviour and BFT time violation misbehaviour
 // in a submitted Header message and verifies the correctness of a submitted Misbehaviour ClientMessage
-func (ClientState) CheckForMisbehaviour(ctx sdk.Context, clientStore storetypes.KVStore, msg ClientMessage) bool {
+func (ClientState) CheckForMisbehaviour(ctx sdk.Context, cdc codec.BinaryCodec, clientStore storetypes.KVStore, msg ClientMessage) bool {
 	switch msg := msg.(type) {
 	case *Header:
 		tmHeader := msg
@@ -25,7 +26,7 @@ func (ClientState) CheckForMisbehaviour(ctx sdk.Context, clientStore storetypes.
 		// Check if the Client store already has a consensus state for the header's height
 		// If the consensus state exists, and it matches the header then we return early
 		// since header has already been submitted in a previous UpdateClient.
-		if existingConsState, found := GetConsensusState(clientStore, tmHeader.GetHeight()); found {
+		if existingConsState, found := GetConsensusState(clientStore, cdc, tmHeader.GetHeight()); found {
 			// This header has already been submitted and the necessary state is already stored
 			// in client store, thus we can return early without further validation.
 			if reflect.DeepEqual(existingConsState, tmHeader.ConsensusState()) { //nolint:gosimple
@@ -38,8 +39,8 @@ func (ClientState) CheckForMisbehaviour(ctx sdk.Context, clientStore storetypes.
 		}
 
 		// Check that consensus state timestamps are monotonic
-		prevCons, prevOk := GetPreviousConsensusState(clientStore, tmHeader.GetHeight())
-		nextCons, nextOk := GetNextConsensusState(clientStore, tmHeader.GetHeight())
+		prevCons, prevOk := GetPreviousConsensusState(clientStore, cdc, tmHeader.GetHeight())
+		nextCons, nextOk := GetNextConsensusState(clientStore, cdc, tmHeader.GetHeight())
 		// if previous consensus state exists, check consensus state time is greater than previous consensus state time
 		// if previous consensus state is not before current consensus state return true
 		if prevOk && !prevCons.Timestamp.Before(consState.Timestamp) {
@@ -87,16 +88,16 @@ func (ClientState) CheckForMisbehaviour(ctx sdk.Context, clientStore storetypes.
 // Similarly, consensusState2 is the trusted consensus state that corresponds
 // to misbehaviour.Header2
 // Misbehaviour sets frozen height to {0, 1} since it is only used as a boolean value (zero or non-zero).
-func (cs *ClientState) verifyMisbehaviour(ctx sdk.Context, clientStore storetypes.KVStore, misbehaviour *Misbehaviour) error {
+func (cs *ClientState) verifyMisbehaviour(ctx sdk.Context, clientStore storetypes.KVStore, cdc codec.BinaryCodec, misbehaviour *Misbehaviour) error {
 	// Regardless of the type of misbehaviour, ensure that both headers are valid and would have been accepted by light-client
 
 	// Retrieve trusted consensus states for each Header in misbehaviour
-	tmConsensusState1, found := GetConsensusState(clientStore, misbehaviour.Header1.TrustedHeight)
+	tmConsensusState1, found := GetConsensusState(clientStore, cdc, misbehaviour.Header1.TrustedHeight)
 	if !found {
 		return fmt.Errorf("consensus state not found, could not get trusted consensus state from clientStore for Header1 at TrustedHeight: %s", misbehaviour.Header1.TrustedHeight)
 	}
 
-	tmConsensusState2, found := GetConsensusState(clientStore, misbehaviour.Header2.TrustedHeight)
+	tmConsensusState2, found := GetConsensusState(clientStore, cdc, misbehaviour.Header2.TrustedHeight)
 	if !found {
 		return fmt.Errorf("consensus state not found, could not get trusted consensus state from clientStore for Header2 at TrustedHeight: %s", misbehaviour.Header2.TrustedHeight)
 	}

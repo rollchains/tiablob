@@ -10,13 +10,6 @@ import (
 	cmttypes "github.com/cometbft/cometbft/types"
 )
 
-type Misbehaviour struct {
-	// ClientID is deprecated
-	ClientId string  `json:"client_id,omitempty"` // Deprecated: Do not use.
-	Header1  *Header `json:"header_1,omitempty"`
-	Header2  *Header `json:"header_2,omitempty"`
-}
-
 // FrozenHeight is same for all misbehaviour
 var FrozenHeight = NewHeight(0, 1)
 

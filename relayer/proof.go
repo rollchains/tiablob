@@ -7,12 +7,13 @@ import (
 	protoblocktypes "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/rollchains/tiablob/celestia-node/blob"
 	"github.com/rollchains/tiablob/celestia-node/share"
+	"github.com/rollchains/tiablob/lightclients/celestia"
 	cn "github.com/rollchains/tiablob/relayer/celestia-node"
 )
 
 // GetCachedProofs() returns the next set of proofs to verify on-chain
-func (r *Relayer) GetCachedProofs() []*Proof {
-	var proofs []*Proof
+func (r *Relayer) GetCachedProofs() []*celestia.BlobProof {
+	var proofs []*celestia.BlobProof
 	for checkHeight := r.latestProvenHeight + 1; r.blockProofCache[checkHeight] != nil; checkHeight++ {
 		proofs = append(proofs, r.blockProofCache[checkHeight])
 	}
@@ -136,9 +137,11 @@ func (r *Relayer) GetBlobProof(ctx context.Context, celestiaNodeClient *cn.Clien
 
 	proverShareProof.Data = nil // Only include proof
 	mBlob.Data = nil            // Only include blob metadata
-	r.blockProofCache[uint64(rollchainBlockHeight)] = &Proof{
-		ShareProof:      proverShareProof,
-		Blob:            mBlob,
+	shareProofProto := celestia.TmShareProofToProto(proverShareProof)
+
+	r.blockProofCache[uint64(rollchainBlockHeight)] = &celestia.BlobProof{
+		ShareProof:      shareProofProto,
+		Blob:            celestia.BlobToProto(mBlob),
 		CelestiaHeight:  queryHeight,
 		RollchainHeight: uint64(rollchainBlockHeight),
 	}

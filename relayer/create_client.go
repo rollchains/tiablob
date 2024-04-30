@@ -6,7 +6,7 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/rollchains/tiablob/light-clients/celestia"
+	"github.com/rollchains/tiablob/lightclients/celestia"
 )
 
 var (
@@ -17,7 +17,7 @@ var (
 )
 
 // TODO: do create client async, worst case scenario, it will be created in the same block as the first proofs
-func (r *Relayer) CreateClient(ctx sdk.Context) *CreateClient {
+func (r *Relayer) CreateClient(ctx sdk.Context) *celestia.CreateClient {
 	latestHeight, err := r.provider.QueryLatestHeight(ctx)
 	if err != nil {
 		r.logger.Error("error querying latest height for create client")
@@ -30,7 +30,7 @@ func (r *Relayer) CreateClient(ctx sdk.Context) *CreateClient {
 		return nil
 	}
 
-	return &CreateClient{
+	return &celestia.CreateClient{
 		ClientState: *celestia.NewClientState(
 			r.celestiaChainID,      // chainID
 			defaultTrustLevel,      // trustLevel (TODO: make this configurable?)
@@ -47,7 +47,7 @@ func (r *Relayer) CreateClient(ctx sdk.Context) *CreateClient {
 	}
 }
 
-func (r *Relayer) ValidateNewClient(ctx sdk.Context, client *CreateClient) error {
+func (r *Relayer) ValidateNewClient(ctx sdk.Context, client *celestia.CreateClient) error {
 	latestHeight, err := r.provider.QueryLatestHeight(ctx)
 	if err != nil {
 		return fmt.Errorf("error querying latest height for create client, %v", err)
