@@ -739,7 +739,8 @@ func NewChainApp(
 	app.TiaBlobKeeper.SetRelayer(app.TiaBlobRelayer)
 
 	// Proof-of-blob proposal handling
-	tiaBlobProposalHandler := tiablobkeeper.NewProofOfBlobProposalHandler(app.TiaBlobKeeper, app.TiaBlobRelayer, bApp.Mempool(), bApp)
+	dph := baseapp.NewDefaultProposalHandler(bApp.Mempool(), bApp)
+	tiaBlobProposalHandler := tiablobkeeper.NewProofOfBlobProposalHandler(app.TiaBlobKeeper, dph.PrepareProposalHandler(), dph.ProcessProposalHandler())
 	bApp.SetPrepareProposal(tiaBlobProposalHandler.PrepareProposal)
 	bApp.SetProcessProposal(tiaBlobProposalHandler.ProcessProposal)
 

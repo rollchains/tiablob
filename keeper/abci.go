@@ -2,27 +2,25 @@ package keeper
 
 import (
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/mempool"
-	tiablobrelayer "github.com/rollchains/tiablob/relayer"
 )
 
 type ProofOfBlobProposalHandler struct {
 	keeper  *Keeper
-	relayer *tiablobrelayer.Relayer
 
 	prepareProposalHandler sdk.PrepareProposalHandler
 	processProposalHandler sdk.ProcessProposalHandler
 }
 
-func NewProofOfBlobProposalHandler(k *Keeper, r *tiablobrelayer.Relayer, mp mempool.Mempool, txVerifier baseapp.ProposalTxVerifier) *ProofOfBlobProposalHandler {
-	defaultProposalHandler := baseapp.NewDefaultProposalHandler(mp, txVerifier)
+func NewProofOfBlobProposalHandler(
+	k *Keeper,
+	prepareProposalHandler sdk.PrepareProposalHandler,
+	processProposalHandler sdk.ProcessProposalHandler,
+) *ProofOfBlobProposalHandler {
 	return &ProofOfBlobProposalHandler{
 		keeper:                 k,
-		relayer:                r,
-		prepareProposalHandler: defaultProposalHandler.PrepareProposalHandler(), // Maybe pass this in
-		processProposalHandler: defaultProposalHandler.ProcessProposalHandler(), // Maybe pass this in
+		prepareProposalHandler: prepareProposalHandler,
+		processProposalHandler: processProposalHandler,
 	}
 }
 
@@ -38,7 +36,7 @@ func (h *ProofOfBlobProposalHandler) PrepareProposal(ctx sdk.Context, req *abci.
 	}
 
 	// Call rconcile to publish next blocks (if necessary), get any cached proofs/headers, and update client if necessary
-	injectData.Proofs, injectData.Headers = h.relayer.Reconcile(ctx)
+	injectData.Proofs, injectData.Headers = h.keeper.relayer.Reconcile(ctx)
 	injectDataBz := injectData.MarshalMaxBytes(ctx, h.keeper, req.MaxTxBytes)
 	if len(injectDataBz) > 0 {
 		var txs [][]byte
