@@ -83,6 +83,7 @@ func (k Keeper) UpdateClient(ctx sdk.Context, clientMsg celestia.ClientMessage) 
 	_ = clientState.UpdateState(ctx, k.cdc, clientStore, clientMsg)
 
 	k.relayer.SetLatestClientState(clientState)
+	k.relayer.ClearUpdateClient()
 
 	return nil
 }

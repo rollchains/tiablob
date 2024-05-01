@@ -33,6 +33,7 @@ func (r *Relayer) Start(
 			r.updateHeight(height)
 		case <-timer.C:
 			r.checkForNewBlockProofs(ctx)
+			r.shouldUpdateClient(ctx)
 			timer.Reset(r.pollInterval)
 		}
 	}
@@ -76,7 +77,7 @@ func (r *Relayer) pruneCache(provenHeight uint64) {
 //     not include the block being proposed).
 //   - check the proofs cache (no fetches here to minimize duration) if there are any new block proofs to be relayed from Celestia
 //   - if there are any block proofs to relay, it will add any headers (update clients) that are also cached
-//   - if the Celestia light client is within 1/3 of the trusting period and there are no block proofs to relay, generate a
+//   - if the Celestia light client is within 2/3 of the trusting period and there are no block proofs to relay, generate a
 //     MsgUpdateClient to update the light client and return it in a tx.
 func (r *Relayer) Reconcile(ctx sdk.Context) ([]*celestia.BlobProof, []*celestia.Header) {
 	go r.postNextBlocks(ctx, r.celestiaPublishBlockInterval)
@@ -84,9 +85,12 @@ func (r *Relayer) Reconcile(ctx sdk.Context) ([]*celestia.BlobProof, []*celestia
 	proofs := r.GetCachedProofs()
 	headers := r.GetCachedHeaders()
 
-	// TODO: check if the light client is within 1/3 of the trusting period, if so, add header
+	// if no headers are present, check to see if an update client is needed
+	// an update client present if it is needed
 	if len(headers) == 0 {
-		// check trust period and add if necessary
+		if r.updateClient != nil {
+			headers = append(headers, r.updateClient)
+		}
 	}
 
 	return proofs, headers

@@ -2,6 +2,7 @@ package relayer
 
 import (
 	"context"
+	"time"
 
 	"github.com/rollchains/tiablob/lightclients/celestia"
 )
@@ -64,5 +65,34 @@ func (r *Relayer) FetchNewHeader(ctx context.Context, queryHeight uint64) *celes
 		ValidatorSet:      valSet,
 		TrustedHeight:     trustedHeight,
 		TrustedValidators: trustedValSet,
+	}
+}
+
+// shouldUpdateClient check if we need to update the client with a new consensus state to avoid expiration
+// if an update is needed, it will get cached in r.updateClient which will be cleared whenever the client is updated
+func (r *Relayer) shouldUpdateClient(ctx context.Context) {
+	if r.latestClientState == nil {
+		// No error, just no client state yet, nothing to update
+		return
+	}
+	
+	height := r.latestClientState.LatestHeight
+
+	cHeader, err := r.provider.QueryLightBlock(ctx, int64(height.GetRevisionHeight()))
+	if err != nil {
+		r.logger.Error("shouldUpdateClient: querying latest client state light block", "error", err)
+		return
+	}
+
+	twoThirdsTrustingPeriodMs := float64(r.latestClientState.TrustingPeriod.Milliseconds()) * 2 / 3
+	timeSinceLastClientUpdateMs := float64(time.Since(cHeader.Header.Time).Milliseconds())
+
+	if timeSinceLastClientUpdateMs > twoThirdsTrustingPeriodMs {
+		celestiaLatestHeight, err := r.provider.QueryLatestHeight(ctx)
+		if err != nil {
+			r.logger.Error("shouldUpdateClient: querying latest height from Celestia", "error", err)
+			return
+		}
+		r.updateClient = r.FetchNewHeader(ctx, uint64(celestiaLatestHeight))
 	}
 }

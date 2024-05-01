@@ -39,6 +39,7 @@ type Relayer struct {
 	clientCtx client.Context
 
 	latestClientState *celestia.ClientState
+	updateClient      *celestia.Header
 
 	nodeRpcUrl    string
 	nodeAuthToken string
@@ -113,4 +114,8 @@ func (r *Relayer) GetLocalBlockAtHeight(ctx context.Context, height int64) (*cor
 // DecrementBlockProofCacheLimit will reduce the number of proofs injected into proposal by 1
 func (r *Relayer) DecrementBlockProofCacheLimit() {
 	r.blockProofCacheLimit = r.blockProofCacheLimit-1
+}
+
+func (r *Relayer) ClearUpdateClient() {
+	r.updateClient = nil
 }
