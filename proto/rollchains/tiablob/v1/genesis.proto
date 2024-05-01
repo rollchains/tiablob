@@ -3,6 +3,7 @@ package rollchains.tiablob.v1;
 
 import "gogoproto/gogo.proto";
 import "rollchains/tiablob/v1/validator.proto";
+import "rollchains/tiablob/lightclients/celestia/v1/celestia.proto";
 
 option go_package = "github.com/rollchains/tiablob";
 
@@ -14,6 +15,6 @@ message GenesisState {
     // increment only, never skipping heights.
     uint64 proven_height = 2;
 
-    // ID of the IBC client tracking Celestia
-    string client_id = 3;
+    .rollchains.tiablob.lightclients.celestia.v1.GenesisState celestia_genesis_state = 3;
+
 }

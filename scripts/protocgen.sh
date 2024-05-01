@@ -33,4 +33,4 @@ rm -rf github.com rollchains
 # Hack to avoid "tendermine/crypto/keys.proto" namespace conflict registered by both:
 # "buf.build/gen/go/tendermint/tendermint/protocolbuffers/go/tendermint/crypto"
 # "cosmossdk.io/api/tendermint/crypto"
-rm -rf api/lightclients api/v1/abci.pulsar.go
+rm -rf api/lightclients api/v1/abci.pulsar.go api/v1/genesis.pulsar.go

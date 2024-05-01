@@ -154,8 +154,8 @@ func (cs *ClientState) UpdateState(ctx sdk.Context, cdc codec.BinaryCodec, clien
 	}
 
 	// set client state, consensus state and associated metadata
-	setClientState(clientStore, cdc, cs)
-	setConsensusState(clientStore, cdc, consensusState, header.GetHeight())
+	SetClientState(clientStore, cdc, cs)
+	SetConsensusState(clientStore, cdc, consensusState, header.GetHeight())
 	setConsensusMetadata(ctx, clientStore, header.GetHeight())
 
 	return []Height{height}

@@ -156,3 +156,22 @@ message NMTProof {
   // resulting 40 bytes total.
   bytes leaf_hash = 4;
 }
+
+// Consensus state with height attached for import/export genesis
+message ConsensusStateWithHeight {
+  Height height = 1 [(gogoproto.nullable) = false];
+  ConsensusState consensus_state = 2 [(gogoproto.nullable) = false];
+}
+
+// Clients key/value metadata for import/export genesis
+message GenesisMetadata {
+  bytes key = 1;
+  bytes value = 2;
+}
+
+// All client state for import/export genesis
+message GenesisState {
+  ClientState client_state = 1 [(gogoproto.nullable) = false];
+  repeated ConsensusStateWithHeight consensus_states = 2;
+  repeated GenesisMetadata metadata = 3;
+}
