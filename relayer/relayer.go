@@ -99,3 +99,8 @@ func (r *Relayer) SetLatestClientState(clientState *celestia.ClientState) {
 func (r *Relayer) GetLocalBlockAtHeight(ctx context.Context, height int64) (*coretypes.ResultBlock, error) {
 	return r.provider.GetLocalBlockAtHeight(ctx, height)
 }
+
+// DecrementBlockProofCacheLimit will reduce the number of proofs injected into proposal by 1
+func (r *Relayer) DecrementBlockProofCacheLimit() {
+	r.blockProofCacheLimit = r.blockProofCacheLimit-1
+}
