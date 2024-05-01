@@ -16,6 +16,9 @@ func (r *Relayer) GetCachedProofs() []*celestia.BlobProof {
 	var proofs []*celestia.BlobProof
 	for checkHeight := r.latestProvenHeight + 1; r.blockProofCache[checkHeight] != nil; checkHeight++ {
 		proofs = append(proofs, r.blockProofCache[checkHeight])
+		if len(proofs) >= r.blockProofCacheLimit {
+			break
+		}
 	}
 
 	return proofs

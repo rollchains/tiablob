@@ -8,10 +8,15 @@ import (
 
 func (r *Relayer) GetCachedHeaders() []*celestia.Header {
 	clientsMap := make(map[uint64]*celestia.Header)
+	numProofs := 0
 	for checkHeight := r.latestProvenHeight + 1; r.blockProofCache[checkHeight] != nil; checkHeight++ {
 		proof := r.blockProofCache[checkHeight]
 		if r.celestiaHeaderCache[proof.CelestiaHeight] != nil {
 			clientsMap[proof.CelestiaHeight] = r.celestiaHeaderCache[proof.CelestiaHeight]
+		}
+		numProofs++
+		if numProofs >= r.blockProofCacheLimit {
+			break
 		}
 	}
 

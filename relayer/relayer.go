@@ -14,6 +14,11 @@ import (
 	coretypes "github.com/cometbft/cometbft/rpc/core/types"
 )
 
+const (
+	DefaultMaxFlushSize = int(100)
+	MaxMaxFlushSize = int(100)
+)
+
 // Relayer is responsible for posting new blocks to Celestia and relaying block proofs from Celestia via the current proposer
 type Relayer struct {
 	logger log.Logger
@@ -55,6 +60,11 @@ func NewRelayer(
 	celestiaPublishBlockInterval int,
 ) (*Relayer, error) {
 	cfg := CelestiaConfigFromAppOpts(appOpts)
+
+	if cfg.MaxFlushSize < 1 || cfg.MaxFlushSize > MaxMaxFlushSize {
+		cfg.MaxFlushSize = DefaultMaxFlushSize
+		//panic(fmt.Sprintf("invalid relayer max flush size: %d", cfg.MaxFlushSize))
+	}
 
 	provider, err := cosmos.NewProvider(cfg.AppRpcURL, keyDir, cfg.AppRpcTimeout, cfg.ChainID)
 	if err != nil {
