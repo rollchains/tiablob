@@ -86,7 +86,7 @@ func NewRelayer(
 		celestiaGasPrice:             cfg.GasPrice,
 		celestiaGasAdjustment:        cfg.GasAdjustment,
 		celestiaPublishBlockInterval: celestiaPublishBlockInterval,
-		celestiaLastQueriedHeight:    0, // TODO: Start at 0 for now, but we'll get this from the latest client state
+		celestiaLastQueriedHeight:    0, // Defaults to 0, but init genesis can set this based on client state's latest height
 
 		nodeRpcUrl:    cfg.NodeRpcURL,
 		nodeAuthToken: cfg.NodeAuthToken,
@@ -99,6 +99,12 @@ func NewRelayer(
 
 func (r *Relayer) SetClientContext(clientCtx client.Context) {
 	r.clientCtx = clientCtx
+}
+
+// SetCelestiaLastQueriedHeight allows tiablob keeper to set a starting point for querying Celestia blocks on import genesis
+// This may not be needed if we query tx hashes for blob heights
+func (r *Relayer) SetCelestiaLastQueriedHeight(height int64) {
+	r.celestiaLastQueriedHeight = height
 }
 
 // SetLatestClientState updates client state
@@ -116,6 +122,9 @@ func (r *Relayer) DecrementBlockProofCacheLimit() {
 	r.blockProofCacheLimit = r.blockProofCacheLimit-1
 }
 
+// ClearUpdateClient will set update client to nil.
+// This is done when the celestia light client has been updated.
+// It is only populated when the trusting period is 2/3 time from expiration.
 func (r *Relayer) ClearUpdateClient() {
 	r.updateClient = nil
 }

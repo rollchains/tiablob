@@ -107,6 +107,7 @@ func (k Keeper) SetCelestiaGenesisState(ctx sdk.Context, gs *celestia.GenesisSta
 		}
 		celestia.SetClientState(store, k.cdc, &gs.ClientState)
 		k.relayer.SetLatestClientState(&gs.ClientState)
+		k.relayer.SetCelestiaLastQueriedHeight(int64(gs.ClientState.LatestHeight.RevisionHeight))
 		for _, consensusStateWithHeight := range gs.ConsensusStates {
 			celestia.SetConsensusState(store, k.cdc, &consensusStateWithHeight.ConsensusState, consensusStateWithHeight.Height)
 		}
