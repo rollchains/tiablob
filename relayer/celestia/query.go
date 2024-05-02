@@ -1,27 +1,16 @@
-package cosmos
+package celestia
 
 import (
 	"context"
 	"fmt"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	rpcclient "github.com/cometbft/cometbft/rpc/client"
-	coretypes "github.com/cometbft/cometbft/rpc/core/types"
-	querytypes "github.com/cosmos/cosmos-sdk/types/query"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
-	celestiacoretypes "github.com/tendermint/tendermint/rpc/core/types"
-	celestiatypes "github.com/tendermint/tendermint/types"
+	rpcclient "github.com/tendermint/tendermint/rpc/client"
+	abci "github.com/tendermint/tendermint/abci/types"
+	coretypes "github.com/tendermint/tendermint/rpc/core/types"
+	types "github.com/tendermint/tendermint/types"
 )
-
-func defaultPageRequest() *querytypes.PageRequest {
-	return &querytypes.PageRequest{
-		Key:        []byte(""),
-		Offset:     0,
-		Limit:      1000,
-		CountTotal: false,
-	}
-}
 
 // QueryABCI performs an ABCI query and returns the appropriate response and error sdk error code.
 func (cc *CosmosProvider) QueryABCI(ctx context.Context, req abci.RequestQuery) (abci.ResponseQuery, error) {
@@ -59,15 +48,6 @@ func (cc *CosmosProvider) GetBlockAtHeight(ctx context.Context, height int64) (*
 	return block, nil
 }
 
-// GetBlockAtHeight queries the block at a given height
-func (cc *CosmosProvider) GetLocalBlockAtHeight(ctx context.Context, height int64) (*coretypes.ResultBlock, error) {
-	block, err := cc.localRpcClient.Block(ctx, &height)
-	if err != nil {
-		return nil, fmt.Errorf("error querying block at height %d: %w", height, err)
-	}
-	return block, nil
-}
-
 func (cc *CosmosProvider) AccountInfo(ctx context.Context, address string) (authtypes.AccountI, error) {
 	res, err := authtypes.NewQueryClient(cc).Account(ctx, &authtypes.QueryAccountRequest{
 		Address: address,
@@ -87,24 +67,15 @@ func (cc *CosmosProvider) AccountInfo(ctx context.Context, address string) (auth
 func (cc *CosmosProvider) QueryChainID(ctx context.Context) (string, error) {
 	status, err := cc.rpcClient.Status(ctx)
 	if err != nil {
-		return "", err
+		return "", err 
 	}
 	return status.NodeInfo.Network, nil
 }
 
-func (cc *CosmosProvider) ProveShares(ctx context.Context, height uint64, startShare uint64, endShare uint64) (*celestiatypes.ShareProof, error) {
-	res, err := cc.celestiaRpcClient.ProveShares(ctx, height, startShare, endShare)
+func (cc *CosmosProvider) ProveShares(ctx context.Context, height uint64, startShare uint64, endShare uint64) (*types.ShareProof, error) {
+	res, err := cc.rpcClient.ProveShares(ctx, height, startShare, endShare)
 	if err != nil {
 		return nil, err
 	}
 	return &res, nil
-}
-
-// GetBlockAtHeight queries the block at a given height
-func (cc *CosmosProvider) GetCelestiaBlockAtHeight(ctx context.Context, height int64) (*celestiacoretypes.ResultBlock, error) {
-	block, err := cc.celestiaRpcClient.Block(ctx, &height)
-	if err != nil {
-		return nil, fmt.Errorf("error querying block at height %d: %w", height, err)
-	}
-	return block, nil
 }

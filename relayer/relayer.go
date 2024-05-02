@@ -9,7 +9,8 @@ import (
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	appns "github.com/rollchains/tiablob/celestia/namespace"
 	"github.com/rollchains/tiablob/lightclients/celestia"
-	"github.com/rollchains/tiablob/relayer/cosmos"
+	celestiaprovider "github.com/rollchains/tiablob/relayer/celestia"
+	"github.com/rollchains/tiablob/relayer/local"
 
 	coretypes "github.com/cometbft/cometbft/rpc/core/types"
 )
@@ -35,7 +36,8 @@ type Relayer struct {
 	blockProofCacheLimit int
 	celestiaHeaderCache  map[uint64]*celestia.Header
 
-	provider  *cosmos.CosmosProvider
+	celestiaProvider  *celestiaprovider.CosmosProvider
+	localProvider     *local.CosmosProvider
 	clientCtx client.Context
 
 	latestClientState *celestia.ClientState
@@ -67,10 +69,12 @@ func NewRelayer(
 		//panic(fmt.Sprintf("invalid relayer max flush size: %d", cfg.MaxFlushSize))
 	}
 
-	provider, err := cosmos.NewProvider(cfg.AppRpcURL, keyDir, cfg.AppRpcTimeout, cfg.ChainID)
+	celestiaProvider, err := celestiaprovider.NewProvider(cfg.AppRpcURL, keyDir, cfg.AppRpcTimeout, cfg.ChainID)
 	if err != nil {
 		return nil, err
 	}
+
+	localProvider, err := local.NewProvider()
 
 	return &Relayer{
 		logger: logger,
@@ -80,7 +84,8 @@ func NewRelayer(
 		provenHeights: make(chan uint64, 10000),
 		commitHeights: make(chan uint64, 10000),
 
-		provider:                     provider,
+		celestiaProvider:             celestiaProvider,
+		localProvider:                localProvider,
 		celestiaNamespace:            celestiaNamespace,
 		celestiaChainID:              cfg.ChainID,
 		celestiaGasPrice:             cfg.GasPrice,
@@ -114,7 +119,7 @@ func (r *Relayer) SetLatestClientState(clientState *celestia.ClientState) {
 
 // GetLocalBlockAtAHeight allows keeper package to use the relayer's provider to fetch its blocks
 func (r *Relayer) GetLocalBlockAtHeight(ctx context.Context, height int64) (*coretypes.ResultBlock, error) {
-	return r.provider.GetLocalBlockAtHeight(ctx, height)
+	return r.localProvider.GetBlockAtHeight(ctx, height)
 }
 
 // DecrementBlockProofCacheLimit will reduce the number of proofs injected into proposal by 1

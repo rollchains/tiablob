@@ -30,7 +30,7 @@ func (r *Relayer) GetCachedHeaders() []*celestia.Header {
 }
 
 func (r *Relayer) FetchNewHeader(ctx context.Context, queryHeight uint64) *celestia.Header {
-	newLightBlock, err := r.provider.QueryLightBlock(ctx, int64(queryHeight))
+	newLightBlock, err := r.celestiaProvider.QueryLightBlock(ctx, int64(queryHeight))
 	if err != nil {
 		r.logger.Error("error querying light block for proofs", "height", queryHeight)
 		return nil
@@ -42,7 +42,7 @@ func (r *Relayer) FetchNewHeader(ctx context.Context, queryHeight uint64) *celes
 	}
 	trustedHeight := r.latestClientState.LatestHeight
 
-	trustedValidatorsInBlock, err := r.provider.QueryLightBlock(ctx, int64(trustedHeight.GetRevisionHeight()+1))
+	trustedValidatorsInBlock, err := r.celestiaProvider.QueryLightBlock(ctx, int64(trustedHeight.GetRevisionHeight()+1))
 	if err != nil {
 		r.logger.Error("error querying trusted light block", "height", trustedHeight)
 		return nil
@@ -78,7 +78,7 @@ func (r *Relayer) shouldUpdateClient(ctx context.Context) {
 	
 	height := r.latestClientState.LatestHeight
 
-	cHeader, err := r.provider.QueryLightBlock(ctx, int64(height.GetRevisionHeight()))
+	cHeader, err := r.celestiaProvider.QueryLightBlock(ctx, int64(height.GetRevisionHeight()))
 	if err != nil {
 		r.logger.Error("shouldUpdateClient: querying latest client state light block", "error", err)
 		return
@@ -88,7 +88,7 @@ func (r *Relayer) shouldUpdateClient(ctx context.Context) {
 	timeSinceLastClientUpdateMs := float64(time.Since(cHeader.Header.Time).Milliseconds())
 
 	if timeSinceLastClientUpdateMs > twoThirdsTrustingPeriodMs {
-		celestiaLatestHeight, err := r.provider.QueryLatestHeight(ctx)
+		celestiaLatestHeight, err := r.celestiaProvider.QueryLatestHeight(ctx)
 		if err != nil {
 			r.logger.Error("shouldUpdateClient: querying latest height from Celestia", "error", err)
 			return

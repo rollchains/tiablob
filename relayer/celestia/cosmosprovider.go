@@ -1,4 +1,4 @@
-package cosmos
+package celestia
 
 import (
 	"regexp"
@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	provtypes "github.com/cometbft/cometbft/light/provider"
-	prov "github.com/cometbft/cometbft/light/provider/http"
+	provtypes "github.com/tendermint/tendermint/light/provider"
+	prov "github.com/tendermint/tendermint/light/provider/http"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	gogogrpc "github.com/cosmos/gogoproto/grpc"
@@ -15,9 +15,6 @@ import (
 	"google.golang.org/grpc/encoding"
 	"google.golang.org/grpc/encoding/proto"
 
-	client "github.com/strangelove-ventures/cometbft-client/client"
-
-	cometrpc "github.com/cometbft/cometbft/rpc/client/http"
 	celestiarpc "github.com/tendermint/tendermint/rpc/client/http"
 )
 
@@ -28,12 +25,10 @@ var protoCodec = encoding.GetCodec(proto.Name)
 var accountSeqRegex = regexp.MustCompile("account sequence mismatch, expected ([0-9]+), got ([0-9]+)")
 
 type CosmosProvider struct {
-	cdc               Codec
-	localRpcClient    *cometrpc.HTTP
-	rpcClient         RPCClient
-	lightProvider     provtypes.Provider
-	celestiaRpcClient *celestiarpc.HTTP
-	keybase           keyring.Keyring
+	cdc           Codec
+	lightProvider provtypes.Provider
+	rpcClient     *celestiarpc.HTTP
+	keybase       keyring.Keyring
 
 	keyDir string
 
@@ -70,42 +65,24 @@ func (cc *CosmosProvider) EnsureWalletState(address string) *WalletState {
 
 // NewProvider validates the CosmosProviderConfig, instantiates a ChainClient and then instantiates a CosmosProvider
 func NewProvider(rpcURL string, keyDir string, timeout time.Duration, chainID string) (*CosmosProvider, error) {
-	rpcClient, err := client.NewClient(rpcURL, timeout)
-	if err != nil {
-		return nil, err
-	}
-
-	/*localRpcClient, err := client.NewClient("http://127.0.0.1:26657", timeout)
-	if err != nil {
-		return nil, err
-	}*/
-
-	// Client wrapper seems to have issues with getting/copying the block. Validate basic does not succeed with it.
-	localRpcClient, err := cometrpc.NewWithTimeout("http://127.0.0.1:26657", "/websocket", uint(timeout.Seconds()))
-	if err != nil {
-		return nil, err
-	}
-
 	// TODO: add cfg item for celestia chain id
-	lightprovider, err := prov.New(chainID, rpcURL)
+	lightProvider, err := prov.New(chainID, rpcURL)
 	if err != nil {
 		return nil, err
 	}
 
 	// Celestia client for their specific APIs, should we just use this instead of the client wrapper?
-	celestiaRpcClient, err := celestiarpc.NewWithTimeout(rpcURL, "/websocket", uint(timeout.Seconds()))
+	rpcClient, err := celestiarpc.NewWithTimeout(rpcURL, "/websocket", uint(timeout.Seconds()))
 	if err != nil {
 		return nil, err
 	}
 
 	cp := &CosmosProvider{
-		cdc:               makeCodec(ModuleBasics),
-		localRpcClient:    localRpcClient,
-		rpcClient:         NewRPCClient(rpcClient),
-		lightProvider:     lightprovider,
-		celestiaRpcClient: celestiaRpcClient,
-		keyDir:            keyDir,
-		walletStateMap:    make(map[string]*WalletState),
+		cdc:                   makeCodec(ModuleBasics),
+		lightProvider: lightProvider,
+		rpcClient:     rpcClient,
+		keyDir:                keyDir,
+		walletStateMap:        make(map[string]*WalletState),
 	}
 
 	return cp, nil

@@ -24,7 +24,7 @@ import (
 	"github.com/rollchains/tiablob"
 	blobtypes "github.com/rollchains/tiablob/celestia/blob/types"
 	"github.com/rollchains/tiablob/relayer"
-	"github.com/rollchains/tiablob/relayer/cosmos"
+	"github.com/rollchains/tiablob/relayer/celestia"
 )
 
 // NewTxCmd returns a root CLI command handler for all x/tiablob transaction commands.
@@ -112,7 +112,7 @@ $ %s tx tiablob feegrant celestia1jzv52ewect8ntvwjs2za087yzl6y3smf5etf3n
 
 			cfg := relayer.CelestiaConfigFromAppOpts(serverCtx.Viper)
 
-			provider, err := cosmos.NewProvider(cfg.AppRpcURL, filepath.Join(serverCtx.Config.RootDir, "keys"), cfg.AppRpcTimeout, cfg.ChainID)
+			provider, err := celestia.NewProvider(cfg.AppRpcURL, filepath.Join(serverCtx.Config.RootDir, "keys"), cfg.AppRpcTimeout, cfg.ChainID)
 			if err != nil {
 				return fmt.Errorf("failed to create cosmos provider: %w", err)
 			}

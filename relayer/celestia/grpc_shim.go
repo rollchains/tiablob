@@ -1,4 +1,4 @@
-package cosmos
+package celestia
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"strconv"
 
-	abci "github.com/cometbft/cometbft/abci/types"
+	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/cosmos/cosmos-sdk/codec/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	grpctypes "github.com/cosmos/cosmos-sdk/types/grpc"

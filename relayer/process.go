@@ -19,7 +19,7 @@ func (r *Relayer) Start(
 	r.latestProvenHeight = provenHeight
 	r.latestCommitHeight = commitHeight
 
-	if err := r.provider.CreateKeystore(); err != nil {
+	if err := r.celestiaProvider.CreateKeystore(); err != nil {
 		return err
 	}
 

@@ -14,7 +14,7 @@ import (
 
 	"github.com/rollchains/tiablob"
 	"github.com/rollchains/tiablob/relayer"
-	"github.com/rollchains/tiablob/relayer/cosmos"
+	"github.com/rollchains/tiablob/relayer/celestia"
 )
 
 const (
@@ -64,7 +64,7 @@ $ %s keys tiablob add
 			cfg := relayer.CelestiaConfigFromAppOpts(serverCtx.Viper)
 
 			keyDir := filepath.Join(clientCtx.HomeDir, "keys")
-			provider, err := cosmos.NewProvider(cfg.AppRpcURL, keyDir, 0, cfg.ChainID)
+			provider, err := celestia.NewProvider(cfg.AppRpcURL, keyDir, 0, cfg.ChainID)
 			if err != nil {
 				return err
 			}
@@ -89,7 +89,7 @@ $ %s keys tiablob add
 			ledger, _ := cmd.Flags().GetBool(FlagLedger)
 			coinType, _ := cmd.Flags().GetUint32(FlagCoinType)
 
-			var ko *cosmos.KeyOutput
+			var ko *celestia.KeyOutput
 
 			if address != "" {
 				accountInfo, err := provider.AccountInfo(cmd.Context(), address)
@@ -163,7 +163,7 @@ $ %s keys tiablob restore "pattern match caution ..."
 			}
 
 			keyDir := filepath.Join(clientCtx.HomeDir, "keys")
-			provider, err := cosmos.NewProvider("", keyDir, 0, "")
+			provider, err := celestia.NewProvider("", keyDir, 0, "")
 			if err != nil {
 				return err
 			}
@@ -225,7 +225,7 @@ $ %s keys tiablob show
 			}
 
 			keyDir := filepath.Join(clientCtx.HomeDir, "keys")
-			provider, err := cosmos.NewProvider("", keyDir, 0, "")
+			provider, err := celestia.NewProvider("", keyDir, 0, "")
 			if err != nil {
 				return err
 			}
@@ -272,7 +272,7 @@ $ %s keys tiablob delete
 			}
 
 			keyDir := filepath.Join(clientCtx.HomeDir, "keys")
-			provider, err := cosmos.NewProvider("", keyDir, 0, "")
+			provider, err := celestia.NewProvider("", keyDir, 0, "")
 			if err != nil {
 				return err
 			}

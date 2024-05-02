@@ -18,13 +18,13 @@ var (
 
 // TODO: do create client async, worst case scenario, it will be created in the same block as the first proofs
 func (r *Relayer) CreateClient(ctx sdk.Context) *celestia.CreateClient {
-	latestHeight, err := r.provider.QueryLatestHeight(ctx)
+	latestHeight, err := r.celestiaProvider.QueryLatestHeight(ctx)
 	if err != nil {
 		r.logger.Error("error querying latest height for create client")
 		return nil
 	}
 
-	lightBlock, err := r.provider.QueryLightBlock(ctx, latestHeight)
+	lightBlock, err := r.celestiaProvider.QueryLightBlock(ctx, latestHeight)
 	if err != nil {
 		r.logger.Error("error querying light block for create client", "error", err)
 		return nil
@@ -48,12 +48,12 @@ func (r *Relayer) CreateClient(ctx sdk.Context) *celestia.CreateClient {
 }
 
 func (r *Relayer) ValidateNewClient(ctx sdk.Context, client *celestia.CreateClient) error {
-	latestHeight, err := r.provider.QueryLatestHeight(ctx)
+	latestHeight, err := r.celestiaProvider.QueryLatestHeight(ctx)
 	if err != nil {
 		return fmt.Errorf("error querying latest height for create client, %v", err)
 	}
 
-	lightBlock, err := r.provider.QueryLightBlock(ctx, int64(client.ClientState.LatestHeight.RevisionHeight))
+	lightBlock, err := r.celestiaProvider.QueryLightBlock(ctx, int64(client.ClientState.LatestHeight.RevisionHeight))
 	if err != nil {
 		return fmt.Errorf("error querying light block for verify new client, %v", err)
 	}

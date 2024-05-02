@@ -1,4 +1,4 @@
-package cosmos
+package celestia
 
 import (
 	"crypto/rand"

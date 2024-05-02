@@ -34,7 +34,7 @@ func (r *Relayer) checkForNewBlockProofs(ctx context.Context) {
 	}
 	defer celestiaNodeClient.Close()
 
-	celestiaLatestHeight, err := r.provider.QueryLatestHeight(ctx)
+	celestiaLatestHeight, err := r.celestiaProvider.QueryLatestHeight(ctx)
 	if err != nil {
 		r.logger.Error("querying latest height from Celestia", "error", err)
 		return
@@ -56,7 +56,7 @@ func (r *Relayer) checkForNewBlockProofs(ctx context.Context) {
 		}
 		if len(blobs) > 0 {
 			r.celestiaHeaderCache[queryHeight] = r.FetchNewHeader(ctx, queryHeight)
-			block, err := r.provider.GetCelestiaBlockAtHeight(ctx, int64(queryHeight))
+			block, err := r.celestiaProvider.GetBlockAtHeight(ctx, int64(queryHeight))
 			if err != nil {
 				r.logger.Error("querying celestia block", "height", queryHeight, "error", err)
 				return
@@ -97,7 +97,7 @@ func (r *Relayer) GetBlobProof(ctx context.Context, celestiaNodeClient *cn.Clien
 	// injection method as vote extensions. https://docs.cosmos.network/v0.50/build/abci/vote-extensions#vote-extension-propagation
 	// "FinalizeBlock will ignore any byte slice that doesn't implement an sdk.Tx, so any injected vote extensions will safely be ignored in FinalizeBlock"
 	// "Some existing Cosmos SDK core APIs may need to be modified and thus broken."
-	expectedBlock, err := r.provider.GetLocalBlockAtHeight(ctx, rollchainBlockHeight)
+	expectedBlock, err := r.localProvider.GetBlockAtHeight(ctx, rollchainBlockHeight)
 	if err != nil {
 		r.logger.Error("getting local block", "celestia height", queryHeight, "rollchain height", rollchainBlockHeight, "err", err)
 		return nil
@@ -125,7 +125,7 @@ func (r *Relayer) GetBlobProof(ctx context.Context, celestiaNodeClient *cn.Clien
 	shareIndex := GetShareIndex(uint64(mBlob.Index()), squareSize)
 
 	// Get all shares from celestia node, confirm our shares are present
-	proverShareProof, err := r.provider.ProveShares(ctx, queryHeight, shareIndex, shareIndex+uint64(len(shares)))
+	proverShareProof, err := r.celestiaProvider.ProveShares(ctx, queryHeight, shareIndex, shareIndex+uint64(len(shares)))
 	if err != nil {
 		r.logger.Error("error calling ProveShares", "error", err)
 		return nil
