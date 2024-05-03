@@ -1,6 +1,6 @@
 # Integration
 
-Follow these steps to integrate the tiablob module into your application. If you are using [spwan](https://github.com/rollchains/spawn) to create a new application, simply include the tiablob module to have it pre-wired in your application.
+Follow these steps to integrate the tiablob module into your application. If you are using [spawn](https://github.com/rollchains/spawn) to create a new application, simply include the tiablob module to have it pre-wired in your application.
 
 A fully integrated example application is available in this repository under the [simapp](/simapp/) directory which can be used as a reference.
 
@@ -79,6 +79,7 @@ func NewChainApp(
 		appCodec,
 		runtime.NewKVStoreService(keys[tiablob.StoreKey]),
 		app.StakingKeeper,
+		keys[tiablob.StoreKey],
 	)
 
     // Initialize rollchains tiablob relayer
@@ -97,7 +98,11 @@ func NewChainApp(
 	app.TiaBlobKeeper.SetRelayer(app.TiaBlobRelayer)
 
     // Rollchains tiablob proposal handling
-	tiaBlobProposalHandler := tiablobkeeper.NewProofOfBlobProposalHandler(app.TiaBlobKeeper, app.TiaBlobRelayer, bApp.Mempool(), bApp)
+	tiaBlobProposalHandler := tiablobkeeper.NewProofOfBlobProposalHandler(
+		app.TiaBlobKeeper,
+		AppSpecificPrepareProposalHandler(), // i.e. baseapp.NoOpPrepareProposal()
+		AppSpecificProcessProposalHandler(), // i.e. baseapp.NoOpProcessProposal()
+	)
 	bApp.SetPrepareProposal(tiaBlobProposalHandler.PrepareProposal)
 	bApp.SetProcessProposal(tiaBlobProposalHandler.ProcessProposal)
 
@@ -158,7 +163,21 @@ func (app *ChainApp) FinalizeBlock(req *abci.RequestFinalizeBlock) (*abci.Respon
 }
 ```
 
-6. Integrate relayer startup
+6. Integrate `tiablob` PreBlocker
+
+The `tiablob` PreBlocker must be called in the app's PreBlocker.
+
+```golang
+func (app *ChainApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
+	err := app.TiaBlobKeeper.PreBlocker(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	return app.ModuleManager.PreBlock(ctx)
+}
+```
+
+7. Integrate relayer startup
 
 The relayer needs to query blocks using the client context in order to package them and publish to Celestia. The relayer also needs to be started with some initial values that must be queried from the app after the app has started. Add the following in `RegisterNodeService`.
 

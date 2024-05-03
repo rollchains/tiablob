@@ -21,8 +21,7 @@ const (
 	DefaultConfigTemplate = `
 
 	[celestia]
-	# RPC URL of celestia-app node for posting block data
-	# TODO remove hardcoded URL
+	# RPC URL of celestia-app node for posting block data, querying proofs & light blocks
 	app-rpc-url = "https://rpc-mocha.pops.one:443"
 
 	# RPC Timeout for transaction broadcasts and queries to celestia-app node
@@ -37,16 +36,18 @@ const (
 	# Gas adjustment for celestia transactions
 	gas-adjustment = 1.0
 
-	# RPC URL of celestia-node for querying proofs
+	# RPC URL of celestia-node for querying blobs
 	node-rpc-url = "http://127.0.0.1:26658"
 
-	# Auth token for celestia-node RPC
+	# Auth token for celestia-node RPC, n/a if --rpc.skip-auth is used on start
 	node-auth-token = "auth-token"
 	
 	# Query celestia for new block proofs this often
 	proof-query-interval = "12s"
 
 	# Only flush at most this many block proofs in an injected tx per block proposal
+	# Must be greater than 0 and less than 100, proofs are roughly 1KB each
+	# tiablob will try to aggregate multiple blobs published at the same height w/ a single proof
 	max-flush-size = 32
 	`
 )

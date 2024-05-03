@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	DefaultMaxFlushSize = int(100)
+	DefaultMaxFlushSize = int(20)
 	MaxMaxFlushSize = int(100)
 )
 
