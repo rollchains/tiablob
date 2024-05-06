@@ -8,11 +8,11 @@ import (
 )
 
 func (k Keeper) prepareInjectData(ctx sdk.Context, currentBlockTime time.Time) InjectedData {
-	return InjectedData {
-		CreateClient: k.prepareCreateClient(ctx),
+	return InjectedData{
+		CreateClient:  k.prepareCreateClient(ctx),
 		PendingBlocks: k.preparePostBlocks(ctx, currentBlockTime),
-		Proofs: k.relayer.GetCachedProofs(),
-		Headers: k.relayer.GetCachedHeaders(),
+		Proofs:        k.relayer.GetCachedProofs(),
+		Headers:       k.relayer.GetCachedHeaders(),
 	}
 }
 
@@ -47,7 +47,7 @@ func (k Keeper) prepareCreateClient(ctx sdk.Context) *celestia.CreateClient {
 func (k Keeper) preparePostBlocks(ctx sdk.Context, currentBlockTime time.Time) PendingBlocks {
 	// Call PostNextBlocks to publish next blocks (if necessary) and/or retry timed-out published blocks
 	newBlocks := k.relayer.ProposePostNextBlocks(ctx)
-	
+
 	// If there are no new blocks to propose, check for expired blocks
 	// Additionally, if the block interval is 1, we need to also be able to re-publish an expired block
 	if len(newBlocks) < 2 {

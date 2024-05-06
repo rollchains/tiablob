@@ -26,7 +26,7 @@ func NewProofOfBlobProposalHandler(
 
 func (h *ProofOfBlobProposalHandler) PrepareProposal(ctx sdk.Context, req *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
 	h.keeper.relayer.SetProposerAddress(req.ProposerAddress)
-	
+
 	resp, err := h.prepareProposalHandler(ctx, req)
 	if err != nil {
 		return nil, err

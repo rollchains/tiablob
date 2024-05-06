@@ -99,7 +99,6 @@ func (k Keeper) processProofs(ctx sdk.Context, clients []*celestia.Header, proof
 	return nil
 }
 
-
 func (k Keeper) processPendingBlocks(ctx sdk.Context, currentBlockTime time.Time, pendingBlocks *PendingBlocks) error {
 	if pendingBlocks != nil {
 		height := ctx.BlockHeight()
