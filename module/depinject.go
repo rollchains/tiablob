@@ -3,6 +3,7 @@ package module
 import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
+	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
 
 	"cosmossdk.io/core/appmodule"
 	"cosmossdk.io/core/store"
@@ -35,6 +36,7 @@ type ModuleInputs struct {
 	StoreService store.KVStoreService
 
 	StakingKeeper stakingkeeper.Keeper
+	UpgradeKeeper upgradekeeper.Keeper
 
 	storeKey storetypes.StoreKey
 
@@ -49,7 +51,7 @@ type ModuleOutputs struct {
 }
 
 func ProvideModule(in ModuleInputs) ModuleOutputs {
-	k := keeper.NewKeeper(in.Cdc, in.StoreService, &in.StakingKeeper, in.storeKey, in.publishToCelestiaBlockInterval)
+	k := keeper.NewKeeper(in.Cdc, in.StoreService, &in.StakingKeeper, &in.UpgradeKeeper, in.storeKey, in.publishToCelestiaBlockInterval)
 	m := NewAppModule(in.Cdc, k)
 
 	return ModuleOutputs{Module: m, Keeper: k}

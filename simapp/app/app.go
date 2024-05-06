@@ -721,6 +721,7 @@ func NewChainApp(
 		appCodec,
 		runtime.NewKVStoreService(keys[tiablob.StoreKey]),
 		app.StakingKeeper,
+		app.UpgradeKeeper,
 		keys[tiablob.StoreKey],
 		publishToCelestiaBlockInterval,
 	)

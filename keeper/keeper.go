@@ -9,10 +9,12 @@ import (
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	"github.com/rollchains/tiablob"
 	tiablobrelayer "github.com/rollchains/tiablob/relayer"
+	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
 )
 
 type Keeper struct {
 	stakingKeeper *stakingkeeper.Keeper
+	upgradeKeeper *upgradekeeper.Keeper
 	relayer       *tiablobrelayer.Relayer
 
 	Validators              collections.Map[string, string]
@@ -32,6 +34,7 @@ func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeService storetypes.KVStoreService,
 	sk *stakingkeeper.Keeper,
+	uk *upgradekeeper.Keeper,
 	key storetypes2.StoreKey,
 	publishToCelestiaBlockInterval int,
 ) *Keeper {
@@ -39,6 +42,7 @@ func NewKeeper(
 
 	return &Keeper{
 		stakingKeeper: sk,
+		upgradeKeeper: uk,
 
 		Validators:              collections.NewMap(sb, tiablob.ValidatorsKey, "validators", collections.StringKey, collections.StringValue),
 		ClientID:                collections.NewItem(sb, tiablob.ClientIDKey, "client_id", collections.StringValue),
