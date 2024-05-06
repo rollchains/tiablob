@@ -6,8 +6,8 @@ import (
 
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
-	rpcclient "github.com/tendermint/tendermint/rpc/client"
 	abci "github.com/tendermint/tendermint/abci/types"
+	rpcclient "github.com/tendermint/tendermint/rpc/client"
 	coretypes "github.com/tendermint/tendermint/rpc/core/types"
 	types "github.com/tendermint/tendermint/types"
 )
@@ -67,7 +67,7 @@ func (cc *CosmosProvider) AccountInfo(ctx context.Context, address string) (auth
 func (cc *CosmosProvider) QueryChainID(ctx context.Context) (string, error) {
 	status, err := cc.rpcClient.Status(ctx)
 	if err != nil {
-		return "", err 
+		return "", err
 	}
 	return status.NodeInfo.Network, nil
 }

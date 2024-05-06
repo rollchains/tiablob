@@ -6,7 +6,7 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	
+
 	"github.com/rollchains/tiablob/lightclients/celestia"
 )
 

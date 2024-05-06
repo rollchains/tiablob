@@ -6,7 +6,7 @@ import (
 )
 
 type ProofOfBlobProposalHandler struct {
-	keeper  *Keeper
+	keeper *Keeper
 
 	prepareProposalHandler sdk.PrepareProposalHandler
 	processProposalHandler sdk.ProcessProposalHandler
@@ -123,7 +123,7 @@ func (d InjectedData) MarshalMaxBytes(ctx sdk.Context, keeper *Keeper, maxBytes 
 		return nil
 	}
 
-	for ; int64(len(injectDataBz)) > maxBytes; {
+	for int64(len(injectDataBz)) > maxBytes {
 		keeper.relayer.DecrementBlockProofCacheLimit()
 		d.Proofs, d.Headers = keeper.relayer.Reconcile(ctx)
 		if len(d.Proofs) == 0 {
@@ -134,6 +134,6 @@ func (d InjectedData) MarshalMaxBytes(ctx sdk.Context, keeper *Keeper, maxBytes 
 			return nil
 		}
 	}
-	
+
 	return injectDataBz
 }

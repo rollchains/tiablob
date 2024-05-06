@@ -45,7 +45,7 @@ func (k *Keeper) PreblockerProofs(ctx sdk.Context, proofs []*celestia.BlobProof)
 			block, err := k.relayer.GetLocalBlockAtHeight(ctx, int64(proof.RollchainHeight))
 			if err != nil {
 				return fmt.Errorf("preblocker proofs, get local block at height: %d, %v", proof.RollchainHeight, err)
-				}
+			}
 
 			blockProto, err := block.Block.ToProto()
 			if err != nil {

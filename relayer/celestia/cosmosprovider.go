@@ -78,11 +78,11 @@ func NewProvider(rpcURL string, keyDir string, timeout time.Duration, chainID st
 	}
 
 	cp := &CosmosProvider{
-		cdc:                   makeCodec(ModuleBasics),
-		lightProvider: lightProvider,
-		rpcClient:     rpcClient,
-		keyDir:                keyDir,
-		walletStateMap:        make(map[string]*WalletState),
+		cdc:            makeCodec(ModuleBasics),
+		lightProvider:  lightProvider,
+		rpcClient:      rpcClient,
+		keyDir:         keyDir,
+		walletStateMap: make(map[string]*WalletState),
 	}
 
 	return cp, nil
