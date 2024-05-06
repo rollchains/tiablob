@@ -98,17 +98,13 @@ func (k *Keeper) AddUpdatePendingBlock(ctx context.Context, cdc codec.BinaryCode
 	found, err = k.TimeoutsToPendingBlocks.Has(ctx, expiration)
 	var pendingBlocks PendingBlocks
 	if found {
-		pendingBlocksBz, err := k.TimeoutsToPendingBlocks.Get(ctx, expiration)
-		if err = cdc.Unmarshal(pendingBlocksBz, &pendingBlocks); err != nil {
+		pendingBlocks, err = k.TimeoutsToPendingBlocks.Get(ctx, expiration)
+		if err != nil {
 			return fmt.Errorf("add/update pending block, unmarshal existing pending blocks")
 		}
 	}
 	pendingBlocks.BlockHeight = append(pendingBlocks.BlockHeight, pendingBlock)
-	newPendingBlocksBz, err := cdc.Marshal(&pendingBlocks)
-	if err != nil {
-		return fmt.Errorf("add/update pending block, marshal new pending blocks")
-	}
-	if err = k.TimeoutsToPendingBlocks.Set(ctx, expiration, newPendingBlocksBz); err != nil {
+	if err = k.TimeoutsToPendingBlocks.Set(ctx, expiration, pendingBlocks); err != nil {
 		return fmt.Errorf("add/update pending block, set new timeouts to pending blocks")
 	}
 	return nil
@@ -128,29 +124,19 @@ func (k *Keeper) RemovePendingBlock(ctx context.Context, cdc codec.BinaryCodec, 
 		if err = k.PendingBlocksToTimeouts.Remove(ctx, provenBlock); err != nil {
 			return fmt.Errorf("remove pending blocks, removing block %d", provenBlock)
 		}
-		blocksBz, err := k.TimeoutsToPendingBlocks.Get(ctx, expiration)
+		pendingBlocks, err := k.TimeoutsToPendingBlocks.Get(ctx, expiration)
 		if err != nil {
 			return fmt.Errorf("remove pending blocks, getting expiration %d", expiration)
 		}
-		var pendingBlocks PendingBlocks
-		err = cdc.Unmarshal(blocksBz, &pendingBlocks)
-		if err != nil {
-			return fmt.Errorf("remove pending blocks, unmarshal pending blocks at expiration %d", expiration)
-		}
-		var newPendingBlockSet []int64
+		var newPendingBlocks []int64
 		for _, blockHeight := range pendingBlocks.BlockHeight {
 			if blockHeight != provenBlock {
-				newPendingBlockSet = append(newPendingBlockSet, blockHeight)
+				newPendingBlocks = append(newPendingBlocks, blockHeight)
 			}
 		}
-		if len(newPendingBlockSet) > 0 {
-			pendingBlocks.BlockHeight = newPendingBlockSet
-			// marshal & set
-			newPendingBlocksBz, err := cdc.Marshal(&pendingBlocks)
-			if err != nil {
-				return fmt.Errorf("remove pending block, marshal new pending blocks")
-			}
-			if err = k.TimeoutsToPendingBlocks.Set(ctx, expiration, newPendingBlocksBz); err != nil {
+		if len(newPendingBlocks) > 0 {
+			pendingBlocks.BlockHeight = newPendingBlocks
+			if err = k.TimeoutsToPendingBlocks.Set(ctx, expiration, pendingBlocks); err != nil {
 				return fmt.Errorf("remove pending block, set new pending blocks")
 			}
 		} else {
@@ -174,12 +160,7 @@ func (k Keeper) GetExpiredBlocks(ctx context.Context, cdc codec.BinaryCodec, cur
 
 	var expiredBlocks []int64
 	for ; iterator.Valid(); iterator.Next() {
-		value, err := iterator.Value()
-		if err != nil {
-			return nil
-		}
-		var pendingBlocks PendingBlocks
-		err = cdc.Unmarshal(value, &pendingBlocks)
+		pendingBlocks, err := iterator.Value()
 		if err != nil {
 			return nil
 		}
