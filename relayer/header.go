@@ -87,7 +87,7 @@ func (r *Relayer) shouldUpdateClient(ctx context.Context) {
 		// No error, just no client state yet, nothing to update
 		return
 	}
-	
+
 	height := r.latestClientState.LatestHeight
 
 	cHeader, err := r.celestiaProvider.QueryLightBlock(ctx, int64(height.GetRevisionHeight()))

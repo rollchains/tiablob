@@ -5,7 +5,7 @@ import (
 )
 
 type CosmosProvider struct {
-	rpcClient        *cometrpc.HTTP
+	rpcClient *cometrpc.HTTP
 }
 
 // NewProvider validates the CosmosProviderConfig, instantiates a ChainClient and then instantiates a CosmosProvider

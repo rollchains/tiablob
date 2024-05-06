@@ -199,7 +199,6 @@ func (cs ClientState) pruneOldestConsensusState(ctx sdk.Context, cdc codec.Binar
 func (cs ClientState) UpdateStateOnMisbehaviour(ctx sdk.Context, cdc codec.BinaryCodec, clientStore storetypes.KVStore, _ ClientMessage) {
 	cs.FrozenHeight = FrozenHeight
 
-
 	csBz, err := cdc.Marshal(&cs)
 	if err != nil {
 		panic(fmt.Errorf("failed to encode client state in update state on misbehaviour: %w", err))

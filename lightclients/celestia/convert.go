@@ -29,32 +29,32 @@ func TmShareProofToProto(sp *tmtypes.ShareProof) ShareProof {
 	for i := range sp.RowProof.RowRoots {
 		rowRoots[i] = sp.RowProof.RowRoots[i].Bytes()
 		rowProofs[i] = &cometcrypto.Proof{
-			Total: sp.RowProof.Proofs[i].Total,
-			Index: sp.RowProof.Proofs[i].Index,
+			Total:    sp.RowProof.Proofs[i].Total,
+			Index:    sp.RowProof.Proofs[i].Index,
 			LeafHash: sp.RowProof.Proofs[i].LeafHash,
-			Aunts: sp.RowProof.Proofs[i].Aunts,
+			Aunts:    sp.RowProof.Proofs[i].Aunts,
 		}
 	}
 
 	shareProofs := make([]*NMTProof, len(sp.ShareProofs))
 	for i := range sp.ShareProofs {
 		shareProofs[i] = &NMTProof{
-			Start: sp.ShareProofs[i].Start,
-			End: sp.ShareProofs[i].End,
-			Nodes: sp.ShareProofs[i].Nodes,
+			Start:    sp.ShareProofs[i].Start,
+			End:      sp.ShareProofs[i].End,
+			Nodes:    sp.ShareProofs[i].Nodes,
 			LeafHash: sp.ShareProofs[i].LeafHash,
 		}
 	}
 
 	return ShareProof{
-		Data: sp.Data,
+		Data:        sp.Data,
 		ShareProofs: shareProofs,
 		NamespaceId: sp.NamespaceID,
 		RowProof: &RowProof{
 			RowRoots: rowRoots,
-			Proofs: rowProofs,
+			Proofs:   rowProofs,
 			StartRow: sp.RowProof.StartRow,
-			EndRow: sp.RowProof.EndRow,
+			EndRow:   sp.RowProof.EndRow,
 		},
 		NamespaceVersion: sp.NamespaceVersion,
 	}
@@ -62,9 +62,9 @@ func TmShareProofToProto(sp *tmtypes.ShareProof) ShareProof {
 
 func BlobToProto(blob *nodeblob.Blob) appproto.Blob {
 	return appproto.Blob{
-		NamespaceId: blob.NamespaceId,
-		Data: blob.Data,
-		ShareVersion: blob.ShareVersion,
+		NamespaceId:      blob.NamespaceId,
+		Data:             blob.Data,
+		ShareVersion:     blob.ShareVersion,
 		NamespaceVersion: blob.NamespaceVersion,
 	}
 }

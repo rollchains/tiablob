@@ -35,7 +35,7 @@ func (k Keeper) processProofs(ctx sdk.Context, clients []*celestia.Header, proof
 		for _, client := range clients {
 			clientsMap[uint64(client.SignedHeader.Header.Height)] = client.SignedHeader.Header.DataHash
 		}
-	
+
 		provenHeight, err := k.GetProvenHeight(ctx)
 		if err != nil {
 			return fmt.Errorf("process proofs, getting proven height, %v", err)
@@ -50,17 +50,17 @@ func (k Keeper) processProofs(ctx sdk.Context, clients []*celestia.Header, proof
 			if err != nil {
 				return fmt.Errorf("process proofs, get local block at height: %d, %v", proof.RollchainHeight, err)
 			}
-	
+
 			blockProto, err := block.Block.ToProto()
 			if err != nil {
 				return fmt.Errorf("process proofs, block to proto, %v", err)
 			}
-	
+
 			blockProtoBz, err := blockProto.Marshal()
 			if err != nil {
 				return fmt.Errorf("process proofs, block proto marshal, %v", err)
 			}
-	
+
 			// Replace blob data with our data for proof verification, do this before the convert
 			proof.Blob.Data = blockProtoBz
 			mBlob, err := celestia.BlobFromProto(&proof.Blob)
@@ -94,7 +94,7 @@ func (k Keeper) processProofs(ctx sdk.Context, clients []*celestia.Header, proof
 				}
 			}
 			provenHeight++
-		}	
+		}
 	}
 	return nil
 }

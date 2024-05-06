@@ -2,12 +2,12 @@ package keeper
 
 import (
 	"strings"
-	
+
 	tiablob "github.com/rollchains/tiablob"
 	"github.com/rollchains/tiablob/lightclients/celestia"
-	
-	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	storetypes "cosmossdk.io/store/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // InitGenesis initializes the module's state from a genesis state.
@@ -40,21 +40,21 @@ func (k *Keeper) ExportGenesis(ctx sdk.Context) *tiablob.GenesisState {
 	}
 
 	return &tiablob.GenesisState{
-		Validators:   vals.Validators,
-		ProvenHeight: provenHeight,
+		Validators:           vals.Validators,
+		ProvenHeight:         provenHeight,
 		CelestiaGenesisState: k.GetCelestiaGenesisState(ctx),
 	}
 }
 
 // GetCelestiaGenesisState exports the celestia light client's full state
-func (k Keeper) GetCelestiaGenesisState(ctx sdk.Context) *celestia.GenesisState{
+func (k Keeper) GetCelestiaGenesisState(ctx sdk.Context) *celestia.GenesisState {
 	var celestiaGenesisState celestia.GenesisState
-	
+
 	clientState, found := k.GetClientState(ctx)
 	if found {
 		var consensusStates []*celestia.ConsensusStateWithHeight
 		var metadatas []*celestia.GenesisMetadata
-	
+
 		store := ctx.KVStore(k.storeKey)
 
 		// Iterate through consensusStates prefix store for consensus states and metadata
@@ -68,13 +68,13 @@ func (k Keeper) GetCelestiaGenesisState(ctx sdk.Context) *celestia.GenesisState{
 				var consensusState celestia.ConsensusState
 				k.cdc.MustUnmarshal(iterator.Value(), &consensusState)
 				consensusStateWithHeight := celestia.ConsensusStateWithHeight{
-					Height: height,
+					Height:         height,
 					ConsensusState: consensusState,
 				}
 				consensusStates = append(consensusStates, &consensusStateWithHeight)
 			} else {
 				metadatas = append(metadatas, &celestia.GenesisMetadata{
-					Key: iterator.Key(),
+					Key:   iterator.Key(),
 					Value: iterator.Value(),
 				})
 			}
@@ -85,7 +85,7 @@ func (k Keeper) GetCelestiaGenesisState(ctx sdk.Context) *celestia.GenesisState{
 		defer iterator2.Close()
 		for ; iterator2.Valid(); iterator2.Next() {
 			metadatas = append(metadatas, &celestia.GenesisMetadata{
-				Key: iterator2.Key(),
+				Key:   iterator2.Key(),
 				Value: iterator2.Value(),
 			})
 		}

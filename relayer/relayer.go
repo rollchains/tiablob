@@ -17,7 +17,7 @@ import (
 
 const (
 	DefaultMaxFlushSize = int(20)
-	MaxMaxFlushSize = int(100)
+	MaxMaxFlushSize     = int(100)
 )
 
 // Relayer is responsible for posting new blocks to Celestia and relaying block proofs from Celestia via the current proposer
@@ -36,9 +36,9 @@ type Relayer struct {
 	blockProofCacheLimit int
 	celestiaHeaderCache  map[uint64]*celestia.Header
 
-	celestiaProvider  *celestiaprovider.CosmosProvider
-	localProvider     *local.CosmosProvider
-	clientCtx client.Context
+	celestiaProvider *celestiaprovider.CosmosProvider
+	localProvider    *local.CosmosProvider
+	clientCtx        client.Context
 
 	latestClientState *celestia.ClientState
 	updateClient      *celestia.Header
@@ -126,7 +126,7 @@ func (r *Relayer) GetLocalBlockAtHeight(ctx context.Context, height int64) (*cor
 
 // DecrementBlockProofCacheLimit will reduce the number of proofs injected into proposal by 1
 func (r *Relayer) DecrementBlockProofCacheLimit() {
-	r.blockProofCacheLimit = r.blockProofCacheLimit-1
+	r.blockProofCacheLimit = r.blockProofCacheLimit - 1
 }
 
 // ClearUpdateClient will set update client to nil.
