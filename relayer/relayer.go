@@ -52,6 +52,8 @@ type Relayer struct {
 	celestiaGasAdjustment        float64
 	celestiaPublishBlockInterval int
 	celestiaLastQueriedHeight    int64
+
+	proposerAddress []byte
 }
 
 // NewRelayer creates a new Relayer instance
@@ -132,4 +134,19 @@ func (r *Relayer) DecrementBlockProofCacheLimit() {
 // It is only populated when the trusting period is 2/3 time from expiration.
 func (r *Relayer) ClearUpdateClient() {
 	r.updateClient = nil
+}
+
+// Sets our address as the proposer
+func (r *Relayer) SetProposerAddress(proposerAddr []byte) {
+	r.proposerAddress = proposerAddr
+}
+
+// Gets the polling interval for determining the pending block expiration
+func (r *Relayer) GetPollingInterval() time.Duration {
+	return r.pollInterval
+}
+
+// Get the publish block interval, this is also the 
+func (r Relayer) GetPublishBlockInterval() int {
+	return r.celestiaPublishBlockInterval
 }

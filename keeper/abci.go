@@ -26,17 +26,17 @@ func NewProofOfBlobProposalHandler(
 
 func (h *ProofOfBlobProposalHandler) PrepareProposal(ctx sdk.Context, req *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
 	resp, err := h.prepareProposalHandler(ctx, req)
-
-	var injectData InjectedData
-
-	// If there is no client state, create a client
-	_, clientFound := h.keeper.GetClientState(ctx)
-	if !clientFound {
-		injectData.CreateClient = h.keeper.relayer.CreateClient(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	// Call rconcile to publish next blocks (if necessary), get any cached proofs/headers, and update client if necessary
-	injectData.Proofs, injectData.Headers = h.keeper.relayer.Reconcile(ctx)
+	var injectData InjectedData
+	injectData.CreateClient = h.keeper.proposeCreateClient(ctx)
+	injectData.PendingBlocks = h.keeper.proposePostBlocks(ctx, req.Time)
+	injectData.Proofs = h.keeper.relayer.GetCachedProofs()
+	injectData.Headers = h.keeper.relayer.GetCachedHeaders()
+
+
 	injectDataBz := injectData.MarshalMaxBytes(ctx, h.keeper, req.MaxTxBytes)
 	if len(injectDataBz) > 0 {
 		var txs [][]byte
@@ -54,7 +54,9 @@ func (h *ProofOfBlobProposalHandler) PrepareProposal(ctx sdk.Context, req *abci.
 		resp.Txs = txs
 	}
 
-	return resp, err
+	h.keeper.relayer.SetProposerAddress(req.ProposerAddress)
+
+	return resp, nil
 }
 
 func (h *ProofOfBlobProposalHandler) ProcessProposal(ctx sdk.Context, req *abci.RequestProcessProposal) (*abci.ResponseProcessProposal, error) {
@@ -68,6 +70,9 @@ func (h *ProofOfBlobProposalHandler) ProcessProposal(ctx sdk.Context, req *abci.
 			return nil, err
 		}
 		if err := h.keeper.ProcessProofs(ctx, injectedData.Headers, injectedData.Proofs); err != nil {
+			return nil, err
+		}
+		if err := h.keeper.ProcessPendingBlocks(ctx, req.Time, &injectedData.PendingBlocks); err != nil {
 			return nil, err
 		}
 	}
@@ -86,6 +91,9 @@ func (k *Keeper) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlock) err
 		if err := k.PreblockerProofs(ctx, injectedData.Proofs); err != nil {
 			return err
 		}
+		if err := k.PreblockerPendingBlocks(ctx, req.Time, req.ProposerAddress, &injectedData.PendingBlocks); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -102,7 +110,7 @@ func (k *Keeper) GetInjectedData(txs [][]byte) *InjectedData {
 }
 
 func (d InjectedData) IsEmpty() bool {
-	if d.CreateClient != nil || len(d.Headers) != 0 || len(d.Proofs) != 0 {
+	if d.CreateClient != nil || len(d.Headers) != 0 || len(d.Proofs) != 0 || d.PendingBlocks.BlockHeight != nil {
 		return false
 	}
 	return true
@@ -125,7 +133,8 @@ func (d InjectedData) MarshalMaxBytes(ctx sdk.Context, keeper *Keeper, maxBytes 
 
 	for ; int64(len(injectDataBz)) > maxBytes; {
 		keeper.relayer.DecrementBlockProofCacheLimit()
-		d.Proofs, d.Headers = keeper.relayer.Reconcile(ctx)
+		d.Proofs = keeper.relayer.GetCachedProofs()
+		d.Headers = keeper.relayer.GetCachedHeaders()
 		if len(d.Proofs) == 0 {
 			return nil
 		}

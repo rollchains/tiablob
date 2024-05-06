@@ -7,13 +7,16 @@ import (
 	"github.com/rollchains/tiablob/lightclients/celestia"
 )
 
+// GetCachedHeaders queries through the cached block proofs, extracts the celestia height they were published, and
+// pulls in the cached header. If a header does not exist, it may have already been included in an earlier block.
+// Finally, if there are no header/client updates, we check if an update client is needed to keep the client from expiring.
 func (r *Relayer) GetCachedHeaders() []*celestia.Header {
-	clientsMap := make(map[uint64]*celestia.Header)
+	headersMap := make(map[uint64]*celestia.Header)
 	numProofs := 0
 	for checkHeight := r.latestProvenHeight + 1; r.blockProofCache[checkHeight] != nil; checkHeight++ {
 		proof := r.blockProofCache[checkHeight]
 		if r.celestiaHeaderCache[proof.CelestiaHeight] != nil {
-			clientsMap[proof.CelestiaHeight] = r.celestiaHeaderCache[proof.CelestiaHeight]
+			headersMap[proof.CelestiaHeight] = r.celestiaHeaderCache[proof.CelestiaHeight]
 		}
 		numProofs++
 		if numProofs >= r.blockProofCacheLimit {
@@ -21,14 +24,23 @@ func (r *Relayer) GetCachedHeaders() []*celestia.Header {
 		}
 	}
 
-	var clients []*celestia.Header
-	for _, header := range clientsMap {
-		clients = append(clients, header)
+	var headers []*celestia.Header
+	for _, header := range headersMap {
+		headers = append(headers, header)
 	}
 
-	return clients
+	// If no headers, check for an update client (trusting period has <1/3 left)
+	if len(headers) == 0 {
+		if r.updateClient != nil {
+			headers = append(headers, r.updateClient)
+		}
+	}
+
+	return headers
 }
 
+// FetchNewHeader will generate a celestia light client header for updating the client.
+// Headers will either be generated for a proof or to keep the client from expiring.
 func (r *Relayer) FetchNewHeader(ctx context.Context, queryHeight uint64) *celestia.Header {
 	newLightBlock, err := r.celestiaProvider.QueryLightBlock(ctx, int64(queryHeight))
 	if err != nil {

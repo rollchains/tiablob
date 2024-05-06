@@ -4,10 +4,6 @@ import (
 	"context"
 	"fmt"
 	"time"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	
-	"github.com/rollchains/tiablob/lightclients/celestia"
 )
 
 // Start begins the relayer process
@@ -70,28 +66,4 @@ func (r *Relayer) pruneCache(provenHeight uint64) {
 			delete(r.blockProofCache, h)
 		}
 	}
-}
-
-// Reconcile is intended to be called by the current proposing validator during PrepareProposal and will:
-//   - call a non-blocking gorouting to post the next block (or chunk of blocks) above the last proven height to Celestia (does
-//     not include the block being proposed).
-//   - check the proofs cache (no fetches here to minimize duration) if there are any new block proofs to be relayed from Celestia
-//   - if there are any block proofs to relay, it will add any headers (update clients) that are also cached
-//   - if the Celestia light client is within 2/3 of the trusting period and there are no block proofs to relay, generate a
-//     MsgUpdateClient to update the light client and return it in a tx.
-func (r *Relayer) Reconcile(ctx sdk.Context) ([]*celestia.BlobProof, []*celestia.Header) {
-	go r.postNextBlocks(ctx, r.celestiaPublishBlockInterval)
-
-	proofs := r.GetCachedProofs()
-	headers := r.GetCachedHeaders()
-
-	// if no headers are present, check to see if an update client is needed
-	// an update client present if it is needed
-	if len(headers) == 0 {
-		if r.updateClient != nil {
-			headers = append(headers, r.updateClient)
-		}
-	}
-
-	return proofs, headers
 }

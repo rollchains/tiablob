@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/rollchains/tiablob/celestia-node/blob"
@@ -18,7 +19,7 @@ func (k Keeper) ProcessCreateClient(ctx sdk.Context, createClient *celestia.Crea
 }
 
 func (k Keeper) ProcessHeaders(ctx sdk.Context, headers []*celestia.Header) error {
-	if headers != nil {
+	if len(headers) > 0 {
 		for _, header := range headers {
 			if err := k.CanUpdateClient(ctx, header); err != nil {
 				return fmt.Errorf("process header, can update client, %v", err)
@@ -29,7 +30,7 @@ func (k Keeper) ProcessHeaders(ctx sdk.Context, headers []*celestia.Header) erro
 }
 
 func (k Keeper) ProcessProofs(ctx sdk.Context, clients []*celestia.Header, proofs []*celestia.BlobProof) error {
-	if proofs != nil {
+	if len(proofs) > 0 {
 		clientsMap := make(map[uint64][]byte) // Celestia height to data hash/root map
 		for _, client := range clients {
 			clientsMap[uint64(client.SignedHeader.Header.Height)] = client.SignedHeader.Header.DataHash
@@ -95,5 +96,43 @@ func (k Keeper) ProcessProofs(ctx sdk.Context, clients []*celestia.Header, proof
 			provenHeight++
 		}	
 	}
+	return nil
+}
+
+
+func (k Keeper) ProcessPendingBlocks(ctx sdk.Context, currentBlockTime time.Time, pendingBlocks *PendingBlocks) error {
+	if pendingBlocks != nil {
+		height := ctx.BlockHeight()
+		numBlocks := len(pendingBlocks.BlockHeight)
+		if numBlocks > 2 && numBlocks > k.relayer.GetPublishBlockInterval() {
+			return fmt.Errorf("process pending blocks, included pending blocks (%d) exceeds limit (%d)", numBlocks, k.relayer.GetPublishBlockInterval())
+		}
+		for _, pendingBlock := range pendingBlocks.BlockHeight {
+			if pendingBlock <= 0 {
+				return fmt.Errorf("process pending blocks, invalid block: %d", pendingBlock)
+			}
+			if pendingBlock >= height {
+				return fmt.Errorf("process pending blocks, start (%d) cannot be >= this block height (%d)", pendingBlock, height)
+			}
+			// Check if already pending, if so, is it expired?
+			if !k.IsBlockExpiredIfPending(ctx, currentBlockTime, pendingBlock) {
+				return fmt.Errorf("process pending blocks, block height (%d) is pending, but not expired", pendingBlock)
+			}
+			// Check if we have a proof for this block
+			if k.relayer.HasCachedProof(pendingBlock) {
+				return fmt.Errorf("process pending blocks, cached proof exists for block %d", pendingBlock)
+			}
+		}
+		// Ensure publish boundries includes new blocks, once they are on-chain, they will be tracked appropriately
+		newBlocks := k.relayer.ProposePostNextBlocks(ctx)
+		for i, newBlock := range newBlocks {
+			if newBlock != pendingBlocks.BlockHeight[i] {
+				return fmt.Errorf("process pending blocks, block (%d) must be included", newBlock)
+			}
+		}
+		// Validators do not need to check if expired pending blocks are not included. There could be a good reason for omitting them.
+		// i.e. a celestia halts has been detected (backoff logic), a rollchain halt recently occurred or proposer recently restarted (relayer needs to catch up)
+	}
+
 	return nil
 }

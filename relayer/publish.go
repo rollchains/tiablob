@@ -3,6 +3,7 @@ package relayer
 import (
 	"encoding/hex"
 	"fmt"
+	"reflect"
 	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -19,18 +20,40 @@ const (
 	celestiaBlobPostMemo    = "Posted by tiablob https://rollchains.com"
 )
 
-// postNextBlocks will post the next block (or chunk of blocks) above the last proven height to Celestia (does not include the block being proposed).
-// Skip the last n blocks to give time for the previous proposer's transaction to succeed.
-func (r *Relayer) postNextBlocks(ctx sdk.Context, n int) {
-	// TODO post blocks since last proven height
+// PostNextBlocks is called by the current proposing validator during PrepareProposal.
+// If on the publish boundary, it will return the block heights that will be published
+// It will not publish the block being proposed.
+func (r *Relayer) ProposePostNextBlocks(ctx sdk.Context) []int64 {
 	height := ctx.BlockHeight()
 
 	if height <= 1 {
-		return
+		return nil
 	}
 
-	// only publish every n blocks
-	if (height-1)%int64(n) != 0 {
+	// only publish new blocks on interval
+	if (height-1)%int64(r.celestiaPublishBlockInterval) != 0 {
+		return nil
+	}
+
+	var blocks []int64
+	for block := height - int64(r.celestiaPublishBlockInterval); block < height; block++ {
+		blocks = append(blocks, block)
+	}
+
+	return blocks
+}
+
+// PostBlocks is call in the preblocker, the proposer will publish at this point with their block accepted
+func (r *Relayer) PostBlocks(ctx sdk.Context, proposerAddr []byte, blocks []int64) {
+	if reflect.DeepEqual(r.proposerAddress, proposerAddr) {
+		go r.postBlocks(ctx, blocks)
+	}
+}
+
+// postBlocks will publish rollchain blocks to celestia
+// start height is inclusive, end height is exclusive
+func (r *Relayer) postBlocks(ctx sdk.Context, blocks []int64) {
+	if len(blocks) == 0 {
 		return
 	}
 
@@ -42,13 +65,12 @@ func (r *Relayer) postNextBlocks(ctx sdk.Context, n int) {
 	// if not set, will not use feegrant
 	feeGranter, _ := r.celestiaProvider.GetKeyAddress(CelestiaFeegrantKeyName)
 
-	blobs := make([]*blobtypes.Blob, n)
+	blobs := make([]*blobtypes.Blob, len(blocks))
 
-	for i := 0; i < n; i++ {
-		h := height - int64(n) + int64(i)
-		res, err := r.localProvider.GetBlockAtHeight(ctx, h)
+	for i, height := range blocks {
+		res, err := r.localProvider.GetBlockAtHeight(ctx, height)
 		if err != nil {
-			r.logger.Error("Error getting block", "height:", h, "error", err)
+			r.logger.Error("Error getting block", "height:", height, "error", err)
 			return
 		}
 
@@ -73,7 +95,7 @@ func (r *Relayer) postNextBlocks(ctx sdk.Context, n int) {
 		blobs[i] = blob
 	}
 
-	blobLens := make([]uint32, n)
+	blobLens := make([]uint32, len(blocks))
 	for i, blob := range blobs {
 		blobLens[i] = uint32(len(blob.Data))
 	}
@@ -141,8 +163,8 @@ func (r *Relayer) postNextBlocks(ctx sdk.Context, n int) {
 	}
 
 	r.logger.Info("Posted block(s) to Celestia",
-		"height_start", height-int64(n),
-		"height_end", height-1,
+		"height_start", blocks[0],
+		"height_end", blocks[len(blocks)-1],
 		"celestia_height", res.Height,
 		"tx_hash", hex.EncodeToString(res.Hash),
 		"url", fmt.Sprintf("https://mocha.celenium.io/tx/%s", hex.EncodeToString(res.Hash)),

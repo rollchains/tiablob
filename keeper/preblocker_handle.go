@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/rollchains/tiablob/celestia-node/blob"
@@ -18,7 +19,7 @@ func (k *Keeper) PreblockerCreateClient(ctx sdk.Context, createClient *celestia.
 }
 
 func (k *Keeper) PreblockerHeaders(ctx sdk.Context, headers []*celestia.Header) error {
-	if headers != nil {
+	if len(headers) > 0 {
 		for _, header := range headers {
 			if err := k.UpdateClient(ctx, header); err != nil {
 				return fmt.Errorf("preblocker headers, update client, %v", err)
@@ -29,7 +30,7 @@ func (k *Keeper) PreblockerHeaders(ctx sdk.Context, headers []*celestia.Header) 
 }
 
 func (k *Keeper) PreblockerProofs(ctx sdk.Context, proofs []*celestia.BlobProof) error {
-	if proofs != nil {
+	if len(proofs) > 0 {
 		defer k.NotifyProvenHeight(ctx)
 		for _, proof := range proofs {
 			provenHeight, err := k.GetProvenHeight(ctx)
@@ -78,8 +79,24 @@ func (k *Keeper) PreblockerProofs(ctx sdk.Context, proofs []*celestia.BlobProof)
 			if err = k.SetProvenHeight(ctx, proof.RollchainHeight); err != nil {
 				return fmt.Errorf("preblocker proofs, set proven height, %v", err)
 			}
+			if err = k.RemovePendingBlock(ctx, k.cdc, int64(proof.RollchainHeight)); err != nil {
+				return fmt.Errorf("preblocker proofs, remove pending block, %v", err)
+			}
 		}
 	}
+	return nil
+}
+
+func (k *Keeper) PreblockerPendingBlocks(ctx sdk.Context, blockTime time.Time, proposerAddr []byte, pendingBlocks *PendingBlocks) error {
+	if pendingBlocks != nil {
+		k.relayer.PostBlocks(ctx, proposerAddr, pendingBlocks.BlockHeight)
+		for _, pendingBlock := range pendingBlocks.BlockHeight {
+			if err := k.AddUpdatePendingBlock(ctx, k.cdc, pendingBlock, blockTime); err != nil {
+				return fmt.Errorf("preblocker pending blocks, %v", err)
+			}
+		}
+	}
+
 	return nil
 }
 

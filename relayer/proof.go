@@ -24,6 +24,11 @@ func (r *Relayer) GetCachedProofs() []*celestia.BlobProof {
 	return proofs
 }
 
+func (r Relayer) HasCachedProof(block int64) bool {
+	_, found := r.blockProofCache[uint64(block)]
+	return found
+}
+
 // checkForNewBlockProofs will query Celestia for new block proofs and cache them to be included in the next proposal
 // that this validator proposes.
 func (r *Relayer) checkForNewBlockProofs(ctx context.Context) {
