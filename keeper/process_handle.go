@@ -9,7 +9,7 @@ import (
 	"github.com/rollchains/tiablob/lightclients/celestia"
 )
 
-func (k Keeper) ProcessCreateClient(ctx sdk.Context, createClient *celestia.CreateClient) error {
+func (k Keeper) processCreateClient(ctx sdk.Context, createClient *celestia.CreateClient) error {
 	if createClient != nil {
 		if err := k.relayer.ValidateNewClient(ctx, createClient); err != nil {
 			return fmt.Errorf("invalid new client, %v", err)
@@ -18,7 +18,7 @@ func (k Keeper) ProcessCreateClient(ctx sdk.Context, createClient *celestia.Crea
 	return nil
 }
 
-func (k Keeper) ProcessHeaders(ctx sdk.Context, headers []*celestia.Header) error {
+func (k Keeper) processHeaders(ctx sdk.Context, headers []*celestia.Header) error {
 	if len(headers) > 0 {
 		for _, header := range headers {
 			if err := k.CanUpdateClient(ctx, header); err != nil {
@@ -29,7 +29,7 @@ func (k Keeper) ProcessHeaders(ctx sdk.Context, headers []*celestia.Header) erro
 	return nil
 }
 
-func (k Keeper) ProcessProofs(ctx sdk.Context, clients []*celestia.Header, proofs []*celestia.BlobProof) error {
+func (k Keeper) processProofs(ctx sdk.Context, clients []*celestia.Header, proofs []*celestia.BlobProof) error {
 	if len(proofs) > 0 {
 		clientsMap := make(map[uint64][]byte) // Celestia height to data hash/root map
 		for _, client := range clients {
@@ -100,14 +100,14 @@ func (k Keeper) ProcessProofs(ctx sdk.Context, clients []*celestia.Header, proof
 }
 
 
-func (k Keeper) ProcessPendingBlocks(ctx sdk.Context, currentBlockTime time.Time, pendingBlocks *PendingBlocks) error {
+func (k Keeper) processPendingBlocks(ctx sdk.Context, currentBlockTime time.Time, pendingBlocks *PendingBlocks) error {
 	if pendingBlocks != nil {
 		height := ctx.BlockHeight()
-		numBlocks := len(pendingBlocks.BlockHeight)
+		numBlocks := len(pendingBlocks.BlockHeights)
 		if numBlocks > 2 && numBlocks > k.publishToCelestiaBlockInterval {
 			return fmt.Errorf("process pending blocks, included pending blocks (%d) exceeds limit (%d)", numBlocks, k.publishToCelestiaBlockInterval)
 		}
-		for _, pendingBlock := range pendingBlocks.BlockHeight {
+		for _, pendingBlock := range pendingBlocks.BlockHeights {
 			if pendingBlock <= 0 {
 				return fmt.Errorf("process pending blocks, invalid block: %d", pendingBlock)
 			}
@@ -115,7 +115,7 @@ func (k Keeper) ProcessPendingBlocks(ctx sdk.Context, currentBlockTime time.Time
 				return fmt.Errorf("process pending blocks, start (%d) cannot be >= this block height (%d)", pendingBlock, height)
 			}
 			// Check if already pending, if so, is it expired?
-			if !k.IsBlockExpiredIfPending(ctx, currentBlockTime, pendingBlock) {
+			if k.IsBlockPending(ctx, pendingBlock) && !k.IsBlockExpired(ctx, currentBlockTime, pendingBlock) {
 				return fmt.Errorf("process pending blocks, block height (%d) is pending, but not expired", pendingBlock)
 			}
 			// Check if we have a proof for this block
@@ -126,7 +126,7 @@ func (k Keeper) ProcessPendingBlocks(ctx sdk.Context, currentBlockTime time.Time
 		// Ensure publish boundries includes new blocks, once they are on-chain, they will be tracked appropriately
 		newBlocks := k.relayer.ProposePostNextBlocks(ctx)
 		for i, newBlock := range newBlocks {
-			if newBlock != pendingBlocks.BlockHeight[i] {
+			if newBlock != pendingBlocks.BlockHeights[i] {
 				return fmt.Errorf("process pending blocks, block (%d) must be included", newBlock)
 			}
 		}

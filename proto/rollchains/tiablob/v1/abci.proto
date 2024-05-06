@@ -14,5 +14,5 @@ message InjectedData {
 }
 
 message PendingBlocks {
-    repeated int64 block_height = 1;
+    repeated int64 block_heights = 1;
 }

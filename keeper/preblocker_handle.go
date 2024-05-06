@@ -9,7 +9,7 @@ import (
 	"github.com/rollchains/tiablob/lightclients/celestia"
 )
 
-func (k *Keeper) PreblockerCreateClient(ctx sdk.Context, createClient *celestia.CreateClient) error {
+func (k *Keeper) preblockerCreateClient(ctx sdk.Context, createClient *celestia.CreateClient) error {
 	if createClient != nil {
 		if err := k.CreateClient(ctx, createClient.ClientState, createClient.ConsensusState); err != nil {
 			return fmt.Errorf("preblocker create client, %v", err)
@@ -18,7 +18,7 @@ func (k *Keeper) PreblockerCreateClient(ctx sdk.Context, createClient *celestia.
 	return nil
 }
 
-func (k *Keeper) PreblockerHeaders(ctx sdk.Context, headers []*celestia.Header) error {
+func (k *Keeper) preblockerHeaders(ctx sdk.Context, headers []*celestia.Header) error {
 	if len(headers) > 0 {
 		for _, header := range headers {
 			if err := k.UpdateClient(ctx, header); err != nil {
@@ -29,9 +29,9 @@ func (k *Keeper) PreblockerHeaders(ctx sdk.Context, headers []*celestia.Header) 
 	return nil
 }
 
-func (k *Keeper) PreblockerProofs(ctx sdk.Context, proofs []*celestia.BlobProof) error {
+func (k *Keeper) preblockerProofs(ctx sdk.Context, proofs []*celestia.BlobProof) error {
 	if len(proofs) > 0 {
-		defer k.NotifyProvenHeight(ctx)
+		defer k.notifyProvenHeight(ctx)
 		for _, proof := range proofs {
 			provenHeight, err := k.GetProvenHeight(ctx)
 			if err != nil {
@@ -87,10 +87,10 @@ func (k *Keeper) PreblockerProofs(ctx sdk.Context, proofs []*celestia.BlobProof)
 	return nil
 }
 
-func (k *Keeper) PreblockerPendingBlocks(ctx sdk.Context, blockTime time.Time, proposerAddr []byte, pendingBlocks *PendingBlocks) error {
+func (k *Keeper) preblockerPendingBlocks(ctx sdk.Context, blockTime time.Time, proposerAddr []byte, pendingBlocks *PendingBlocks) error {
 	if pendingBlocks != nil {
-		k.relayer.PostBlocks(ctx, proposerAddr, pendingBlocks.BlockHeight)
-		for _, pendingBlock := range pendingBlocks.BlockHeight {
+		k.relayer.PostBlocks(ctx, proposerAddr, pendingBlocks.BlockHeights)
+		for _, pendingBlock := range pendingBlocks.BlockHeights {
 			if err := k.AddUpdatePendingBlock(ctx, k.cdc, pendingBlock, blockTime); err != nil {
 				return fmt.Errorf("preblocker pending blocks, %v", err)
 			}
@@ -100,7 +100,7 @@ func (k *Keeper) PreblockerPendingBlocks(ctx sdk.Context, blockTime time.Time, p
 	return nil
 }
 
-func (k *Keeper) NotifyProvenHeight(ctx sdk.Context) {
+func (k *Keeper) notifyProvenHeight(ctx sdk.Context) {
 	provenHeight, err := k.GetProvenHeight(ctx)
 	if err != nil {
 		fmt.Println("unable to get proven height", err)

@@ -7,7 +7,35 @@ import (
 	"github.com/rollchains/tiablob/lightclients/celestia"
 )
 
-func (k Keeper) proposeCreateClient(ctx sdk.Context) *celestia.CreateClient {
+func (k Keeper) prepareInjectData(ctx sdk.Context, currentBlockTime time.Time) InjectedData {
+	return InjectedData {
+		CreateClient: k.prepareCreateClient(ctx),
+		PendingBlocks: k.preparePostBlocks(ctx, currentBlockTime),
+		Proofs: k.relayer.GetCachedProofs(),
+		Headers: k.relayer.GetCachedHeaders(),
+	}
+}
+
+func (k Keeper) addTiablobDataToTxs(injectDataBz []byte, maxTxBytes int64, txs [][]byte) [][]byte {
+	if len(injectDataBz) > 0 {
+		var finalTxs [][]byte
+		totalTxBytes := int64(len(injectDataBz))
+		finalTxs = append(finalTxs, injectDataBz)
+		for _, tx := range txs {
+			totalTxBytes += int64(len(tx))
+			// Append as many transactions as will fit
+			if totalTxBytes <= maxTxBytes {
+				finalTxs = append(finalTxs, tx)
+			} else {
+				break
+			}
+		}
+		return finalTxs
+	}
+	return txs
+}
+
+func (k Keeper) prepareCreateClient(ctx sdk.Context) *celestia.CreateClient {
 	// If there is no client state, create a client
 	_, clientFound := k.GetClientState(ctx)
 	if !clientFound {
@@ -16,7 +44,7 @@ func (k Keeper) proposeCreateClient(ctx sdk.Context) *celestia.CreateClient {
 	return nil
 }
 
-func (k Keeper) proposePostBlocks(ctx sdk.Context, currentBlockTime time.Time) PendingBlocks {
+func (k Keeper) preparePostBlocks(ctx sdk.Context, currentBlockTime time.Time) PendingBlocks {
 	// Call PostNextBlocks to publish next blocks (if necessary) and/or retry timed-out published blocks
 	newBlocks := k.relayer.ProposePostNextBlocks(ctx)
 	
@@ -37,6 +65,6 @@ func (k Keeper) proposePostBlocks(ctx sdk.Context, currentBlockTime time.Time) P
 	}
 
 	return PendingBlocks{
-		BlockHeight: newBlocks,
+		BlockHeights: newBlocks,
 	}
 }

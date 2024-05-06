@@ -67,8 +67,17 @@ func (k *Keeper) GetClientID(ctx context.Context) (string, error) {
 	return k.ClientID.Get(ctx)
 }
 
-// IsBlockExpiredIfPending will return true if a block is pending and expired, otherwise it returns false
-func (k *Keeper) IsBlockExpiredIfPending(ctx context.Context, currentBlockTime time.Time, blockHeight int64) bool {
+// IsBlockPending return true if a block height is already pending
+func (k Keeper) IsBlockPending(ctx context.Context, blockHeight int64) bool {
+	found, err := k.PendingBlocksToTimeouts.Has(ctx, blockHeight)
+	if err != nil {
+		return false
+	}
+	return found
+}
+
+// IsBlockExpired will return true if a block is pending and expired, otherwise it returns false
+func (k *Keeper) IsBlockExpired(ctx context.Context, currentBlockTime time.Time, blockHeight int64) bool {
 	currentBlockTimeNs := currentBlockTime.UnixNano()
 	found, err := k.PendingBlocksToTimeouts.Has(ctx, blockHeight)
 	if err != nil {
@@ -109,7 +118,7 @@ func (k *Keeper) AddUpdatePendingBlock(ctx context.Context, cdc codec.BinaryCode
 			return fmt.Errorf("add/update pending block, unmarshal existing pending blocks")
 		}
 	}
-	pendingBlocks.BlockHeight = append(pendingBlocks.BlockHeight, pendingBlock)
+	pendingBlocks.BlockHeights = append(pendingBlocks.BlockHeights, pendingBlock)
 	if err = k.TimeoutsToPendingBlocks.Set(ctx, expiration, pendingBlocks); err != nil {
 		return fmt.Errorf("add/update pending block, set new timeouts to pending blocks")
 	}
@@ -136,13 +145,13 @@ func (k *Keeper) RemovePendingBlock(ctx context.Context, cdc codec.BinaryCodec, 
 			return fmt.Errorf("remove pending blocks, getting expiration %d", expiration)
 		}
 		var newPendingBlocks []int64
-		for _, blockHeight := range pendingBlocks.BlockHeight {
+		for _, blockHeight := range pendingBlocks.BlockHeights {
 			if blockHeight != provenBlock {
 				newPendingBlocks = append(newPendingBlocks, blockHeight)
 			}
 		}
 		if len(newPendingBlocks) > 0 {
-			pendingBlocks.BlockHeight = newPendingBlocks
+			pendingBlocks.BlockHeights = newPendingBlocks
 			if err = k.TimeoutsToPendingBlocks.Set(ctx, expiration, pendingBlocks); err != nil {
 				return fmt.Errorf("remove pending block, set new pending blocks")
 			}
@@ -171,7 +180,7 @@ func (k Keeper) GetExpiredBlocks(ctx context.Context, cdc codec.BinaryCodec, cur
 		if err != nil {
 			return nil
 		}
-		expiredBlocks = append(expiredBlocks, pendingBlocks.BlockHeight...)
+		expiredBlocks = append(expiredBlocks, pendingBlocks.BlockHeights...)
 	}
 	return expiredBlocks
 }
