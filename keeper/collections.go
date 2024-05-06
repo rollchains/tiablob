@@ -67,9 +67,9 @@ func (k *Keeper) GetClientID(ctx context.Context) (string, error) {
 	return k.ClientID.Get(ctx)
 }
 
-// Is block height pending and expired?
+// IsBlockExpiredIfPending will return true if a block is pending and expired, otherwise it returns false
 func (k *Keeper) IsBlockExpiredIfPending(ctx context.Context, currentBlockTime time.Time, blockHeight int64) bool {
-	unixBlockTimeNs := currentBlockTime.UnixNano()
+	currentBlockTimeNs := currentBlockTime.UnixNano()
 	found, err := k.PendingBlocksToTimeouts.Has(ctx, blockHeight)
 	if err != nil {
 		return false
@@ -79,16 +79,14 @@ func (k *Keeper) IsBlockExpiredIfPending(ctx context.Context, currentBlockTime t
 		if err != nil {
 			return false
 		}
-		if unixBlockTimeNs < expiration {
-			return false
+		if currentBlockTimeNs >= expiration {
+			return true
 		}
 	}
-	return true
+	return false
 }
 
-// Update pending blocks
-// If pending block exists, update
-// If pending block doesn't exist, add
+// AddUpdatePendingBlock will add a new pending block or update an existing pending block
 func (k *Keeper) AddUpdatePendingBlock(ctx context.Context, cdc codec.BinaryCodec, pendingBlock int64, currentBlockTime time.Time) error {
 	found, err := k.PendingBlocksToTimeouts.Has(ctx, pendingBlock)
 	if err != nil {
@@ -118,7 +116,8 @@ func (k *Keeper) AddUpdatePendingBlock(ctx context.Context, cdc codec.BinaryCode
 	return nil
 }
 
-// Remove proven block from pending state
+// RemovePendingBlock removes proven block from pending state
+// This function will remove the proven block from the PendingBlocksToTimeouts map and TimeoutsToPendingBlocks map
 func (k *Keeper) RemovePendingBlock(ctx context.Context, cdc codec.BinaryCodec, provenBlock int64) error {
 	found, err := k.PendingBlocksToTimeouts.Has(ctx, provenBlock)
 	if err != nil {
@@ -156,11 +155,11 @@ func (k *Keeper) RemovePendingBlock(ctx context.Context, cdc codec.BinaryCodec, 
 	return nil
 }
 
-// Get expired blocks (get all, let proposer figure out which to include)
+// GetExpiredBlocks returns all expired blocks, proposer will propose publishing based on this set
 func (k Keeper) GetExpiredBlocks(ctx context.Context, cdc codec.BinaryCodec, currentBlockTime time.Time) []int64 {
-	unixBlockTimeNs := currentBlockTime.UnixNano()
+	currentBlockTimeNs := currentBlockTime.UnixNano()
 	iterator, err := k.TimeoutsToPendingBlocks.
-		Iterate(ctx, (&collections.Range[int64]{}).StartInclusive(0).EndInclusive(unixBlockTimeNs))
+		Iterate(ctx, (&collections.Range[int64]{}).StartInclusive(0).EndInclusive(currentBlockTimeNs))
 	if err != nil {
 		return nil
 	}
