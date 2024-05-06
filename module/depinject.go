@@ -37,6 +37,8 @@ type ModuleInputs struct {
 	StakingKeeper stakingkeeper.Keeper
 
 	storeKey storetypes.StoreKey
+
+	publishToCelestiaBlockInterval int
 }
 
 type ModuleOutputs struct {
@@ -47,7 +49,7 @@ type ModuleOutputs struct {
 }
 
 func ProvideModule(in ModuleInputs) ModuleOutputs {
-	k := keeper.NewKeeper(in.Cdc, in.StoreService, &in.StakingKeeper, in.storeKey)
+	k := keeper.NewKeeper(in.Cdc, in.StoreService, &in.StakingKeeper, in.storeKey, in.publishToCelestiaBlockInterval)
 	m := NewAppModule(in.Cdc, k)
 
 	return ModuleOutputs{Module: m, Keeper: k}

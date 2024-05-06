@@ -104,8 +104,8 @@ func (k Keeper) ProcessPendingBlocks(ctx sdk.Context, currentBlockTime time.Time
 	if pendingBlocks != nil {
 		height := ctx.BlockHeight()
 		numBlocks := len(pendingBlocks.BlockHeight)
-		if numBlocks > 2 && numBlocks > k.relayer.GetPublishBlockInterval() {
-			return fmt.Errorf("process pending blocks, included pending blocks (%d) exceeds limit (%d)", numBlocks, k.relayer.GetPublishBlockInterval())
+		if numBlocks > 2 && numBlocks > k.publishToCelestiaBlockInterval {
+			return fmt.Errorf("process pending blocks, included pending blocks (%d) exceeds limit (%d)", numBlocks, k.publishToCelestiaBlockInterval)
 		}
 		for _, pendingBlock := range pendingBlocks.BlockHeight {
 			if pendingBlock <= 0 {

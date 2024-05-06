@@ -722,6 +722,7 @@ func NewChainApp(
 		runtime.NewKVStoreService(keys[tiablob.StoreKey]),
 		app.StakingKeeper,
 		keys[tiablob.StoreKey],
+		publishToCelestiaBlockInterval,
 	)
 
 	app.TiaBlobRelayer, err = tiablobrelayer.NewRelayer(

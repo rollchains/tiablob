@@ -24,6 +24,8 @@ type Keeper struct {
 	storeKey storetypes2.StoreKey
 
 	cdc codec.BinaryCodec
+
+	publishToCelestiaBlockInterval int
 }
 
 func NewKeeper(
@@ -31,6 +33,7 @@ func NewKeeper(
 	storeService storetypes.KVStoreService,
 	sk *stakingkeeper.Keeper,
 	key storetypes2.StoreKey,
+	publishToCelestiaBlockInterval int,
 ) *Keeper {
 	sb := collections.NewSchemaBuilder(storeService)
 
@@ -46,6 +49,8 @@ func NewKeeper(
 		storeKey: key,
 
 		cdc: cdc,
+
+		publishToCelestiaBlockInterval: publishToCelestiaBlockInterval,
 	}
 }
 

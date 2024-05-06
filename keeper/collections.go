@@ -10,6 +10,14 @@ import (
 	"github.com/rollchains/tiablob"
 )
 
+const (
+	// Window for a transaction to be committed on Celestia
+	CelestiaResubmissionTime = 75 * time.Second
+
+	// Buffer for relayer polling logic to retrieve a proof
+	RelayerPollingBuffer = 15 * time.Second
+)
+
 func (k *Keeper) SetValidatorCelestiaAddress(ctx context.Context, validator tiablob.Validator) error {
 	return k.Validators.Set(ctx, validator.ValidatorAddress, validator.CelestiaAddress)
 }
@@ -91,7 +99,7 @@ func (k *Keeper) AddUpdatePendingBlock(ctx context.Context, cdc codec.BinaryCode
 			return err
 		}
 	}
-	expiration := currentBlockTime.Add(75 * time.Second + k.relayer.GetPollingInterval()).UnixNano()
+	expiration := currentBlockTime.Add(CelestiaResubmissionTime + RelayerPollingBuffer).UnixNano()
 	if err = k.PendingBlocksToTimeouts.Set(ctx, pendingBlock, expiration); err != nil {
 		return fmt.Errorf("add/update pending block, set pending block (%d) to timeout (%d)", pendingBlock, expiration)
 	}

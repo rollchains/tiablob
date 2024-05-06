@@ -140,13 +140,3 @@ func (r *Relayer) ClearUpdateClient() {
 func (r *Relayer) SetProposerAddress(proposerAddr []byte) {
 	r.proposerAddress = proposerAddr
 }
-
-// Gets the polling interval for determining the pending block expiration
-func (r *Relayer) GetPollingInterval() time.Duration {
-	return r.pollInterval
-}
-
-// Get the publish block interval, this is also the 
-func (r Relayer) GetPublishBlockInterval() int {
-	return r.celestiaPublishBlockInterval
-}

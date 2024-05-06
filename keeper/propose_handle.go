@@ -30,7 +30,7 @@ func (k Keeper) proposePostBlocks(ctx sdk.Context, currentBlockTime time.Time) P
 				continue
 			}
 			// Add it to the list respecting the publish limit
-			if len(newBlocks) < 2 || len(newBlocks) < k.relayer.GetPublishBlockInterval() {
+			if len(newBlocks) < 2 || len(newBlocks) < k.publishToCelestiaBlockInterval {
 				newBlocks = append(newBlocks, expiredBlock)
 			}
 		}
