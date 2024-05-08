@@ -9,12 +9,12 @@ import (
 
 const DelayAfterUpgrade = int64(10)
 
-func (k Keeper) prepareInjectData(ctx sdk.Context, currentBlockTime time.Time) InjectedData {
+func (k Keeper) prepareInjectData(ctx sdk.Context, currentBlockTime time.Time, latestProvenHeight int64) InjectedData {
 	return InjectedData{
 		CreateClient:  k.prepareCreateClient(ctx),
 		PendingBlocks: k.preparePostBlocks(ctx, currentBlockTime),
-		Proofs:        k.relayer.GetCachedProofs(),
-		Headers:       k.relayer.GetCachedHeaders(),
+		Proofs:        k.relayer.GetCachedProofs(k.injectedProofsLimit, latestProvenHeight),
+		Headers:       k.relayer.GetCachedHeaders(k.injectedProofsLimit, latestProvenHeight),
 	}
 }
 

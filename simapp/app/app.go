@@ -719,6 +719,7 @@ func NewChainApp(
 
 	app.TiaBlobKeeper = tiablobkeeper.NewKeeper(
 		appCodec,
+		appOpts,
 		runtime.NewKVStoreService(keys[tiablob.StoreKey]),
 		app.StakingKeeper,
 		app.UpgradeKeeper,
@@ -728,6 +729,7 @@ func NewChainApp(
 
 	app.TiaBlobRelayer, err = tiablobrelayer.NewRelayer(
 		logger,
+		appCodec,
 		appOpts,
 		appns.MustNewV0([]byte(celestiaNamespace)),
 		filepath.Join(homePath, "keys"),
@@ -1047,7 +1049,7 @@ func (app *ChainApp) FinalizeBlock(req *abci.RequestFinalizeBlock) (*abci.Respon
 		return res, err
 	}
 
-	app.TiaBlobRelayer.NotifyCommitHeight(uint64(req.Height))
+	app.TiaBlobRelayer.NotifyCommitHeight(req.Height)
 
 	return res, nil
 }
@@ -1265,7 +1267,7 @@ func (app *ChainApp) RegisterNodeService(clientCtx client.Context, cfg config.Co
 	if err != nil {
 		panic(err)
 	}
-	latestCommitHeight := uint64(appInfo.LastBlockHeight)
+	latestCommitHeight := appInfo.LastBlockHeight
 
 	go app.TiaBlobRelayer.Start(
 		ctx,

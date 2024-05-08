@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"reflect"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -72,7 +73,7 @@ func (k *Keeper) preblockerProofs(ctx sdk.Context, proofs []*celestia.BlobProof)
 			}
 
 			// the update state/client was not provided, try for existing consensus state
-			err = k.VerifyMembership(ctx, proof.CelestiaHeight, &proof.ShareProof)
+			err = k.VerifyMembership(ctx, uint64(proof.CelestiaHeight), &proof.ShareProof)
 			if err != nil {
 				return fmt.Errorf("preblocker proofs, verify membership, %v", err)
 			}
@@ -89,7 +90,9 @@ func (k *Keeper) preblockerProofs(ctx sdk.Context, proofs []*celestia.BlobProof)
 
 func (k *Keeper) preblockerPendingBlocks(ctx sdk.Context, blockTime time.Time, proposerAddr []byte, pendingBlocks *PendingBlocks) error {
 	if pendingBlocks != nil {
-		k.relayer.PostBlocks(ctx, proposerAddr, pendingBlocks.BlockHeights)
+		if reflect.DeepEqual(k.proposerAddress, proposerAddr) {
+			k.relayer.PostBlocks(ctx, pendingBlocks.BlockHeights)
+		}
 		for _, pendingBlock := range pendingBlocks.BlockHeights {
 			if err := k.AddUpdatePendingBlock(ctx, k.cdc, pendingBlock, blockTime); err != nil {
 				return fmt.Errorf("preblocker pending blocks, %v", err)

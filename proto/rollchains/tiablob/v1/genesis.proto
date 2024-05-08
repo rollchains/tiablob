@@ -13,7 +13,7 @@ message GenesisState {
 
     // the height of the last block that was proven to be posted to Celestia.
     // increment only, never skipping heights.
-    uint64 proven_height = 2;
+    int64 proven_height = 2;
 
     .rollchains.tiablob.lightclients.celestia.v1.GenesisState celestia_genesis_state = 3;
 

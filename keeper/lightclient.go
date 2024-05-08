@@ -6,15 +6,12 @@ import (
 	"cosmossdk.io/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	"github.com/rollchains/tiablob"
 	"github.com/rollchains/tiablob/lightclients/celestia"
 )
 
-var (
-	keyClientStore = []byte("client_store")
-)
-
 func (k Keeper) GetClientState(ctx sdk.Context) (*celestia.ClientState, bool) {
-	clientStore := prefix.NewStore(ctx.KVStore(k.storeKey), keyClientStore)
+	clientStore := prefix.NewStore(ctx.KVStore(k.storeKey), tiablob.ClientStoreKey)
 
 	return celestia.GetClientState(clientStore, k.cdc)
 }
@@ -24,7 +21,7 @@ func (k Keeper) CreateClient(ctx sdk.Context, clientState celestia.ClientState, 
 		return err
 	}
 
-	clientStore := prefix.NewStore(ctx.KVStore(k.storeKey), keyClientStore)
+	clientStore := prefix.NewStore(ctx.KVStore(k.storeKey), tiablob.ClientStoreKey)
 
 	if err := clientState.Initialize(ctx, k.cdc, clientStore, &consensusState); err != nil {
 		return err
@@ -34,13 +31,11 @@ func (k Keeper) CreateClient(ctx sdk.Context, clientState celestia.ClientState, 
 		return fmt.Errorf("client not active, cannot create client with status %s", status)
 	}
 
-	k.relayer.SetLatestClientState(&clientState)
-
 	return nil
 }
 
 func (k Keeper) CanUpdateClient(ctx sdk.Context, clientMsg celestia.ClientMessage) error {
-	clientStore := prefix.NewStore(ctx.KVStore(k.storeKey), keyClientStore)
+	clientStore := prefix.NewStore(ctx.KVStore(k.storeKey), tiablob.ClientStoreKey)
 
 	clientState, found := celestia.GetClientState(clientStore, k.cdc)
 	if !found {
@@ -59,7 +54,7 @@ func (k Keeper) CanUpdateClient(ctx sdk.Context, clientMsg celestia.ClientMessag
 }
 
 func (k Keeper) UpdateClient(ctx sdk.Context, clientMsg celestia.ClientMessage) error {
-	clientStore := prefix.NewStore(ctx.KVStore(k.storeKey), keyClientStore)
+	clientStore := prefix.NewStore(ctx.KVStore(k.storeKey), tiablob.ClientStoreKey)
 
 	clientState, found := celestia.GetClientState(clientStore, k.cdc)
 	if !found {
@@ -82,14 +77,13 @@ func (k Keeper) UpdateClient(ctx sdk.Context, clientMsg celestia.ClientMessage) 
 
 	_ = clientState.UpdateState(ctx, k.cdc, clientStore, clientMsg)
 
-	k.relayer.SetLatestClientState(clientState)
-	k.relayer.ClearUpdateClient()
+	k.relayer.SetUpdateClient(nil)
 
 	return nil
 }
 
 func (k Keeper) VerifyMembership(ctx sdk.Context, height uint64, proof *celestia.ShareProof) error {
-	clientStore := prefix.NewStore(ctx.KVStore(k.storeKey), keyClientStore)
+	clientStore := prefix.NewStore(ctx.KVStore(k.storeKey), tiablob.ClientStoreKey)
 
 	clientState, found := celestia.GetClientState(clientStore, k.cdc)
 	if !found {

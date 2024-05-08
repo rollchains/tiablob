@@ -7,21 +7,51 @@ import (
 	"github.com/rollchains/tiablob/lightclients/celestia"
 )
 
+func (r *Relayer) getCachedHeader(height int64) *celestia.Header {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.celestiaHeaderCache[height]
+}
+
+func (r *Relayer) setCachedHeader(height int64, header *celestia.Header) {
+	r.mu.Lock()
+	r.celestiaHeaderCache[height] = header
+	r.mu.Unlock()
+}
+
+func (r *Relayer) GetUpdateClient() *celestia.Header {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.updateClient
+}
+
+// A non-nil set is performed when trusting period is 2/3 time from expiration
+// a nil clears it
+func (r *Relayer) SetUpdateClient(updateClient *celestia.Header) {
+	r.mu.Lock()
+	r.updateClient = updateClient
+	r.mu.Unlock()
+}
+
 // GetCachedHeaders queries through the cached block proofs, extracts the celestia height they were published, and
 // pulls in the cached header. If a header does not exist, it may have already been included in an earlier block.
 // Finally, if there are no header/client updates, we check if an update client is needed to keep the client from expiring.
-func (r *Relayer) GetCachedHeaders() []*celestia.Header {
-	headersMap := make(map[uint64]*celestia.Header)
+func (r *Relayer) GetCachedHeaders(proofLimit int, latestProvenHeight int64) []*celestia.Header {
+	headersMap := make(map[int64]*celestia.Header)
 	numProofs := 0
-	for checkHeight := r.latestProvenHeight + 1; r.blockProofCache[checkHeight] != nil; checkHeight++ {
-		proof := r.blockProofCache[checkHeight]
-		if r.celestiaHeaderCache[proof.CelestiaHeight] != nil {
-			headersMap[proof.CelestiaHeight] = r.celestiaHeaderCache[proof.CelestiaHeight]
+	checkHeight := latestProvenHeight + 1
+	proof := r.getCachedProof(checkHeight)
+	for ; proof != nil; {
+		header := r.getCachedHeader(proof.CelestiaHeight)
+		if header != nil {
+			headersMap[proof.CelestiaHeight] = header
 		}
 		numProofs++
-		if numProofs >= r.blockProofCacheLimit {
+		if numProofs >= proofLimit {
 			break
 		}
+		checkHeight++
+		proof = r.getCachedProof(checkHeight)
 	}
 
 	var headers []*celestia.Header
@@ -31,8 +61,9 @@ func (r *Relayer) GetCachedHeaders() []*celestia.Header {
 
 	// If no headers, check for an update client (trusting period has <1/3 left)
 	if len(headers) == 0 {
-		if r.updateClient != nil {
-			headers = append(headers, r.updateClient)
+		updateClient := r.GetUpdateClient()
+		if updateClient != nil {
+			headers = append(headers, updateClient)
 		}
 	}
 
@@ -41,20 +72,20 @@ func (r *Relayer) GetCachedHeaders() []*celestia.Header {
 
 // FetchNewHeader will generate a celestia light client header for updating the client.
 // Headers will either be generated for a proof or to keep the client from expiring.
-func (r *Relayer) FetchNewHeader(ctx context.Context, queryHeight uint64) *celestia.Header {
-	newLightBlock, err := r.celestiaProvider.QueryLightBlock(ctx, int64(queryHeight))
+func (r *Relayer) FetchNewHeader(ctx context.Context, queryHeight int64, latestClientState *celestia.ClientState) *celestia.Header {
+	newLightBlock, err := r.celestiaProvider.QueryLightBlock(ctx, queryHeight)
 	if err != nil {
 		r.logger.Error("error querying light block for proofs", "height", queryHeight)
 		return nil
 	}
 
-	if r.latestClientState == nil {
+	if latestClientState == nil {
 		r.logger.Error("Client state is not set")
 		return nil
 	}
-	trustedHeight := r.latestClientState.LatestHeight
+	trustedHeight := latestClientState.LatestHeight
 
-	trustedValidatorsInBlock, err := r.celestiaProvider.QueryLightBlock(ctx, int64(trustedHeight.GetRevisionHeight()+1))
+	trustedValidatorsInBlock, err := r.celestiaProvider.QueryLightBlock(ctx, int64(trustedHeight.RevisionHeight+1))
 	if err != nil {
 		r.logger.Error("error querying trusted light block", "height", trustedHeight)
 		return nil
@@ -80,23 +111,21 @@ func (r *Relayer) FetchNewHeader(ctx context.Context, queryHeight uint64) *celes
 	}
 }
 
-// shouldUpdateClient check if we need to update the client with a new consensus state to avoid expiration
-// if an update is needed, it will get cached in r.updateClient which will be cleared whenever the client is updated
-func (r *Relayer) shouldUpdateClient(ctx context.Context) {
-	if r.latestClientState == nil {
+// shouldUpdateClient checks if we need to update the client with a new consensus state to avoid expiration
+// if an update is needed, it will be cached in r.updateClient which will be cleared whenever the client is updated
+func (r *Relayer) shouldUpdateClient(ctx context.Context, latestClientState *celestia.ClientState) {
+	if latestClientState == nil {
 		// No error, just no client state yet, nothing to update
 		return
 	}
 
-	height := r.latestClientState.LatestHeight
-
-	cHeader, err := r.celestiaProvider.QueryLightBlock(ctx, int64(height.GetRevisionHeight()))
+	cHeader, err := r.celestiaProvider.QueryLightBlock(ctx, int64(latestClientState.LatestHeight.RevisionHeight))
 	if err != nil {
 		r.logger.Error("shouldUpdateClient: querying latest client state light block", "error", err)
 		return
 	}
 
-	twoThirdsTrustingPeriodMs := float64(r.latestClientState.TrustingPeriod.Milliseconds()) * 2 / 3
+	twoThirdsTrustingPeriodMs := float64(latestClientState.TrustingPeriod.Milliseconds()) * 2 / 3
 	timeSinceLastClientUpdateMs := float64(time.Since(cHeader.Header.Time).Milliseconds())
 
 	if timeSinceLastClientUpdateMs > twoThirdsTrustingPeriodMs {
@@ -105,6 +134,7 @@ func (r *Relayer) shouldUpdateClient(ctx context.Context) {
 			r.logger.Error("shouldUpdateClient: querying latest height from Celestia", "error", err)
 			return
 		}
-		r.updateClient = r.FetchNewHeader(ctx, uint64(celestiaLatestHeight))
+		updateClient := r.FetchNewHeader(ctx, celestiaLatestHeight, latestClientState)
+		r.SetUpdateClient(updateClient)
 	}
 }

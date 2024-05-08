@@ -31,9 +31,9 @@ func (k Keeper) processHeaders(ctx sdk.Context, headers []*celestia.Header) erro
 
 func (k Keeper) processProofs(ctx sdk.Context, clients []*celestia.Header, proofs []*celestia.BlobProof) error {
 	if len(proofs) > 0 {
-		clientsMap := make(map[uint64][]byte) // Celestia height to data hash/root map
+		clientsMap := make(map[int64][]byte) // Celestia height to data hash/root map
 		for _, client := range clients {
-			clientsMap[uint64(client.SignedHeader.Header.Height)] = client.SignedHeader.Header.DataHash
+			clientsMap[client.SignedHeader.Header.Height] = client.SignedHeader.Header.DataHash
 		}
 
 		provenHeight, err := k.GetProvenHeight(ctx)
@@ -88,7 +88,7 @@ func (k Keeper) processProofs(ctx sdk.Context, clients []*celestia.Header, proof
 				}
 			} else {
 				// the update state/client was not provided, try for existing consensus state
-				err := k.VerifyMembership(ctx, proof.CelestiaHeight, &proof.ShareProof)
+				err := k.VerifyMembership(ctx, uint64(proof.CelestiaHeight), &proof.ShareProof)
 				if err != nil {
 					return fmt.Errorf("process proofs, verify membership, %v", err)
 				}

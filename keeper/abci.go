@@ -25,15 +25,20 @@ func NewProofOfBlobProposalHandler(
 }
 
 func (h *ProofOfBlobProposalHandler) PrepareProposal(ctx sdk.Context, req *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
-	h.keeper.relayer.SetProposerAddress(req.ProposerAddress)
+	h.keeper.proposerAddress = req.ProposerAddress
 
 	resp, err := h.prepareProposalHandler(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	injectData := h.keeper.prepareInjectData(ctx, req.Time)
-	injectDataBz := injectData.marshalMaxBytes(h.keeper, req.MaxTxBytes)
+	latestProvenHeight, err := h.keeper.GetProvenHeight(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	injectData := h.keeper.prepareInjectData(ctx, req.Time, latestProvenHeight)
+	injectDataBz := injectData.marshalMaxBytes(h.keeper, req.MaxTxBytes, latestProvenHeight)
 	resp.Txs = h.keeper.addTiablobDataToTxs(injectDataBz, req.MaxTxBytes, resp.Txs)
 
 	return resp, nil
@@ -101,7 +106,7 @@ func (d InjectedData) IsEmpty() bool {
 // This new configuration will persist until the node is restarted. If a decrement is required,
 // there was most likely a misconfiguration for block proof cache limit.
 // Injected data is roughly 1KB/proof
-func (d InjectedData) marshalMaxBytes(keeper *Keeper, maxBytes int64) []byte {
+func (d InjectedData) marshalMaxBytes(keeper *Keeper, maxBytes int64, latestProvenHeight int64) []byte {
 	if d.IsEmpty() {
 		return nil
 	}
@@ -111,10 +116,11 @@ func (d InjectedData) marshalMaxBytes(keeper *Keeper, maxBytes int64) []byte {
 		return nil
 	}
 
+	proofLimit := keeper.injectedProofsLimit
 	for int64(len(injectDataBz)) > maxBytes {
-		keeper.relayer.DecrementBlockProofCacheLimit()
-		d.Proofs = keeper.relayer.GetCachedProofs()
-		d.Headers = keeper.relayer.GetCachedHeaders()
+		proofLimit = proofLimit - 1
+		d.Proofs = keeper.relayer.GetCachedProofs(proofLimit, latestProvenHeight)
+		d.Headers = keeper.relayer.GetCachedHeaders(proofLimit, latestProvenHeight)
 		if len(d.Proofs) == 0 {
 			return nil
 		}

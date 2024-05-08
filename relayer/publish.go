@@ -3,7 +3,6 @@ package relayer
 import (
 	"encoding/hex"
 	"fmt"
-	"reflect"
 	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -44,10 +43,8 @@ func (r *Relayer) ProposePostNextBlocks(ctx sdk.Context) []int64 {
 }
 
 // PostBlocks is call in the preblocker, the proposer will publish at this point with their block accepted
-func (r *Relayer) PostBlocks(ctx sdk.Context, proposerAddr []byte, blocks []int64) {
-	if reflect.DeepEqual(r.proposerAddress, proposerAddr) {
-		go r.postBlocks(ctx, blocks)
-	}
+func (r *Relayer) PostBlocks(ctx sdk.Context, blocks []int64) {
+	go r.postBlocks(ctx, blocks)
 }
 
 // postBlocks will publish rollchain blocks to celestia

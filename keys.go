@@ -20,6 +20,9 @@ var (
 
 	// TimeoutsToPendingBlocks maps timeouts to a set of pending blocks
 	TimeoutsToPendingBlocks = collections.NewPrefix(4)
+
+	// light client store key
+	ClientStoreKey = []byte("client_store/")
 )
 
 const (
