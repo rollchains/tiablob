@@ -9,19 +9,23 @@ import (
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	grpc1 "github.com/cosmos/gogoproto/grpc"
 	proto "github.com/cosmos/gogoproto/proto"
+	github_com_cosmos_gogoproto_types "github.com/cosmos/gogoproto/types"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	_ "google.golang.org/protobuf/types/known/timestamppb"
 	io "io"
 	math "math"
 	math_bits "math/bits"
+	time "time"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
+var _ = time.Kitchen
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the proto package it is being compiled against.
@@ -202,41 +206,365 @@ func (m *QueryCelestiaAddressResponse) GetCelestiaAddress() string {
 	return ""
 }
 
+type QueryProvenHeightRequest struct {
+}
+
+func (m *QueryProvenHeightRequest) Reset()         { *m = QueryProvenHeightRequest{} }
+func (m *QueryProvenHeightRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryProvenHeightRequest) ProtoMessage()    {}
+func (*QueryProvenHeightRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_117cd9c71193f13a, []int{4}
+}
+func (m *QueryProvenHeightRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryProvenHeightRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryProvenHeightRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryProvenHeightRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryProvenHeightRequest.Merge(m, src)
+}
+func (m *QueryProvenHeightRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryProvenHeightRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryProvenHeightRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryProvenHeightRequest proto.InternalMessageInfo
+
+type QueryProvenHeightResponse struct {
+	ProvenHeight int64 `protobuf:"varint,1,opt,name=proven_height,json=provenHeight,proto3" json:"proven_height,omitempty"`
+}
+
+func (m *QueryProvenHeightResponse) Reset()         { *m = QueryProvenHeightResponse{} }
+func (m *QueryProvenHeightResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryProvenHeightResponse) ProtoMessage()    {}
+func (*QueryProvenHeightResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_117cd9c71193f13a, []int{5}
+}
+func (m *QueryProvenHeightResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryProvenHeightResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryProvenHeightResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryProvenHeightResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryProvenHeightResponse.Merge(m, src)
+}
+func (m *QueryProvenHeightResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryProvenHeightResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryProvenHeightResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryProvenHeightResponse proto.InternalMessageInfo
+
+func (m *QueryProvenHeightResponse) GetProvenHeight() int64 {
+	if m != nil {
+		return m.ProvenHeight
+	}
+	return 0
+}
+
+type BlockWithExpiration struct {
+	Height     int64     `protobuf:"varint,1,opt,name=height,proto3" json:"height,omitempty"`
+	Expiration time.Time `protobuf:"bytes,2,opt,name=expiration,proto3,stdtime" json:"expiration"`
+}
+
+func (m *BlockWithExpiration) Reset()         { *m = BlockWithExpiration{} }
+func (m *BlockWithExpiration) String() string { return proto.CompactTextString(m) }
+func (*BlockWithExpiration) ProtoMessage()    {}
+func (*BlockWithExpiration) Descriptor() ([]byte, []int) {
+	return fileDescriptor_117cd9c71193f13a, []int{6}
+}
+func (m *BlockWithExpiration) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *BlockWithExpiration) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_BlockWithExpiration.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *BlockWithExpiration) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_BlockWithExpiration.Merge(m, src)
+}
+func (m *BlockWithExpiration) XXX_Size() int {
+	return m.Size()
+}
+func (m *BlockWithExpiration) XXX_DiscardUnknown() {
+	xxx_messageInfo_BlockWithExpiration.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_BlockWithExpiration proto.InternalMessageInfo
+
+func (m *BlockWithExpiration) GetHeight() int64 {
+	if m != nil {
+		return m.Height
+	}
+	return 0
+}
+
+func (m *BlockWithExpiration) GetExpiration() time.Time {
+	if m != nil {
+		return m.Expiration
+	}
+	return time.Time{}
+}
+
+type QueryPendingBlocksRequest struct {
+}
+
+func (m *QueryPendingBlocksRequest) Reset()         { *m = QueryPendingBlocksRequest{} }
+func (m *QueryPendingBlocksRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryPendingBlocksRequest) ProtoMessage()    {}
+func (*QueryPendingBlocksRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_117cd9c71193f13a, []int{7}
+}
+func (m *QueryPendingBlocksRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryPendingBlocksRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryPendingBlocksRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryPendingBlocksRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryPendingBlocksRequest.Merge(m, src)
+}
+func (m *QueryPendingBlocksRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryPendingBlocksRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryPendingBlocksRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryPendingBlocksRequest proto.InternalMessageInfo
+
+type QueryPendingBlocksResponse struct {
+	PendingBlocks []*BlockWithExpiration `protobuf:"bytes,1,rep,name=pending_blocks,json=pendingBlocks,proto3" json:"pending_blocks,omitempty"`
+}
+
+func (m *QueryPendingBlocksResponse) Reset()         { *m = QueryPendingBlocksResponse{} }
+func (m *QueryPendingBlocksResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryPendingBlocksResponse) ProtoMessage()    {}
+func (*QueryPendingBlocksResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_117cd9c71193f13a, []int{8}
+}
+func (m *QueryPendingBlocksResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryPendingBlocksResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryPendingBlocksResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryPendingBlocksResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryPendingBlocksResponse.Merge(m, src)
+}
+func (m *QueryPendingBlocksResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryPendingBlocksResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryPendingBlocksResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryPendingBlocksResponse proto.InternalMessageInfo
+
+func (m *QueryPendingBlocksResponse) GetPendingBlocks() []*BlockWithExpiration {
+	if m != nil {
+		return m.PendingBlocks
+	}
+	return nil
+}
+
+type QueryExpiredBlocksRequest struct {
+}
+
+func (m *QueryExpiredBlocksRequest) Reset()         { *m = QueryExpiredBlocksRequest{} }
+func (m *QueryExpiredBlocksRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryExpiredBlocksRequest) ProtoMessage()    {}
+func (*QueryExpiredBlocksRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_117cd9c71193f13a, []int{9}
+}
+func (m *QueryExpiredBlocksRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryExpiredBlocksRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryExpiredBlocksRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryExpiredBlocksRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryExpiredBlocksRequest.Merge(m, src)
+}
+func (m *QueryExpiredBlocksRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryExpiredBlocksRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryExpiredBlocksRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryExpiredBlocksRequest proto.InternalMessageInfo
+
+type QueryExpiredBlocksResponse struct {
+	CurrentTime   time.Time              `protobuf:"bytes,1,opt,name=current_time,json=currentTime,proto3,stdtime" json:"current_time"`
+	ExpiredBlocks []*BlockWithExpiration `protobuf:"bytes,2,rep,name=expired_blocks,json=expiredBlocks,proto3" json:"expired_blocks,omitempty"`
+}
+
+func (m *QueryExpiredBlocksResponse) Reset()         { *m = QueryExpiredBlocksResponse{} }
+func (m *QueryExpiredBlocksResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryExpiredBlocksResponse) ProtoMessage()    {}
+func (*QueryExpiredBlocksResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_117cd9c71193f13a, []int{10}
+}
+func (m *QueryExpiredBlocksResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryExpiredBlocksResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryExpiredBlocksResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryExpiredBlocksResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryExpiredBlocksResponse.Merge(m, src)
+}
+func (m *QueryExpiredBlocksResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryExpiredBlocksResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryExpiredBlocksResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryExpiredBlocksResponse proto.InternalMessageInfo
+
+func (m *QueryExpiredBlocksResponse) GetCurrentTime() time.Time {
+	if m != nil {
+		return m.CurrentTime
+	}
+	return time.Time{}
+}
+
+func (m *QueryExpiredBlocksResponse) GetExpiredBlocks() []*BlockWithExpiration {
+	if m != nil {
+		return m.ExpiredBlocks
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*QueryValidatorsRequest)(nil), "rollchains.tiablob.v1.QueryValidatorsRequest")
 	proto.RegisterType((*QueryValidatorsResponse)(nil), "rollchains.tiablob.v1.QueryValidatorsResponse")
 	proto.RegisterType((*QueryCelestiaAddressRequest)(nil), "rollchains.tiablob.v1.QueryCelestiaAddressRequest")
 	proto.RegisterType((*QueryCelestiaAddressResponse)(nil), "rollchains.tiablob.v1.QueryCelestiaAddressResponse")
+	proto.RegisterType((*QueryProvenHeightRequest)(nil), "rollchains.tiablob.v1.QueryProvenHeightRequest")
+	proto.RegisterType((*QueryProvenHeightResponse)(nil), "rollchains.tiablob.v1.QueryProvenHeightResponse")
+	proto.RegisterType((*BlockWithExpiration)(nil), "rollchains.tiablob.v1.BlockWithExpiration")
+	proto.RegisterType((*QueryPendingBlocksRequest)(nil), "rollchains.tiablob.v1.QueryPendingBlocksRequest")
+	proto.RegisterType((*QueryPendingBlocksResponse)(nil), "rollchains.tiablob.v1.QueryPendingBlocksResponse")
+	proto.RegisterType((*QueryExpiredBlocksRequest)(nil), "rollchains.tiablob.v1.QueryExpiredBlocksRequest")
+	proto.RegisterType((*QueryExpiredBlocksResponse)(nil), "rollchains.tiablob.v1.QueryExpiredBlocksResponse")
 }
 
 func init() { proto.RegisterFile("rollchains/tiablob/v1/query.proto", fileDescriptor_117cd9c71193f13a) }
 
 var fileDescriptor_117cd9c71193f13a = []byte{
-	// 371 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x52, 0x2c, 0xca, 0xcf, 0xc9,
-	0x49, 0xce, 0x48, 0xcc, 0xcc, 0x2b, 0xd6, 0x2f, 0xc9, 0x4c, 0x4c, 0xca, 0xc9, 0x4f, 0xd2, 0x2f,
-	0x33, 0xd4, 0x2f, 0x2c, 0x4d, 0x2d, 0xaa, 0xd4, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x12, 0x45,
-	0x28, 0xd1, 0x83, 0x2a, 0xd1, 0x2b, 0x33, 0x94, 0x12, 0x49, 0xcf, 0x4f, 0xcf, 0x07, 0xab, 0xd0,
-	0x07, 0xb1, 0x20, 0x8a, 0xa5, 0x64, 0xd2, 0xf3, 0xf3, 0xd3, 0x73, 0x52, 0xf5, 0x13, 0x0b, 0x32,
-	0xf5, 0x13, 0xf3, 0xf2, 0xf2, 0x4b, 0x12, 0x4b, 0x32, 0xf3, 0xf3, 0x8a, 0xa1, 0xb2, 0xaa, 0xd8,
-	0x6d, 0x2b, 0x4b, 0xcc, 0xc9, 0x4c, 0x49, 0x2c, 0xc9, 0x2f, 0x82, 0x28, 0x53, 0x92, 0xe0, 0x12,
-	0x0b, 0x04, 0x39, 0x20, 0x0c, 0x26, 0x5e, 0x1c, 0x94, 0x5a, 0x58, 0x9a, 0x5a, 0x5c, 0xa2, 0x94,
-	0xc8, 0x25, 0x8e, 0x21, 0x53, 0x5c, 0x90, 0x9f, 0x57, 0x9c, 0x2a, 0xe4, 0xc6, 0xc5, 0x05, 0x37,
-	0xa7, 0x58, 0x82, 0x51, 0x81, 0x59, 0x83, 0xdb, 0x48, 0x41, 0x0f, 0xab, 0xdb, 0xf5, 0xe0, 0xda,
-	0x9d, 0x58, 0x4e, 0xdc, 0x93, 0x67, 0x08, 0x42, 0xd2, 0xa9, 0xe4, 0xc5, 0x25, 0x0d, 0xb6, 0xc2,
-	0x39, 0x35, 0x27, 0xb5, 0xb8, 0x24, 0x33, 0xd1, 0x31, 0x25, 0xa5, 0x28, 0xb5, 0x18, 0xe6, 0x02,
-	0x21, 0x6d, 0x2e, 0x41, 0xb8, 0xe2, 0xf8, 0x44, 0x88, 0x9c, 0x04, 0xa3, 0x02, 0xa3, 0x06, 0x67,
-	0x90, 0x00, 0x5c, 0x02, 0xaa, 0x47, 0xc9, 0x93, 0x4b, 0x06, 0xbb, 0x59, 0x50, 0x37, 0x6b, 0x72,
-	0x09, 0x24, 0x43, 0xa5, 0xd0, 0xcc, 0xe2, 0x4f, 0x46, 0xd5, 0x62, 0xb4, 0x83, 0x89, 0x8b, 0x15,
-	0x6c, 0x96, 0x50, 0x37, 0x23, 0x17, 0x17, 0xc2, 0xff, 0x42, 0xba, 0x38, 0xfc, 0x88, 0x3d, 0x04,
-	0xa5, 0xf4, 0x88, 0x55, 0x0e, 0x71, 0xa2, 0x92, 0x5c, 0xd3, 0xe5, 0x27, 0x93, 0x99, 0x24, 0x84,
-	0xc4, 0xb0, 0x46, 0x58, 0xb1, 0xd0, 0x02, 0x46, 0x2e, 0x7e, 0x34, 0xef, 0x09, 0x19, 0xe1, 0xb3,
-	0x03, 0x7b, 0xb8, 0x4a, 0x19, 0x93, 0xa4, 0x07, 0xea, 0x38, 0x15, 0xb0, 0xe3, 0xe4, 0x84, 0x64,
-	0x90, 0x1d, 0x87, 0x1e, 0xa2, 0x4e, 0xe6, 0x27, 0x1e, 0xc9, 0x31, 0x5e, 0x78, 0x24, 0xc7, 0xf8,
-	0xe0, 0x91, 0x1c, 0xe3, 0x84, 0xc7, 0x72, 0x0c, 0x17, 0x1e, 0xcb, 0x31, 0xdc, 0x78, 0x2c, 0xc7,
-	0x10, 0x25, 0x9b, 0x9e, 0x59, 0x92, 0x51, 0x9a, 0xa4, 0x97, 0x9c, 0x9f, 0xab, 0x8f, 0x99, 0x34,
-	0x93, 0xd8, 0xc0, 0xc9, 0xd1, 0x18, 0x10, 0x00, 0x00, 0xff, 0xff, 0x09, 0x2f, 0xde, 0x85, 0x25,
-	0x03, 0x00, 0x00,
+	// 654 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x95, 0x3f, 0x6f, 0xd3, 0x40,
+	0x18, 0xc6, 0x73, 0x2d, 0x54, 0xf0, 0xb6, 0xa5, 0xe5, 0x80, 0x92, 0xba, 0xc1, 0x4d, 0x0d, 0x48,
+	0x05, 0x84, 0x4d, 0xd3, 0x81, 0x15, 0xc2, 0x7f, 0x26, 0x1a, 0x21, 0x90, 0x58, 0x22, 0xdb, 0x39,
+	0x9c, 0x13, 0xae, 0xcf, 0xf5, 0x5d, 0x22, 0x58, 0x91, 0x98, 0x58, 0x2a, 0xc1, 0xc0, 0xc8, 0xc7,
+	0xe0, 0x23, 0x74, 0xac, 0xc4, 0xc2, 0x04, 0xa8, 0xe5, 0x83, 0x20, 0x9f, 0xcf, 0xae, 0x9d, 0x5e,
+	0xa3, 0x76, 0x8b, 0xf3, 0xbc, 0xcf, 0xbd, 0xbf, 0xf7, 0xde, 0x3c, 0x31, 0xac, 0x24, 0x2c, 0x0c,
+	0xfd, 0xbe, 0x4b, 0x23, 0xee, 0x08, 0xea, 0x7a, 0x21, 0xf3, 0x9c, 0xe1, 0x9a, 0xb3, 0x35, 0x20,
+	0xc9, 0x07, 0x3b, 0x4e, 0x98, 0x60, 0xf8, 0xd2, 0x41, 0x89, 0xad, 0x4a, 0xec, 0xe1, 0x9a, 0x71,
+	0x31, 0x60, 0x01, 0x93, 0x15, 0x4e, 0xfa, 0x29, 0x2b, 0x36, 0x1a, 0x01, 0x63, 0x41, 0x48, 0x1c,
+	0x37, 0xa6, 0x8e, 0x1b, 0x45, 0x4c, 0xb8, 0x82, 0xb2, 0x88, 0x2b, 0xf5, 0xba, 0xbe, 0xdb, 0xd0,
+	0x0d, 0x69, 0xcf, 0x15, 0x2c, 0x51, 0x65, 0xcb, 0xea, 0x10, 0xf9, 0xe4, 0x0d, 0xde, 0x3a, 0x82,
+	0x6e, 0x12, 0x2e, 0xdc, 0xcd, 0x38, 0x2b, 0xb0, 0xea, 0xb0, 0xb0, 0x91, 0x12, 0xbe, 0xca, 0x8d,
+	0xbc, 0x43, 0xb6, 0x06, 0x84, 0x0b, 0xcb, 0x85, 0xcb, 0x87, 0x14, 0x1e, 0xb3, 0x88, 0x13, 0xfc,
+	0x18, 0xa0, 0x68, 0xc4, 0xeb, 0xa8, 0x39, 0xb9, 0x3a, 0xdd, 0x6a, 0xda, 0xda, 0xe1, 0xec, 0xc2,
+	0xde, 0x3e, 0xb5, 0xf3, 0x7b, 0xb9, 0xd6, 0x29, 0x39, 0xad, 0xe7, 0xb0, 0x24, 0x5b, 0x3c, 0x20,
+	0x21, 0xe1, 0x82, 0xba, 0xf7, 0x7b, 0xbd, 0x84, 0xf0, 0x9c, 0x00, 0xdf, 0x82, 0xf3, 0x45, 0x71,
+	0xd7, 0xcd, 0xb4, 0x3a, 0x6a, 0xa2, 0xd5, 0xb3, 0x9d, 0xf9, 0x42, 0x50, 0x1e, 0xeb, 0x19, 0x34,
+	0xf4, 0x67, 0x29, 0xe6, 0x1b, 0x30, 0xef, 0x2b, 0x69, 0xe4, 0xac, 0x39, 0xbf, 0x6a, 0xb1, 0x0c,
+	0xa8, 0xcb, 0xa3, 0x5e, 0x24, 0x6c, 0x48, 0xa2, 0xa7, 0x84, 0x06, 0x7d, 0x91, 0xdf, 0xca, 0x3d,
+	0x58, 0xd4, 0x68, 0xaa, 0xc7, 0x55, 0x98, 0x8d, 0xe5, 0xf7, 0xdd, 0xbe, 0x14, 0x64, 0x83, 0xc9,
+	0xce, 0x4c, 0x5c, 0x2a, 0xb6, 0x38, 0x5c, 0x68, 0x87, 0xcc, 0x7f, 0xf7, 0x9a, 0x8a, 0xfe, 0xa3,
+	0xf7, 0x31, 0x4d, 0xe4, 0x5e, 0xf1, 0x02, 0x4c, 0x55, 0x4c, 0xea, 0x09, 0x3f, 0x04, 0x20, 0x45,
+	0x55, 0x7d, 0xa2, 0x89, 0x56, 0xa7, 0x5b, 0x86, 0x9d, 0xad, 0xd5, 0xce, 0xd7, 0x6a, 0xbf, 0xcc,
+	0xd7, 0xda, 0x3e, 0x93, 0xde, 0xf2, 0xf6, 0x9f, 0x65, 0xd4, 0x29, 0xf9, 0xac, 0xa5, 0x1c, 0x9b,
+	0x44, 0x3d, 0x1a, 0x05, 0x12, 0xa0, 0xd8, 0x34, 0x03, 0x43, 0x27, 0xaa, 0xa1, 0x36, 0xe0, 0x5c,
+	0x9c, 0x09, 0x5d, 0x4f, 0x2a, 0x6a, 0xe1, 0x37, 0x8f, 0x58, 0xb8, 0x66, 0xb8, 0xce, 0x6c, 0x5c,
+	0x3e, 0xba, 0xa0, 0x91, 0x15, 0xa4, 0x57, 0xa5, 0xf9, 0x81, 0x14, 0xce, 0x88, 0xaa, 0x70, 0x9e,
+	0xc0, 0x8c, 0x3f, 0x48, 0x12, 0x12, 0x89, 0x6e, 0xfa, 0x5b, 0x96, 0xb7, 0x75, 0xdc, 0x1b, 0x99,
+	0x56, 0xce, 0x54, 0x4b, 0xe7, 0x22, 0x59, 0x87, 0x7c, 0xae, 0x89, 0x93, 0xcf, 0x45, 0xca, 0x8c,
+	0xad, 0x4f, 0x53, 0x70, 0x5a, 0xa2, 0xe3, 0xcf, 0x08, 0xe0, 0x20, 0x38, 0xf8, 0xf6, 0x11, 0x67,
+	0xea, 0xa3, 0x67, 0xd8, 0xc7, 0x2d, 0xcf, 0xee, 0xc4, 0x32, 0x3f, 0xfe, 0xfc, 0xf7, 0x65, 0xa2,
+	0x8e, 0x17, 0xb4, 0x7f, 0x05, 0x1c, 0x7f, 0x47, 0x30, 0x37, 0x92, 0x0b, 0xdc, 0x1a, 0xd7, 0x43,
+	0x1f, 0x48, 0x63, 0xfd, 0x44, 0x1e, 0x05, 0x77, 0x4d, 0xc2, 0x99, 0xb8, 0x51, 0x86, 0x1b, 0x8d,
+	0x22, 0xfe, 0x8a, 0x60, 0xa6, 0x9c, 0x29, 0xec, 0x8c, 0xeb, 0xa5, 0x49, 0xa6, 0x71, 0xe7, 0xf8,
+	0x06, 0x45, 0xb6, 0x22, 0xc9, 0x96, 0xf0, 0x62, 0x99, 0xac, 0x12, 0x60, 0xfc, 0x0d, 0xc1, 0x6c,
+	0x25, 0x16, 0x78, 0x7c, 0x1b, 0x4d, 0xbc, 0x8c, 0xb5, 0x13, 0x38, 0x14, 0x99, 0x25, 0xc9, 0x1a,
+	0xd8, 0xa8, 0x90, 0x55, 0x52, 0x28, 0xd1, 0x2a, 0x11, 0x19, 0x8f, 0xa6, 0xcb, 0xda, 0x78, 0x34,
+	0x6d, 0xfe, 0xf4, 0x68, 0xd5, 0x20, 0xb5, 0xef, 0xee, 0xec, 0x99, 0x68, 0x77, 0xcf, 0x44, 0x7f,
+	0xf7, 0x4c, 0xb4, 0xbd, 0x6f, 0xd6, 0x76, 0xf7, 0xcd, 0xda, 0xaf, 0x7d, 0xb3, 0xf6, 0xe6, 0x4a,
+	0x40, 0x45, 0x7f, 0xe0, 0xd9, 0x3e, 0xdb, 0x74, 0x0e, 0xbf, 0xc1, 0xbc, 0x29, 0x19, 0xdf, 0xf5,
+	0xff, 0x01, 0x00, 0x00, 0xff, 0xff, 0x82, 0x11, 0xd3, 0x42, 0x4c, 0x07, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -254,6 +582,9 @@ type QueryClient interface {
 	// Validators returns registered validators of the module.
 	Validators(ctx context.Context, in *QueryValidatorsRequest, opts ...grpc.CallOption) (*QueryValidatorsResponse, error)
 	CelestiaAddress(ctx context.Context, in *QueryCelestiaAddressRequest, opts ...grpc.CallOption) (*QueryCelestiaAddressResponse, error)
+	ProvenHeight(ctx context.Context, in *QueryProvenHeightRequest, opts ...grpc.CallOption) (*QueryProvenHeightResponse, error)
+	PendingBlocks(ctx context.Context, in *QueryPendingBlocksRequest, opts ...grpc.CallOption) (*QueryPendingBlocksResponse, error)
+	ExpiredBlocks(ctx context.Context, in *QueryExpiredBlocksRequest, opts ...grpc.CallOption) (*QueryExpiredBlocksResponse, error)
 }
 
 type queryClient struct {
@@ -282,11 +613,41 @@ func (c *queryClient) CelestiaAddress(ctx context.Context, in *QueryCelestiaAddr
 	return out, nil
 }
 
+func (c *queryClient) ProvenHeight(ctx context.Context, in *QueryProvenHeightRequest, opts ...grpc.CallOption) (*QueryProvenHeightResponse, error) {
+	out := new(QueryProvenHeightResponse)
+	err := c.cc.Invoke(ctx, "/rollchains.tiablob.v1.Query/ProvenHeight", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) PendingBlocks(ctx context.Context, in *QueryPendingBlocksRequest, opts ...grpc.CallOption) (*QueryPendingBlocksResponse, error) {
+	out := new(QueryPendingBlocksResponse)
+	err := c.cc.Invoke(ctx, "/rollchains.tiablob.v1.Query/PendingBlocks", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) ExpiredBlocks(ctx context.Context, in *QueryExpiredBlocksRequest, opts ...grpc.CallOption) (*QueryExpiredBlocksResponse, error) {
+	out := new(QueryExpiredBlocksResponse)
+	err := c.cc.Invoke(ctx, "/rollchains.tiablob.v1.Query/ExpiredBlocks", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // QueryServer is the server API for Query service.
 type QueryServer interface {
 	// Validators returns registered validators of the module.
 	Validators(context.Context, *QueryValidatorsRequest) (*QueryValidatorsResponse, error)
 	CelestiaAddress(context.Context, *QueryCelestiaAddressRequest) (*QueryCelestiaAddressResponse, error)
+	ProvenHeight(context.Context, *QueryProvenHeightRequest) (*QueryProvenHeightResponse, error)
+	PendingBlocks(context.Context, *QueryPendingBlocksRequest) (*QueryPendingBlocksResponse, error)
+	ExpiredBlocks(context.Context, *QueryExpiredBlocksRequest) (*QueryExpiredBlocksResponse, error)
 }
 
 // UnimplementedQueryServer can be embedded to have forward compatible implementations.
@@ -298,6 +659,15 @@ func (*UnimplementedQueryServer) Validators(ctx context.Context, req *QueryValid
 }
 func (*UnimplementedQueryServer) CelestiaAddress(ctx context.Context, req *QueryCelestiaAddressRequest) (*QueryCelestiaAddressResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CelestiaAddress not implemented")
+}
+func (*UnimplementedQueryServer) ProvenHeight(ctx context.Context, req *QueryProvenHeightRequest) (*QueryProvenHeightResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ProvenHeight not implemented")
+}
+func (*UnimplementedQueryServer) PendingBlocks(ctx context.Context, req *QueryPendingBlocksRequest) (*QueryPendingBlocksResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PendingBlocks not implemented")
+}
+func (*UnimplementedQueryServer) ExpiredBlocks(ctx context.Context, req *QueryExpiredBlocksRequest) (*QueryExpiredBlocksResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ExpiredBlocks not implemented")
 }
 
 func RegisterQueryServer(s grpc1.Server, srv QueryServer) {
@@ -340,6 +710,60 @@ func _Query_CelestiaAddress_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Query_ProvenHeight_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryProvenHeightRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).ProvenHeight(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rollchains.tiablob.v1.Query/ProvenHeight",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).ProvenHeight(ctx, req.(*QueryProvenHeightRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_PendingBlocks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryPendingBlocksRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).PendingBlocks(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rollchains.tiablob.v1.Query/PendingBlocks",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).PendingBlocks(ctx, req.(*QueryPendingBlocksRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_ExpiredBlocks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryExpiredBlocksRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).ExpiredBlocks(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rollchains.tiablob.v1.Query/ExpiredBlocks",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).ExpiredBlocks(ctx, req.(*QueryExpiredBlocksRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Query_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "rollchains.tiablob.v1.Query",
 	HandlerType: (*QueryServer)(nil),
@@ -351,6 +775,18 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CelestiaAddress",
 			Handler:    _Query_CelestiaAddress_Handler,
+		},
+		{
+			MethodName: "ProvenHeight",
+			Handler:    _Query_ProvenHeight_Handler,
+		},
+		{
+			MethodName: "PendingBlocks",
+			Handler:    _Query_PendingBlocks_Handler,
+		},
+		{
+			MethodName: "ExpiredBlocks",
+			Handler:    _Query_ExpiredBlocks_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -477,6 +913,221 @@ func (m *QueryCelestiaAddressResponse) MarshalToSizedBuffer(dAtA []byte) (int, e
 	return len(dAtA) - i, nil
 }
 
+func (m *QueryProvenHeightRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryProvenHeightRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryProvenHeightRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryProvenHeightResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryProvenHeightResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryProvenHeightResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.ProvenHeight != 0 {
+		i = encodeVarintQuery(dAtA, i, uint64(m.ProvenHeight))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *BlockWithExpiration) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *BlockWithExpiration) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *BlockWithExpiration) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	n1, err1 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.Expiration, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.Expiration):])
+	if err1 != nil {
+		return 0, err1
+	}
+	i -= n1
+	i = encodeVarintQuery(dAtA, i, uint64(n1))
+	i--
+	dAtA[i] = 0x12
+	if m.Height != 0 {
+		i = encodeVarintQuery(dAtA, i, uint64(m.Height))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryPendingBlocksRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryPendingBlocksRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryPendingBlocksRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryPendingBlocksResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryPendingBlocksResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryPendingBlocksResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.PendingBlocks) > 0 {
+		for iNdEx := len(m.PendingBlocks) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.PendingBlocks[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintQuery(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryExpiredBlocksRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryExpiredBlocksRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryExpiredBlocksRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryExpiredBlocksResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryExpiredBlocksResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryExpiredBlocksResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.ExpiredBlocks) > 0 {
+		for iNdEx := len(m.ExpiredBlocks) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.ExpiredBlocks[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintQuery(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	n2, err2 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.CurrentTime, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.CurrentTime):])
+	if err2 != nil {
+		return 0, err2
+	}
+	i -= n2
+	i = encodeVarintQuery(dAtA, i, uint64(n2))
+	i--
+	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintQuery(dAtA []byte, offset int, v uint64) int {
 	offset -= sovQuery(v)
 	base := offset
@@ -534,6 +1185,91 @@ func (m *QueryCelestiaAddressResponse) Size() (n int) {
 	l = len(m.CelestiaAddress)
 	if l > 0 {
 		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryProvenHeightRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *QueryProvenHeightResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.ProvenHeight != 0 {
+		n += 1 + sovQuery(uint64(m.ProvenHeight))
+	}
+	return n
+}
+
+func (m *BlockWithExpiration) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Height != 0 {
+		n += 1 + sovQuery(uint64(m.Height))
+	}
+	l = github_com_cosmos_gogoproto_types.SizeOfStdTime(m.Expiration)
+	n += 1 + l + sovQuery(uint64(l))
+	return n
+}
+
+func (m *QueryPendingBlocksRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *QueryPendingBlocksResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.PendingBlocks) > 0 {
+		for _, e := range m.PendingBlocks {
+			l = e.Size()
+			n += 1 + l + sovQuery(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *QueryExpiredBlocksRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *QueryExpiredBlocksResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = github_com_cosmos_gogoproto_types.SizeOfStdTime(m.CurrentTime)
+	n += 1 + l + sovQuery(uint64(l))
+	if len(m.ExpiredBlocks) > 0 {
+		for _, e := range m.ExpiredBlocks {
+			l = e.Size()
+			n += 1 + l + sovQuery(uint64(l))
+		}
 	}
 	return n
 }
@@ -820,6 +1556,528 @@ func (m *QueryCelestiaAddressResponse) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.CelestiaAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryProvenHeightRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryProvenHeightRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryProvenHeightRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryProvenHeightResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryProvenHeightResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryProvenHeightResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ProvenHeight", wireType)
+			}
+			m.ProvenHeight = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ProvenHeight |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *BlockWithExpiration) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: BlockWithExpiration: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: BlockWithExpiration: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Height", wireType)
+			}
+			m.Height = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Height |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Expiration", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(&m.Expiration, dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryPendingBlocksRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryPendingBlocksRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryPendingBlocksRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryPendingBlocksResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryPendingBlocksResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryPendingBlocksResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PendingBlocks", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PendingBlocks = append(m.PendingBlocks, &BlockWithExpiration{})
+			if err := m.PendingBlocks[len(m.PendingBlocks)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryExpiredBlocksRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryExpiredBlocksRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryExpiredBlocksRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryExpiredBlocksResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryExpiredBlocksResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryExpiredBlocksResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CurrentTime", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(&m.CurrentTime, dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ExpiredBlocks", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ExpiredBlocks = append(m.ExpiredBlocks, &BlockWithExpiration{})
+			if err := m.ExpiredBlocks[len(m.ExpiredBlocks)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

@@ -67,8 +67,6 @@ func (cc *CosmosProvider) QueryCelestiaClientState(ctx context.Context, height i
 		return nil, err
 	}
 
-	fmt.Println("Client state size: ", len(res.Value))
-
 	var clientState celestia.ClientState
 	if err = cc.cdc.Unmarshal(res.Value, &clientState); err != nil {
 		return nil, err

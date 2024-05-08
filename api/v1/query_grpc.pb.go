@@ -21,6 +21,9 @@ const _ = grpc.SupportPackageIsVersion7
 const (
 	Query_Validators_FullMethodName      = "/rollchains.tiablob.v1.Query/Validators"
 	Query_CelestiaAddress_FullMethodName = "/rollchains.tiablob.v1.Query/CelestiaAddress"
+	Query_ProvenHeight_FullMethodName    = "/rollchains.tiablob.v1.Query/ProvenHeight"
+	Query_PendingBlocks_FullMethodName   = "/rollchains.tiablob.v1.Query/PendingBlocks"
+	Query_ExpiredBlocks_FullMethodName   = "/rollchains.tiablob.v1.Query/ExpiredBlocks"
 )
 
 // QueryClient is the client API for Query service.
@@ -30,6 +33,9 @@ type QueryClient interface {
 	// Validators returns registered validators of the module.
 	Validators(ctx context.Context, in *QueryValidatorsRequest, opts ...grpc.CallOption) (*QueryValidatorsResponse, error)
 	CelestiaAddress(ctx context.Context, in *QueryCelestiaAddressRequest, opts ...grpc.CallOption) (*QueryCelestiaAddressResponse, error)
+	ProvenHeight(ctx context.Context, in *QueryProvenHeightRequest, opts ...grpc.CallOption) (*QueryProvenHeightResponse, error)
+	PendingBlocks(ctx context.Context, in *QueryPendingBlocksRequest, opts ...grpc.CallOption) (*QueryPendingBlocksResponse, error)
+	ExpiredBlocks(ctx context.Context, in *QueryExpiredBlocksRequest, opts ...grpc.CallOption) (*QueryExpiredBlocksResponse, error)
 }
 
 type queryClient struct {
@@ -58,6 +64,33 @@ func (c *queryClient) CelestiaAddress(ctx context.Context, in *QueryCelestiaAddr
 	return out, nil
 }
 
+func (c *queryClient) ProvenHeight(ctx context.Context, in *QueryProvenHeightRequest, opts ...grpc.CallOption) (*QueryProvenHeightResponse, error) {
+	out := new(QueryProvenHeightResponse)
+	err := c.cc.Invoke(ctx, Query_ProvenHeight_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) PendingBlocks(ctx context.Context, in *QueryPendingBlocksRequest, opts ...grpc.CallOption) (*QueryPendingBlocksResponse, error) {
+	out := new(QueryPendingBlocksResponse)
+	err := c.cc.Invoke(ctx, Query_PendingBlocks_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) ExpiredBlocks(ctx context.Context, in *QueryExpiredBlocksRequest, opts ...grpc.CallOption) (*QueryExpiredBlocksResponse, error) {
+	out := new(QueryExpiredBlocksResponse)
+	err := c.cc.Invoke(ctx, Query_ExpiredBlocks_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // QueryServer is the server API for Query service.
 // All implementations must embed UnimplementedQueryServer
 // for forward compatibility
@@ -65,6 +98,9 @@ type QueryServer interface {
 	// Validators returns registered validators of the module.
 	Validators(context.Context, *QueryValidatorsRequest) (*QueryValidatorsResponse, error)
 	CelestiaAddress(context.Context, *QueryCelestiaAddressRequest) (*QueryCelestiaAddressResponse, error)
+	ProvenHeight(context.Context, *QueryProvenHeightRequest) (*QueryProvenHeightResponse, error)
+	PendingBlocks(context.Context, *QueryPendingBlocksRequest) (*QueryPendingBlocksResponse, error)
+	ExpiredBlocks(context.Context, *QueryExpiredBlocksRequest) (*QueryExpiredBlocksResponse, error)
 	mustEmbedUnimplementedQueryServer()
 }
 
@@ -77,6 +113,15 @@ func (UnimplementedQueryServer) Validators(context.Context, *QueryValidatorsRequ
 }
 func (UnimplementedQueryServer) CelestiaAddress(context.Context, *QueryCelestiaAddressRequest) (*QueryCelestiaAddressResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CelestiaAddress not implemented")
+}
+func (UnimplementedQueryServer) ProvenHeight(context.Context, *QueryProvenHeightRequest) (*QueryProvenHeightResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ProvenHeight not implemented")
+}
+func (UnimplementedQueryServer) PendingBlocks(context.Context, *QueryPendingBlocksRequest) (*QueryPendingBlocksResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PendingBlocks not implemented")
+}
+func (UnimplementedQueryServer) ExpiredBlocks(context.Context, *QueryExpiredBlocksRequest) (*QueryExpiredBlocksResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ExpiredBlocks not implemented")
 }
 func (UnimplementedQueryServer) mustEmbedUnimplementedQueryServer() {}
 
@@ -127,6 +172,60 @@ func _Query_CelestiaAddress_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Query_ProvenHeight_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryProvenHeightRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).ProvenHeight(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Query_ProvenHeight_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).ProvenHeight(ctx, req.(*QueryProvenHeightRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_PendingBlocks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryPendingBlocksRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).PendingBlocks(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Query_PendingBlocks_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).PendingBlocks(ctx, req.(*QueryPendingBlocksRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_ExpiredBlocks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryExpiredBlocksRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).ExpiredBlocks(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Query_ExpiredBlocks_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).ExpiredBlocks(ctx, req.(*QueryExpiredBlocksRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Query_ServiceDesc is the grpc.ServiceDesc for Query service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -141,6 +240,18 @@ var Query_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CelestiaAddress",
 			Handler:    _Query_CelestiaAddress_Handler,
+		},
+		{
+			MethodName: "ProvenHeight",
+			Handler:    _Query_ProvenHeight_Handler,
+		},
+		{
+			MethodName: "PendingBlocks",
+			Handler:    _Query_PendingBlocks_Handler,
+		},
+		{
+			MethodName: "ExpiredBlocks",
+			Handler:    _Query_ExpiredBlocks_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -91,9 +91,9 @@ func (r *Relayer) isValidatorAndCaughtUp(ctx context.Context) bool {
 }
 
 func (r *Relayer) getClientState(ctx context.Context) *celestia.ClientState {
+	// TODO: decide whether to query for the latest commit height, use r.latestCommitHeight, or use r.latestCommitHeight-1
 	clientState, err := r.localProvider.QueryCelestiaClientState(ctx, r.latestCommitHeight-1)
 	if err != nil {
-		fmt.Println("err getClientstate, ", err)
 		return nil
 	}
 

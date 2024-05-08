@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"cosmossdk.io/collections"
-	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/rollchains/tiablob"
 )
 
@@ -96,13 +95,13 @@ func (k *Keeper) IsBlockExpired(ctx context.Context, currentBlockTime time.Time,
 }
 
 // AddUpdatePendingBlock will add a new pending block or update an existing pending block
-func (k *Keeper) AddUpdatePendingBlock(ctx context.Context, cdc codec.BinaryCodec, pendingBlock int64, currentBlockTime time.Time) error {
+func (k *Keeper) AddUpdatePendingBlock(ctx context.Context, pendingBlock int64, currentBlockTime time.Time) error {
 	found, err := k.PendingBlocksToTimeouts.Has(ctx, pendingBlock)
 	if err != nil {
 		return fmt.Errorf("remove pending blocks, block %d error", pendingBlock)
 	}
 	if found {
-		if err = k.RemovePendingBlock(ctx, cdc, pendingBlock); err != nil {
+		if err = k.RemovePendingBlock(ctx, pendingBlock); err != nil {
 			return err
 		}
 	}
@@ -110,24 +109,31 @@ func (k *Keeper) AddUpdatePendingBlock(ctx context.Context, cdc codec.BinaryCode
 	if err = k.PendingBlocksToTimeouts.Set(ctx, pendingBlock, expiration); err != nil {
 		return fmt.Errorf("add/update pending block, set pending block (%d) to timeout (%d)", pendingBlock, expiration)
 	}
-	found, err = k.TimeoutsToPendingBlocks.Has(ctx, expiration)
+	if err = k.AddPendingBlockToTimeoutsMap(ctx, pendingBlock, expiration); err != nil {
+		return fmt.Errorf("add/update pending block, add pending block to timeouts map, %v", err)
+	}
+	return nil
+}
+
+func (k *Keeper) AddPendingBlockToTimeoutsMap(ctx context.Context, height int64, expiration int64) error {
+	found, err := k.TimeoutsToPendingBlocks.Has(ctx, expiration)
 	var pendingBlocks PendingBlocks
 	if found {
 		pendingBlocks, err = k.TimeoutsToPendingBlocks.Get(ctx, expiration)
 		if err != nil {
-			return fmt.Errorf("add/update pending block, unmarshal existing pending blocks")
+			return err
 		}
 	}
-	pendingBlocks.BlockHeights = append(pendingBlocks.BlockHeights, pendingBlock)
+	pendingBlocks.BlockHeights = append(pendingBlocks.BlockHeights, height)
 	if err = k.TimeoutsToPendingBlocks.Set(ctx, expiration, pendingBlocks); err != nil {
-		return fmt.Errorf("add/update pending block, set new timeouts to pending blocks")
+		return err
 	}
 	return nil
 }
 
 // RemovePendingBlock removes proven block from pending state
 // This function will remove the proven block from the PendingBlocksToTimeouts map and TimeoutsToPendingBlocks map
-func (k *Keeper) RemovePendingBlock(ctx context.Context, cdc codec.BinaryCodec, provenBlock int64) error {
+func (k *Keeper) RemovePendingBlock(ctx context.Context, provenBlock int64) error {
 	found, err := k.PendingBlocksToTimeouts.Has(ctx, provenBlock)
 	if err != nil {
 		return fmt.Errorf("remove pending blocks, block %d error", provenBlock)
@@ -165,7 +171,7 @@ func (k *Keeper) RemovePendingBlock(ctx context.Context, cdc codec.BinaryCodec, 
 }
 
 // GetExpiredBlocks returns all expired blocks, proposer will propose publishing based on this set
-func (k Keeper) GetExpiredBlocks(ctx context.Context, cdc codec.BinaryCodec, currentBlockTime time.Time) []int64 {
+func (k Keeper) GetExpiredBlocks(ctx context.Context, currentBlockTime time.Time) []int64 {
 	currentBlockTimeNs := currentBlockTime.UnixNano()
 	iterator, err := k.TimeoutsToPendingBlocks.
 		Iterate(ctx, (&collections.Range[int64]{}).StartInclusive(0).EndInclusive(currentBlockTimeNs))
@@ -183,4 +189,30 @@ func (k Keeper) GetExpiredBlocks(ctx context.Context, cdc codec.BinaryCodec, cur
 		expiredBlocks = append(expiredBlocks, pendingBlocks.BlockHeights...)
 	}
 	return expiredBlocks
+}
+
+func (k *Keeper) GetPendingBlocksWithExpiration(ctx context.Context) ([]*tiablob.BlockWithExpiration, error) {
+	iterator, err := k.PendingBlocksToTimeouts.Iterate(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer iterator.Close()
+
+	var pendingBlocks []*tiablob.BlockWithExpiration
+	for ; iterator.Valid(); iterator.Next() {
+		pendingBlock, err := iterator.Key()
+		if err != nil {
+			return nil, err
+		}
+		expiration, err := iterator.Value()
+		if err != nil {
+			return nil, err
+		}
+		pendingBlocks = append(pendingBlocks, &tiablob.BlockWithExpiration{
+			Height: pendingBlock,
+			Expiration: time.Unix(0, expiration),
+		})
+	}
+
+	return pendingBlocks, nil
 }

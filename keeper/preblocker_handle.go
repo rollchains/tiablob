@@ -80,7 +80,7 @@ func (k *Keeper) preblockerProofs(ctx sdk.Context, proofs []*celestia.BlobProof)
 			if err = k.SetProvenHeight(ctx, proof.RollchainHeight); err != nil {
 				return fmt.Errorf("preblocker proofs, set proven height, %v", err)
 			}
-			if err = k.RemovePendingBlock(ctx, k.cdc, int64(proof.RollchainHeight)); err != nil {
+			if err = k.RemovePendingBlock(ctx, int64(proof.RollchainHeight)); err != nil {
 				return fmt.Errorf("preblocker proofs, remove pending block, %v", err)
 			}
 		}
@@ -94,7 +94,7 @@ func (k *Keeper) preblockerPendingBlocks(ctx sdk.Context, blockTime time.Time, p
 			k.relayer.PostBlocks(ctx, pendingBlocks.BlockHeights)
 		}
 		for _, pendingBlock := range pendingBlocks.BlockHeights {
-			if err := k.AddUpdatePendingBlock(ctx, k.cdc, pendingBlock, blockTime); err != nil {
+			if err := k.AddUpdatePendingBlock(ctx, pendingBlock, blockTime); err != nil {
 				return fmt.Errorf("preblocker pending blocks, %v", err)
 			}
 		}
