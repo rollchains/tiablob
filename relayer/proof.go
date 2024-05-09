@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	protoblocktypes "github.com/cometbft/cometbft/proto/tendermint/types"
+	appblob "github.com/rollchains/tiablob/celestia/blob"
 	"github.com/rollchains/tiablob/celestia-node/blob"
 	"github.com/rollchains/tiablob/celestia-node/share"
 	"github.com/rollchains/tiablob/lightclients/celestia"
@@ -33,7 +34,7 @@ func (r *Relayer) GetCachedProofs(proofLimit int, latestProvenHeight int64) []*c
 		if len(proofs) >= proofLimit {
 			break
 		}
-		checkHeight++
+		checkHeight = checkHeight + int64(len(proof.RollchainHeights))
 		proof = r.getCachedProof(checkHeight)
 	}
 
@@ -88,17 +89,110 @@ func (r *Relayer) checkForNewBlockProofs(ctx context.Context, latestClientState 
 				return
 			}
 			squareSize = block.Block.Data.SquareSize
-		}
-		for _, mBlob := range blobs {
-			// TODO: we can aggregate adjacent blobs and prove with a single proof, fall back to individual blobs when not possible
-			err = r.GetBlobProof(ctx, celestiaNodeClient, mBlob, queryHeight, squareSize, latestClientState)
-			if err != nil {
-				r.logger.Error("getting blob proof", "error", err)
-				return
+			if err = r.getBlobProofs(ctx, blobs, queryHeight, squareSize, latestClientState); err != nil {
+				r.logger.Error("getting blob proofs", "error", err)
 			}
 		}
+
 		r.celestiaLastQueriedHeight = queryHeight
 	}
+}
+
+func (r *Relayer) getBlobProofs(ctx context.Context, blobs []*blob.Blob, queryHeight int64, squareSize uint64, latestClientState *celestia.ClientState) error {
+	success := r.tryGetAggregatedProof(ctx, blobs, queryHeight, squareSize, latestClientState)
+	if !success {
+		for _, mBlob := range blobs {
+			// TODO: we can aggregate adjacent blobs and prove with a single proof, fall back to individual blobs when not possible
+			err := r.getBlobProof(ctx, mBlob, queryHeight, squareSize, latestClientState)
+			if err != nil {
+				r.logger.Error("getting blob proof", "error", err)
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// tryGetAggregatedProof will try and find a proof for multiple blocks/blobs
+// currently, it is strict and will bail on an error or not sequential set of blocks
+func (r *Relayer) tryGetAggregatedProof(ctx context.Context, blobs []*blob.Blob, queryHeight int64, squareSize uint64, latestClientState *celestia.ClientState) bool {
+	heights := make([]int64, len(blobs))
+	for i, mBlob := range blobs {
+		var err error
+		// Replace blob data with our data for proof verification
+		heights[i], mBlob.Data = r.getBlobHeightAndData(ctx, mBlob, queryHeight, r.latestProvenHeight)
+		if heights[i] == 0 || mBlob.Data == nil {
+			r.logger.Error("aggregate, getBlobHeightAndData bail", "error", err)
+			// bail immediately and try individual block proofs
+			return false
+		}
+	
+		// Non-sequential set of blocks check
+		if i > 0 && heights[i] != heights[i-1] + 1{
+			r.logger.Error("aggregate, blobs not sequential", "current", heights[i], "previous", heights[i-1])
+			return false
+		}
+	}
+
+	shares, err := blob.BlobsToShares(blobs...)
+	if err != nil {
+		r.logger.Error("aggregate, blobs to shares", "error", err)
+		return false
+	}
+
+	shareIndex := getShareIndex(uint64(blobs[0].Index()), squareSize)
+
+	// Get all shares from celestia node, confirm our shares are present
+	proverShareProof, err := r.celestiaProvider.ProveShares(ctx, uint64(queryHeight), shareIndex, shareIndex+uint64(len(shares)))
+	if err != nil {
+		r.logger.Error("aggregate, error calling ProveShares", "error", err)
+		return false
+	}
+
+	// Get the header to verify the proof
+	header := r.getCachedHeader(queryHeight)
+	if header == nil {
+		header = r.fetchNewHeader(ctx, queryHeight, latestClientState)
+		if header == nil {
+			r.logger.Error("aggregate, fetch header is nil")
+			return false
+		}
+	}
+
+	proverShareProof.Data = shares // Replace with retrieved shares
+	err = proverShareProof.Validate(header.SignedHeader.Header.DataHash)
+	if err != nil {
+		r.logger.Error("aggregate, failed verify membership", "error", err)
+		return false
+	}
+
+	// We have a valid proof, if we haven't cached the header, cache it
+	// This goroutine is the only way to delete headers, so it should be kept that way
+	if r.getCachedHeader(queryHeight) == nil {
+		r.setCachedHeader(queryHeight, header)
+	}
+
+	proverShareProof.Data = nil // Only include proof
+	shareProofProto := celestia.TmShareProofToProto(proverShareProof)
+
+	var protoBlobs []appblob.Blob
+	for _, mBlob := range blobs {
+		mBlob.Data = nil            // Only include blob metadata
+		protoBlobs = append(protoBlobs, celestia.BlobToProto(mBlob))
+	}
+
+	proof := &celestia.BlobProof{
+		ShareProof:      shareProofProto,
+		Blob:            protoBlobs,
+		CelestiaHeight:  queryHeight,
+		RollchainHeights: heights,
+	}
+
+	for _, height := range heights {
+		r.setCachedProof(height, proof)
+	}
+
+	return true
 }
 
 // GetBlobProof
@@ -109,43 +203,14 @@ func (r *Relayer) checkForNewBlockProofs(ctx context.Context, latestClientState 
 //   - stores proof in cache
 //
 // returns an error only when we shouldn't hit an error, otherwise nil if the blob could be someone elses (i.e. same namespace used)
-func (r *Relayer) GetBlobProof(ctx context.Context, celestiaNodeClient *cn.Client, mBlob *blob.Blob, queryHeight int64, squareSize uint64, latestClientState *celestia.ClientState) error {
-	var blobBlockProto protoblocktypes.Block
-	err := blobBlockProto.Unmarshal(mBlob.GetData())
-	if err != nil {
-		r.logger.Error("blob unmarshal", "height", queryHeight, "error", err)
+func (r *Relayer) getBlobProof(ctx context.Context, mBlob *blob.Blob, queryHeight int64, squareSize uint64, latestClientState *celestia.ClientState) error {
+	rollchainBlockHeight, data := r.getBlobHeightAndData(ctx, mBlob, queryHeight, r.latestProvenHeight)
+	if data == nil {
 		return nil
 	}
-
-	rollchainBlockHeight := blobBlockProto.Header.Height
-
-	// Ignore any blocks that are <= the latest proven height
-	if rollchainBlockHeight <= r.latestProvenHeight {
-		return nil
-	}
-
-	// Cannot use txClient.GetBlockWithTxs since it tries to decode the txs. This API is broken when using the same tx
-	// injection method as vote extensions. https://docs.cosmos.network/v0.50/build/abci/vote-extensions#vote-extension-propagation
-	// "FinalizeBlock will ignore any byte slice that doesn't implement an sdk.Tx, so any injected vote extensions will safely be ignored in FinalizeBlock"
-	// "Some existing Cosmos SDK core APIs may need to be modified and thus broken."
-	expectedBlock, err := r.localProvider.GetBlockAtHeight(ctx, rollchainBlockHeight)
-	if err != nil {
-		r.logger.Error("getting local block", "celestia height", queryHeight, "rollchain height", rollchainBlockHeight, "err", err)
-		return nil
-	}
-
-	blockProto, err := expectedBlock.Block.ToProto()
-	if err != nil {
-		return err
-	}
-
-	blockProtoBz, err := blockProto.Marshal()
-	if err != nil {
-		return err
-	}
-
+	
 	// Replace blob data with our data for proof verification
-	mBlob.Data = blockProtoBz
+	mBlob.Data = data
 
 	shares, err := blob.BlobsToShares(mBlob)
 	if err != nil {
@@ -153,7 +218,7 @@ func (r *Relayer) GetBlobProof(ctx context.Context, celestiaNodeClient *cn.Clien
 		return nil
 	}
 
-	shareIndex := GetShareIndex(uint64(mBlob.Index()), squareSize)
+	shareIndex := getShareIndex(uint64(mBlob.Index()), squareSize)
 
 	// Get all shares from celestia node, confirm our shares are present
 	proverShareProof, err := r.celestiaProvider.ProveShares(ctx, uint64(queryHeight), shareIndex, shareIndex+uint64(len(shares)))
@@ -165,7 +230,11 @@ func (r *Relayer) GetBlobProof(ctx context.Context, celestiaNodeClient *cn.Clien
 	// Get the header to verify the proof
 	header := r.getCachedHeader(queryHeight)
 	if header == nil {
-		header = r.FetchNewHeader(ctx, queryHeight, latestClientState)
+		header = r.fetchNewHeader(ctx, queryHeight, latestClientState)
+		if header == nil {
+			r.logger.Error("fetch new header is nil")
+			return nil
+		}
 	}
 
 	proverShareProof.Data = shares // Replace with retrieved shares
@@ -187,16 +256,59 @@ func (r *Relayer) GetBlobProof(ctx context.Context, celestiaNodeClient *cn.Clien
 
 	r.setCachedProof(rollchainBlockHeight, &celestia.BlobProof{
 		ShareProof:      shareProofProto,
-		Blob:            celestia.BlobToProto(mBlob),
+		Blob:            []appblob.Blob{celestia.BlobToProto(mBlob)},
 		CelestiaHeight:  queryHeight,
-		RollchainHeight: rollchainBlockHeight,
+		RollchainHeights: []int64{rollchainBlockHeight},
 	})
 
 	return nil
 }
 
+func (r *Relayer) getBlobHeightAndData(ctx context.Context, mBlob *blob.Blob, queryHeight int64, latestProvenHeight int64) (int64, []byte) {
+	var blobBlockProto protoblocktypes.Block
+	err := blobBlockProto.Unmarshal(mBlob.GetData())
+	if err != nil {
+		r.logger.Error("blob unmarshal", "height", queryHeight, "error", err)
+		return 0, nil
+	}
+
+	rollchainBlockHeight := blobBlockProto.Header.Height
+
+	// Ignore any blocks that are <= the latest proven height
+	if rollchainBlockHeight <= latestProvenHeight {
+		return 0, nil
+	}
+
+	blockProtoBz, err := r.GetLocalBlockAtHeight(ctx, rollchainBlockHeight)
+	if err != nil {
+		return 0, nil
+	}
+
+	return rollchainBlockHeight, blockProtoBz
+}
+
+func (r *Relayer) GetLocalBlockAtHeight(ctx context.Context, rollchainBlockHeight int64) ([]byte, error) {
+	// Cannot use txClient.GetBlockWithTxs since it tries to decode the txs. This API is broken when using the same tx
+	// injection method as vote extensions. https://docs.cosmos.network/v0.50/build/abci/vote-extensions#vote-extension-propagation
+	// "FinalizeBlock will ignore any byte slice that doesn't implement an sdk.Tx, so any injected vote extensions will safely be ignored in FinalizeBlock"
+	// "Some existing Cosmos SDK core APIs may need to be modified and thus broken."
+	expectedBlock, err := r.localProvider.GetBlockAtHeight(ctx, rollchainBlockHeight)
+	if err != nil {
+		// TODO: add retries, bad if this errors
+		r.logger.Error("getting local block", "rollchain height", rollchainBlockHeight, "err", err)
+		return nil, err
+	}
+
+	blockProto, err := expectedBlock.Block.ToProto()
+	if err != nil {
+		return nil, err
+	}
+
+	return blockProto.Marshal()
+}
+
 // GetShareIndex calculates the share index given the EDS index of the blob and square size of the respective block
-func GetShareIndex(edsIndex uint64, squareSize uint64) uint64 {
+func getShareIndex(edsIndex uint64, squareSize uint64) uint64 {
 	shareIndex := edsIndex
 	if edsIndex > squareSize {
 		shareIndex = (edsIndex-(edsIndex%squareSize))/2 + (edsIndex % squareSize)

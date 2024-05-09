@@ -40,36 +40,33 @@ func (k Keeper) processProofs(ctx sdk.Context, clients []*celestia.Header, proof
 		if err != nil {
 			return fmt.Errorf("process proofs, getting proven height, %v", err)
 		}
+		checkHeight := provenHeight + 1
 		for _, proof := range proofs {
-			if proof.RollchainHeight != provenHeight+1 {
-				return fmt.Errorf("process proofs, expected height: %d, actual height: %d", provenHeight+1, proof.RollchainHeight)
-			}
-			// Form blob
-			// State sync will need to sync from a snapshot + the unproven blocks
-			block, err := k.relayer.GetLocalBlockAtHeight(ctx, int64(proof.RollchainHeight))
-			if err != nil {
-				return fmt.Errorf("process proofs, get local block at height: %d, %v", proof.RollchainHeight, err)
-			}
+			blobs := make([]*blob.Blob, len(proof.RollchainHeights))
+			for i, height := range proof.RollchainHeights {
+				if height != checkHeight {
+					return fmt.Errorf("process proofs, expected height: %d, actual height: %d", checkHeight, height)
+				}
+				checkHeight++
+			
+				// Form blob
+				// State sync will need to sync from a snapshot + the unproven blocks
+				blockProtoBz, err := k.relayer.GetLocalBlockAtHeight(ctx, height)
+				if err != nil {
+					return fmt.Errorf("process proofs, get local block at height: %d, %v", height, err)
+				}
 
-			blockProto, err := block.Block.ToProto()
-			if err != nil {
-				return fmt.Errorf("process proofs, block to proto, %v", err)
-			}
+				// Replace blob data with our data for proof verification, do this before the convert
+				proof.Blob[i].Data = blockProtoBz
 
-			blockProtoBz, err := blockProto.Marshal()
-			if err != nil {
-				return fmt.Errorf("process proofs, block proto marshal, %v", err)
-			}
-
-			// Replace blob data with our data for proof verification, do this before the convert
-			proof.Blob.Data = blockProtoBz
-			mBlob, err := celestia.BlobFromProto(&proof.Blob)
-			if err != nil {
-				return fmt.Errorf("process proofs, blob from proto, %v", err)
+				blobs[i], err = celestia.BlobFromProto(&proof.Blob[i])
+				if err != nil {
+					return fmt.Errorf("process proofs, blob from proto, %v", err)
+				}	
 			}
 
 			// Populate proof with data
-			proof.ShareProof.Data, err = blob.BlobsToShares(mBlob)
+			proof.ShareProof.Data, err = blob.BlobsToShares(blobs...)
 			if err != nil {
 				return fmt.Errorf("process proofs, blobs to shares, %v", err)
 			}
@@ -93,7 +90,6 @@ func (k Keeper) processProofs(ctx sdk.Context, clients []*celestia.Header, proof
 					return fmt.Errorf("process proofs, verify membership, %v", err)
 				}
 			}
-			provenHeight++
 		}
 	}
 	return nil

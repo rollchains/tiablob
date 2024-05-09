@@ -1,7 +1,6 @@
 package relayer
 
 import (
-	"context"
 	"sync"
 	"time"
 
@@ -13,7 +12,6 @@ import (
 	celestiaprovider "github.com/rollchains/tiablob/relayer/celestia"
 	"github.com/rollchains/tiablob/relayer/local"
 
-	coretypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 )
 
@@ -109,9 +107,4 @@ func NewRelayer(
 
 func (r *Relayer) SetClientContext(clientCtx client.Context) {
 	r.clientCtx = clientCtx
-}
-
-// GetLocalBlockAtAHeight allows keeper package to use the relayer's provider to fetch its blocks
-func (r *Relayer) GetLocalBlockAtHeight(ctx context.Context, height int64) (*coretypes.ResultBlock, error) {
-	return r.localProvider.GetBlockAtHeight(ctx, height)
 }

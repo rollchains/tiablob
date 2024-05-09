@@ -50,7 +50,7 @@ func (r *Relayer) GetCachedHeaders(proofLimit int, latestProvenHeight int64) []*
 		if numProofs >= proofLimit {
 			break
 		}
-		checkHeight++
+		checkHeight = checkHeight + int64(len(proof.RollchainHeights))
 		proof = r.getCachedProof(checkHeight)
 	}
 
@@ -72,7 +72,7 @@ func (r *Relayer) GetCachedHeaders(proofLimit int, latestProvenHeight int64) []*
 
 // FetchNewHeader will generate a celestia light client header for updating the client.
 // Headers will either be generated for a proof or to keep the client from expiring.
-func (r *Relayer) FetchNewHeader(ctx context.Context, queryHeight int64, latestClientState *celestia.ClientState) *celestia.Header {
+func (r *Relayer) fetchNewHeader(ctx context.Context, queryHeight int64, latestClientState *celestia.ClientState) *celestia.Header {
 	newLightBlock, err := r.celestiaProvider.QueryLightBlock(ctx, queryHeight)
 	if err != nil {
 		r.logger.Error("error querying light block for proofs", "height", queryHeight)
@@ -134,7 +134,7 @@ func (r *Relayer) shouldUpdateClient(ctx context.Context, latestClientState *cel
 			r.logger.Error("shouldUpdateClient: querying latest height from Celestia", "error", err)
 			return
 		}
-		updateClient := r.FetchNewHeader(ctx, celestiaLatestHeight, latestClientState)
+		updateClient := r.fetchNewHeader(ctx, celestiaLatestHeight, latestClientState)
 		r.SetUpdateClient(updateClient)
 	}
 }

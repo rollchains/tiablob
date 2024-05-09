@@ -110,9 +110,9 @@ message Height {
 
 message BlobProof {
   ShareProof share_proof = 1 [(gogoproto.nullable) = false];
-  .celestia.core.v1.blob.Blob blob = 2 [(gogoproto.nullable) = false];
+  repeated .celestia.core.v1.blob.Blob blob = 2 [(gogoproto.nullable) = false];
   int64 celestia_height = 3;
-  int64 rollchain_height = 4;
+  repeated int64 rollchain_heights = 4;
 }
 
 // ShareProof is an NMT proof that a set of shares exist in a set of rows and a

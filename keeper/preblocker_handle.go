@@ -38,36 +38,32 @@ func (k *Keeper) preblockerProofs(ctx sdk.Context, proofs []*celestia.BlobProof)
 			if err != nil {
 				return fmt.Errorf("preblocker proofs, get proven height, %v", err)
 			}
-			if proof.RollchainHeight != provenHeight+1 {
-				return fmt.Errorf("preblocker proofs,  expected height: %d, actual height: %d", provenHeight+1, proof.RollchainHeight)
-			}
+			checkHeight := provenHeight + 1
+			blobs := make([]*blob.Blob, len(proof.RollchainHeights))
+			for i, height := range proof.RollchainHeights {
+				if height != checkHeight {
+					return fmt.Errorf("preblocker proofs,  expected height: %d, actual height: %d", checkHeight, height)
+				}
+				checkHeight++
 
-			// Form blob
-			// State sync will need to sync from a snapshot + the unproven blocks
-			block, err := k.relayer.GetLocalBlockAtHeight(ctx, int64(proof.RollchainHeight))
-			if err != nil {
-				return fmt.Errorf("preblocker proofs, get local block at height: %d, %v", proof.RollchainHeight, err)
-			}
+				// Form blob
+				// State sync will need to sync from a snapshot + the unproven blocks
+				blockProtoBz, err := k.relayer.GetLocalBlockAtHeight(ctx, height)
+				if err != nil {
+					return fmt.Errorf("preblocker proofs, get local block at height: %d, %v", height, err)
+				}
 
-			blockProto, err := block.Block.ToProto()
-			if err != nil {
-				return fmt.Errorf("preblocker proofs, block to proto, %v", err)
-			}
+				// Replace blob data with our data for proof verification, do this before convert
+				proof.Blob[i].Data = blockProtoBz
 
-			blockProtoBz, err := blockProto.Marshal()
-			if err != nil {
-				return fmt.Errorf("preblocker proofs, block proto marshal, %v", err)
-			}
-
-			// Replace blob data with our data for proof verification, do this before convert
-			proof.Blob.Data = blockProtoBz
-			mBlob, err := celestia.BlobFromProto(&proof.Blob)
-			if err != nil {
-				return fmt.Errorf("preblocker proofs, blob from proto, %v", err)
+				blobs[i], err = celestia.BlobFromProto(&proof.Blob[i])
+				if err != nil {
+					return fmt.Errorf("preblocker proofs, blob from proto, %v", err)
+				}
 			}
 
 			// Populate proof with data
-			proof.ShareProof.Data, err = blob.BlobsToShares(mBlob)
+			proof.ShareProof.Data, err = blob.BlobsToShares(blobs...)
 			if err != nil {
 				return fmt.Errorf("preblocker proofs, blobs to shares, %v", err)
 			}
@@ -77,11 +73,13 @@ func (k *Keeper) preblockerProofs(ctx sdk.Context, proofs []*celestia.BlobProof)
 			if err != nil {
 				return fmt.Errorf("preblocker proofs, verify membership, %v", err)
 			}
-			if err = k.SetProvenHeight(ctx, proof.RollchainHeight); err != nil {
+			if err = k.SetProvenHeight(ctx, proof.RollchainHeights[len(proof.RollchainHeights)-1]); err != nil {
 				return fmt.Errorf("preblocker proofs, set proven height, %v", err)
 			}
-			if err = k.RemovePendingBlock(ctx, int64(proof.RollchainHeight)); err != nil {
-				return fmt.Errorf("preblocker proofs, remove pending block, %v", err)
+			for _, height := range proof.RollchainHeights {
+				if err = k.RemovePendingBlock(ctx, height); err != nil {
+					return fmt.Errorf("preblocker proofs, remove pending block, %v", err)
+				}
 			}
 		}
 	}

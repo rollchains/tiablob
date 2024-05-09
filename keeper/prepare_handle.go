@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"fmt"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -22,6 +23,7 @@ func (k Keeper) addTiablobDataToTxs(injectDataBz []byte, maxTxBytes int64, txs [
 	if len(injectDataBz) > 0 {
 		var finalTxs [][]byte
 		totalTxBytes := int64(len(injectDataBz))
+		fmt.Println("Injected data size: ", totalTxBytes) // TODO: remove, debug only
 		finalTxs = append(finalTxs, injectDataBz)
 		for _, tx := range txs {
 			totalTxBytes += int64(len(tx))
@@ -47,7 +49,7 @@ func (k Keeper) prepareCreateClient(ctx sdk.Context) *celestia.CreateClient {
 }
 
 func (k Keeper) preparePostBlocks(ctx sdk.Context, currentBlockTime time.Time) PendingBlocks {
-	// Call PostNextBlocks to publish next blocks (if necessary) and/or retry timed-out published blocks
+	// Call PostNextBlocks to publish next blocks (if necessary)
 	newBlocks := k.relayer.ProposePostNextBlocks(ctx)
 
 	// If there are no new blocks to propose, check for expired blocks
