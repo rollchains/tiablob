@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	rpcclient "github.com/cometbft/cometbft/rpc/client"
 	coretypes "github.com/cometbft/cometbft/rpc/core/types"
 
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -35,12 +34,8 @@ func (cc *CosmosProvider) Status(ctx context.Context) (*coretypes.ResultStatus, 
 }
 
 // QueryABCI performs an ABCI query and returns the appropriate response and error sdk error code.
-func (cc *CosmosProvider) QueryABCI(ctx context.Context, req abci.RequestQuery) (abci.ResponseQuery, error) {
-	opts := rpcclient.ABCIQueryOptions{
-		Height: req.Height,
-		Prove:  req.Prove,
-	}
-	result, err := cc.rpcClient.ABCIQueryWithOptions(ctx, req.Path, req.Data, opts)
+func (cc *CosmosProvider) QueryABCI(ctx context.Context, path string, data []byte) (abci.ResponseQuery, error) {
+	result, err := cc.rpcClient.ABCIQuery(ctx, path, data)
 	if err != nil {
 		return abci.ResponseQuery{}, err
 	}
@@ -52,17 +47,11 @@ func (cc *CosmosProvider) QueryABCI(ctx context.Context, req abci.RequestQuery) 
 	return result.Response, nil
 }
 
-func (cc *CosmosProvider) QueryCelestiaClientState(ctx context.Context, height int64) (*celestia.ClientState, error) {
+func (cc *CosmosProvider) QueryCelestiaClientState(ctx context.Context) (*celestia.ClientState, error) {
+	path := fmt.Sprintf("store/%s/key", tiablob.StoreKey)
 	key := []byte(fmt.Sprintf("%s%s", tiablob.ClientStoreKey, celestia.KeyClientState))
 
-	req := abci.RequestQuery{
-		Path:   fmt.Sprintf("store/%s/key", tiablob.StoreKey),
-		Height: height,
-		Data:   key,
-		Prove:  false,
-	}
-
-	res, err := cc.QueryABCI(ctx, req)
+	res, err := cc.QueryABCI(ctx, path, key)
 	if err != nil {
 		return nil, err
 	}
