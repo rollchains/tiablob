@@ -75,8 +75,8 @@ func (k Keeper) preparePostBlocks(ctx sdk.Context, currentBlockTime time.Time) P
 // If so, it will delay publishing expired blocks so that the relayer has time to populate block proof cache first
 func (k Keeper) shouldGetExpiredBlock(ctx sdk.Context) bool {
 	_, lastUpgradeHeight, _ := k.upgradeKeeper.GetLastCompletedUpgrade(ctx)
-	if ctx.BlockHeight() < lastUpgradeHeight+DelayAfterUpgrade {
-		return false
+	if ctx.BlockHeight() >= lastUpgradeHeight+DelayAfterUpgrade {
+		return true
 	}
-	return true
+	return false
 }

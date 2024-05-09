@@ -117,6 +117,9 @@ func (k *Keeper) AddUpdatePendingBlock(ctx context.Context, pendingBlock int64, 
 
 func (k *Keeper) AddPendingBlockToTimeoutsMap(ctx context.Context, height int64, expiration int64) error {
 	found, err := k.TimeoutsToPendingBlocks.Has(ctx, expiration)
+	if err != nil {
+		return err
+	}
 	var pendingBlocks PendingBlocks
 	if found {
 		pendingBlocks, err = k.TimeoutsToPendingBlocks.Get(ctx, expiration)

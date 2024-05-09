@@ -77,6 +77,9 @@ func NewRelayer(
 	}
 
 	localProvider, err := local.NewProvider(cdc)
+	if err != nil {
+		return nil, err
+	}
 
 	return &Relayer{
 		logger: logger,
