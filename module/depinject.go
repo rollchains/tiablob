@@ -1,10 +1,10 @@
 package module
 
 import (
+	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
 	"github.com/cosmos/cosmos-sdk/codec"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
-	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
 
 	"cosmossdk.io/core/appmodule"
 	"cosmossdk.io/core/store"

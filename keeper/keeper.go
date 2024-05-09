@@ -4,13 +4,13 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 
 	"cosmossdk.io/collections"
-	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	storetypes "cosmossdk.io/core/store"
 	storetypes2 "cosmossdk.io/store/types"
+	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
+	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	"github.com/rollchains/tiablob"
 	tiablobrelayer "github.com/rollchains/tiablob/relayer"
-	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
 )
 
 type Keeper struct {
@@ -29,7 +29,7 @@ type Keeper struct {
 	cdc codec.BinaryCodec
 
 	publishToCelestiaBlockInterval int
-	injectedProofsLimit int
+	injectedProofsLimit            int
 
 	proposerAddress []byte
 }
@@ -61,7 +61,7 @@ func NewKeeper(
 		cdc: cdc,
 
 		publishToCelestiaBlockInterval: publishToCelestiaBlockInterval,
-		injectedProofsLimit: cfg.MaxFlushSize,
+		injectedProofsLimit:            cfg.MaxFlushSize,
 	}
 }
 

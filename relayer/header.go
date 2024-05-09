@@ -41,7 +41,7 @@ func (r *Relayer) GetCachedHeaders(proofLimit int, latestProvenHeight int64) []*
 	numProofs := 0
 	checkHeight := latestProvenHeight + 1
 	proof := r.getCachedProof(checkHeight)
-	for ; proof != nil; {
+	for proof != nil {
 		header := r.getCachedHeader(proof.CelestiaHeight)
 		if header != nil {
 			headersMap[proof.CelestiaHeight] = header

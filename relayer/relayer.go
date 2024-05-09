@@ -13,8 +13,8 @@ import (
 	celestiaprovider "github.com/rollchains/tiablob/relayer/celestia"
 	"github.com/rollchains/tiablob/relayer/local"
 
-	"github.com/cosmos/cosmos-sdk/codec"
 	coretypes "github.com/cometbft/cometbft/rpc/core/types"
+	"github.com/cosmos/cosmos-sdk/codec"
 )
 
 const (
@@ -32,16 +32,16 @@ type Relayer struct {
 	commitHeights      chan int64
 	latestCommitHeight int64
 
-	pollInterval time.Duration
+	pollInterval         time.Duration
 	blockProofCacheLimit int
-	nodeRpcUrl    string
-	nodeAuthToken string
+	nodeRpcUrl           string
+	nodeAuthToken        string
 
 	// These items are shared state, must be access with mutex
-	blockProofCache      map[int64]*celestia.BlobProof
-	celestiaHeaderCache  map[int64]*celestia.Header
-	updateClient         *celestia.Header
-	mu                   sync.Mutex
+	blockProofCache     map[int64]*celestia.BlobProof
+	celestiaHeaderCache map[int64]*celestia.Header
+	updateClient        *celestia.Header
+	mu                  sync.Mutex
 
 	celestiaProvider *celestiaprovider.CosmosProvider
 	localProvider    *local.CosmosProvider

@@ -5,13 +5,13 @@ import (
 	"fmt"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	coretypes "github.com/cometbft/cometbft/rpc/core/types"
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
+	coretypes "github.com/cometbft/cometbft/rpc/core/types"
 
-	"github.com/rollchains/tiablob"
-	"google.golang.org/grpc/status"
-	"google.golang.org/grpc/codes"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/rollchains/tiablob"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/rollchains/tiablob/lightclients/celestia"
 )
@@ -56,10 +56,10 @@ func (cc *CosmosProvider) QueryCelestiaClientState(ctx context.Context, height i
 	key := []byte(fmt.Sprintf("%s%s", tiablob.ClientStoreKey, celestia.KeyClientState))
 
 	req := abci.RequestQuery{
-		Path: fmt.Sprintf("store/%s/key", tiablob.StoreKey),
+		Path:   fmt.Sprintf("store/%s/key", tiablob.StoreKey),
 		Height: height,
-		Data: key,
-		Prove: false,
+		Data:   key,
+		Prove:  false,
 	}
 
 	res, err := cc.QueryABCI(ctx, req)

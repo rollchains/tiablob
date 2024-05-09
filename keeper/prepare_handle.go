@@ -52,7 +52,7 @@ func (k Keeper) preparePostBlocks(ctx sdk.Context, currentBlockTime time.Time) P
 
 	// If there are no new blocks to propose, check for expired blocks
 	// Additionally, if the block interval is 1, we need to also be able to re-publish an expired block
-	if len(newBlocks) < 2 && k.shouldGetExpiredBlock(ctx){
+	if len(newBlocks) < 2 && k.shouldGetExpiredBlock(ctx) {
 		expiredBlocks := k.GetExpiredBlocks(ctx, currentBlockTime)
 		for _, expiredBlock := range expiredBlocks {
 			// Check if we have a proof for this block already
@@ -75,7 +75,7 @@ func (k Keeper) preparePostBlocks(ctx sdk.Context, currentBlockTime time.Time) P
 // If so, it will delay publishing expired blocks so that the relayer has time to populate block proof cache first
 func (k Keeper) shouldGetExpiredBlock(ctx sdk.Context) bool {
 	_, lastUpgradeHeight, _ := k.upgradeKeeper.GetLastCompletedUpgrade(ctx)
-	if ctx.BlockHeight() < lastUpgradeHeight + DelayAfterUpgrade {
+	if ctx.BlockHeight() < lastUpgradeHeight+DelayAfterUpgrade {
 		return false
 	}
 	return true

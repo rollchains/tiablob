@@ -209,7 +209,7 @@ func (k *Keeper) GetPendingBlocksWithExpiration(ctx context.Context) ([]*tiablob
 			return nil, err
 		}
 		pendingBlocks = append(pendingBlocks, &tiablob.BlockWithExpiration{
-			Height: pendingBlock,
+			Height:     pendingBlock,
 			Expiration: time.Unix(0, expiration),
 		})
 	}

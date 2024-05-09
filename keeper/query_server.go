@@ -80,13 +80,13 @@ func (qs queryServer) ExpiredBlocks(ctx context.Context, _ *tiablob.QueryExpired
 		}
 		for _, block := range blocks.BlockHeights {
 			expiredBlocks = append(expiredBlocks, &tiablob.BlockWithExpiration{
-				Height: block,
+				Height:     block,
 				Expiration: time.Unix(0, expiration),
 			})
 		}
 	}
 	return &tiablob.QueryExpiredBlocksResponse{
-		CurrentTime: time.Unix(0, currentTimeNs),
+		CurrentTime:   time.Unix(0, currentTimeNs),
 		ExpiredBlocks: expiredBlocks,
 	}, nil
 }

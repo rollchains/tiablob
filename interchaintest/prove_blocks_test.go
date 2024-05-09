@@ -87,7 +87,7 @@ func TestProveBlocks(t *testing.T) {
 
 	_ = StartCelestiaNode(t, ctx, celestiaChain, client, network)
 
-	for provedHeight := int64(0) ; provedHeight < 20 ; {
+	for provedHeight := int64(0); provedHeight < 20; {
 		provedHeight = GetProvenHeight(t, ctx, rollchainChain)
 		t.Log("Proved height: ", provedHeight)
 

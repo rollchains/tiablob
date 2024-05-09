@@ -28,7 +28,7 @@ func (r *Relayer) GetCachedProofs(proofLimit int, latestProvenHeight int64) []*c
 	var proofs []*celestia.BlobProof
 	checkHeight := latestProvenHeight + 1
 	proof := r.getCachedProof(checkHeight)
-	for ; proof != nil; {
+	for proof != nil {
 		proofs = append(proofs, proof)
 		if len(proofs) >= proofLimit {
 			break
@@ -68,7 +68,7 @@ func (r *Relayer) checkForNewBlockProofs(ctx context.Context, latestClientState 
 	}
 
 	squareSize := uint64(0)
-	
+
 	for queryHeight := r.celestiaLastQueriedHeight + 1; queryHeight < celestiaLatestHeight; queryHeight++ {
 		// get the namespace blobs from that height
 		blobs, err := celestiaNodeClient.Blob.GetAll(ctx, uint64(queryHeight), []share.Namespace{r.celestiaNamespace.Bytes()})
@@ -107,6 +107,7 @@ func (r *Relayer) checkForNewBlockProofs(ctx context.Context, latestClientState 
 //   - fetches proof from celestia app
 //   - verifies proof using block data from this node
 //   - stores proof in cache
+//
 // returns an error only when we shouldn't hit an error, otherwise nil if the blob could be someone elses (i.e. same namespace used)
 func (r *Relayer) GetBlobProof(ctx context.Context, celestiaNodeClient *cn.Client, mBlob *blob.Blob, queryHeight int64, squareSize uint64, latestClientState *celestia.ClientState) error {
 	var blobBlockProto protoblocktypes.Block
@@ -173,7 +174,7 @@ func (r *Relayer) GetBlobProof(ctx context.Context, celestiaNodeClient *cn.Clien
 		r.logger.Error("failed verify membership", "error", err)
 		return nil
 	}
-	
+
 	// We have a valid proof, if we haven't cached the header, cache it
 	// This goroutine is the only way to delete headers, so it should be kept that way
 	if r.getCachedHeader(queryHeight) == nil {
