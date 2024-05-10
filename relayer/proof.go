@@ -124,9 +124,9 @@ func (r *Relayer) tryGetAggregatedProof(ctx context.Context, blobs []*blob.Blob,
 			// bail immediately and try individual block proofs
 			return false
 		}
-	
+
 		// Non-sequential set of blocks check
-		if i > 0 && heights[i] != heights[i-1] + 1{
+		if i > 0 && heights[i] != heights[i-1]+1 {
 			r.logger.Error("aggregate, blobs not sequential", "current", heights[i], "previous", heights[i-1])
 			return false
 		}
@@ -174,8 +174,8 @@ func (r *Relayer) tryGetAggregatedProof(ctx context.Context, blobs []*blob.Blob,
 	shareProofProto := celestia.TmShareProofToProto(proverShareProof)
 
 	proof := &celestia.BlobProof{
-		ShareProof:      shareProofProto,
-		CelestiaHeight:  queryHeight,
+		ShareProof:       shareProofProto,
+		CelestiaHeight:   queryHeight,
 		RollchainHeights: heights,
 	}
 
@@ -199,7 +199,7 @@ func (r *Relayer) getBlobProof(ctx context.Context, mBlob *blob.Blob, queryHeigh
 	if data == nil {
 		return nil
 	}
-	
+
 	// Replace blob data with our data for proof verification
 	mBlob.Data = data
 
@@ -245,8 +245,8 @@ func (r *Relayer) getBlobProof(ctx context.Context, mBlob *blob.Blob, queryHeigh
 	shareProofProto := celestia.TmShareProofToProto(proverShareProof)
 
 	r.setCachedProof(rollchainBlockHeight, &celestia.BlobProof{
-		ShareProof:      shareProofProto,
-		CelestiaHeight:  queryHeight,
+		ShareProof:       shareProofProto,
+		CelestiaHeight:   queryHeight,
 		RollchainHeights: []int64{rollchainBlockHeight},
 	})
 

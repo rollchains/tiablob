@@ -9,10 +9,10 @@ import (
 	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
-	
+
 	"github.com/rollchains/tiablob"
-	tiablobrelayer "github.com/rollchains/tiablob/relayer"
 	"github.com/rollchains/tiablob/celestia-node/share"
+	tiablobrelayer "github.com/rollchains/tiablob/relayer"
 )
 
 type Keeper struct {

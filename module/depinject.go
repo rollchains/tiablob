@@ -12,8 +12,8 @@ import (
 	storetypes "cosmossdk.io/store/types"
 
 	modulev1 "github.com/rollchains/tiablob/api/module/v1"
-	"github.com/rollchains/tiablob/keeper"
 	"github.com/rollchains/tiablob/celestia-node/share"
+	"github.com/rollchains/tiablob/keeper"
 )
 
 var _ appmodule.AppModule = AppModule{}

@@ -89,7 +89,7 @@ func TestResubmission(t *testing.T) {
 	_ = StartCelestiaNode(t, ctx, celestiaChain, client, network)
 
 	proveXBlocks(t, ctx, rollchainChain, 20)
-	pauseCelestiaForX(t, ctx, celestiaChain, 4 * time.Minute - 15 * time.Second)
+	pauseCelestiaForX(t, ctx, celestiaChain, 4*time.Minute-15*time.Second)
 	proveXBlocks(t, ctx, rollchainChain, 150)
 }
 

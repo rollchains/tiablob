@@ -48,7 +48,7 @@ func (k Keeper) processProofs(ctx sdk.Context, clients []*celestia.Header, proof
 					return fmt.Errorf("process proofs, expected height: %d, actual height: %d", checkHeight, height)
 				}
 				checkHeight++
-			
+
 				// Form blob
 				// State sync will need to sync from a snapshot + the unproven blocks
 				blockProtoBz, err := k.relayer.GetLocalBlockAtHeight(ctx, height)
@@ -60,7 +60,7 @@ func (k Keeper) processProofs(ctx sdk.Context, clients []*celestia.Header, proof
 				blobs[i], err = blob.NewBlobV0(k.celestiaNamespace, blockProtoBz)
 				if err != nil {
 					return fmt.Errorf("process proofs, blob from proto, %v", err)
-				}	
+				}
 			}
 
 			// Populate proof with data
