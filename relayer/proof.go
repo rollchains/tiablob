@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	protoblocktypes "github.com/cometbft/cometbft/proto/tendermint/types"
-	appblob "github.com/rollchains/tiablob/celestia/blob"
 	"github.com/rollchains/tiablob/celestia-node/blob"
 	"github.com/rollchains/tiablob/celestia-node/share"
 	"github.com/rollchains/tiablob/lightclients/celestia"
@@ -102,7 +101,6 @@ func (r *Relayer) getBlobProofs(ctx context.Context, blobs []*blob.Blob, queryHe
 	success := r.tryGetAggregatedProof(ctx, blobs, queryHeight, squareSize, latestClientState)
 	if !success {
 		for _, mBlob := range blobs {
-			// TODO: we can aggregate adjacent blobs and prove with a single proof, fall back to individual blobs when not possible
 			err := r.getBlobProof(ctx, mBlob, queryHeight, squareSize, latestClientState)
 			if err != nil {
 				r.logger.Error("getting blob proof", "error", err)
@@ -175,15 +173,8 @@ func (r *Relayer) tryGetAggregatedProof(ctx context.Context, blobs []*blob.Blob,
 	proverShareProof.Data = nil // Only include proof
 	shareProofProto := celestia.TmShareProofToProto(proverShareProof)
 
-	var protoBlobs []appblob.Blob
-	for _, mBlob := range blobs {
-		mBlob.Data = nil            // Only include blob metadata
-		protoBlobs = append(protoBlobs, celestia.BlobToProto(mBlob))
-	}
-
 	proof := &celestia.BlobProof{
 		ShareProof:      shareProofProto,
-		Blob:            protoBlobs,
 		CelestiaHeight:  queryHeight,
 		RollchainHeights: heights,
 	}
@@ -251,12 +242,10 @@ func (r *Relayer) getBlobProof(ctx context.Context, mBlob *blob.Blob, queryHeigh
 	}
 
 	proverShareProof.Data = nil // Only include proof
-	mBlob.Data = nil            // Only include blob metadata
 	shareProofProto := celestia.TmShareProofToProto(proverShareProof)
 
 	r.setCachedProof(rollchainBlockHeight, &celestia.BlobProof{
 		ShareProof:      shareProofProto,
-		Blob:            []appblob.Blob{celestia.BlobToProto(mBlob)},
 		CelestiaHeight:  queryHeight,
 		RollchainHeights: []int64{rollchainBlockHeight},
 	})

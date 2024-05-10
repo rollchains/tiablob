@@ -9,8 +9,10 @@ import (
 	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
+	
 	"github.com/rollchains/tiablob"
 	tiablobrelayer "github.com/rollchains/tiablob/relayer"
+	"github.com/rollchains/tiablob/celestia-node/share"
 )
 
 type Keeper struct {
@@ -30,6 +32,7 @@ type Keeper struct {
 
 	publishToCelestiaBlockInterval int
 	injectedProofsLimit            int
+	celestiaNamespace              share.Namespace
 
 	proposerAddress []byte
 }
@@ -42,6 +45,7 @@ func NewKeeper(
 	uk *upgradekeeper.Keeper,
 	key storetypes2.StoreKey,
 	publishToCelestiaBlockInterval int,
+	celestiaNamespace share.Namespace,
 ) *Keeper {
 	cfg := tiablobrelayer.CelestiaConfigFromAppOpts(appOpts)
 	sb := collections.NewSchemaBuilder(storeService)
@@ -62,6 +66,7 @@ func NewKeeper(
 
 		publishToCelestiaBlockInterval: publishToCelestiaBlockInterval,
 		injectedProofsLimit:            cfg.MaxFlushSize,
+		celestiaNamespace:              celestiaNamespace,
 	}
 }
 

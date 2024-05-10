@@ -13,6 +13,7 @@ import (
 
 	modulev1 "github.com/rollchains/tiablob/api/module/v1"
 	"github.com/rollchains/tiablob/keeper"
+	"github.com/rollchains/tiablob/celestia-node/share"
 )
 
 var _ appmodule.AppModule = AppModule{}
@@ -43,6 +44,7 @@ type ModuleInputs struct {
 	storeKey storetypes.StoreKey
 
 	publishToCelestiaBlockInterval int
+	celestiaNamespace              share.Namespace
 }
 
 type ModuleOutputs struct {
@@ -53,7 +55,7 @@ type ModuleOutputs struct {
 }
 
 func ProvideModule(in ModuleInputs) ModuleOutputs {
-	k := keeper.NewKeeper(in.Cdc, in.appOpts, in.StoreService, &in.StakingKeeper, &in.UpgradeKeeper, in.storeKey, in.publishToCelestiaBlockInterval)
+	k := keeper.NewKeeper(in.Cdc, in.appOpts, in.StoreService, &in.StakingKeeper, &in.UpgradeKeeper, in.storeKey, in.publishToCelestiaBlockInterval, in.celestiaNamespace)
 	m := NewAppModule(in.Cdc, k)
 
 	return ModuleOutputs{Module: m, Keeper: k}

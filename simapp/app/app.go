@@ -37,7 +37,6 @@ import (
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 	ibckeeper "github.com/cosmos/ibc-go/v8/modules/core/keeper"
 	ibctm "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
-	appns "github.com/rollchains/tiablob/celestia/namespace"
 	"github.com/spf13/cast"
 
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
@@ -150,6 +149,8 @@ import (
 	tiablobkeeper "github.com/rollchains/tiablob/keeper"
 	tiablobmodule "github.com/rollchains/tiablob/module"
 	tiablobrelayer "github.com/rollchains/tiablob/relayer"
+	appns "github.com/rollchains/tiablob/celestia/namespace"
+	nodens "github.com/rollchains/tiablob/celestia-node/share"
 )
 
 const (
@@ -717,6 +718,10 @@ func NewChainApp(
 		AddRoute(icahosttypes.SubModuleName, icaHostStack)
 	app.IBCKeeper.SetRouter(ibcRouter)
 
+	nodeNamespace, err := nodens.NewBlobNamespaceV0([]byte(celestiaNamespace))
+	if err != nil {
+		panic(err)
+	}
 	app.TiaBlobKeeper = tiablobkeeper.NewKeeper(
 		appCodec,
 		appOpts,
@@ -725,6 +730,7 @@ func NewChainApp(
 		app.UpgradeKeeper,
 		keys[tiablob.StoreKey],
 		publishToCelestiaBlockInterval,
+		nodeNamespace,
 	)
 
 	app.TiaBlobRelayer, err = tiablobrelayer.NewRelayer(

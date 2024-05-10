@@ -56,10 +56,8 @@ func (k Keeper) processProofs(ctx sdk.Context, clients []*celestia.Header, proof
 					return fmt.Errorf("process proofs, get local block at height: %d, %v", height, err)
 				}
 
-				// Replace blob data with our data for proof verification, do this before the convert
-				proof.Blob[i].Data = blockProtoBz
-
-				blobs[i], err = celestia.BlobFromProto(&proof.Blob[i])
+				// create blob from local data
+				blobs[i], err = blob.NewBlobV0(k.celestiaNamespace, blockProtoBz)
 				if err != nil {
 					return fmt.Errorf("process proofs, blob from proto, %v", err)
 				}	

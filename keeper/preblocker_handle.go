@@ -53,10 +53,8 @@ func (k *Keeper) preblockerProofs(ctx sdk.Context, proofs []*celestia.BlobProof)
 					return fmt.Errorf("preblocker proofs, get local block at height: %d, %v", height, err)
 				}
 
-				// Replace blob data with our data for proof verification, do this before convert
-				proof.Blob[i].Data = blockProtoBz
-
-				blobs[i], err = celestia.BlobFromProto(&proof.Blob[i])
+				// create blob from local data
+				blobs[i], err = blob.NewBlobV0(k.celestiaNamespace, blockProtoBz)
 				if err != nil {
 					return fmt.Errorf("preblocker proofs, blob from proto, %v", err)
 				}
