@@ -1,4 +1,4 @@
-package e2e
+package rollchain
 
 import (
 	"context"
@@ -9,6 +9,8 @@ import (
 
 	"github.com/rollchains/tiablob"
 )
+
+// Rollchain/tiablob APIs
 
 func GetProvenHeight(t *testing.T, ctx context.Context, chain *cosmos.CosmosChain) int64 {
 	node := chain.GetNode()

@@ -9,11 +9,14 @@ import (
 	"github.com/strangelove-ventures/interchaintest/v8/testutil"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
+
+	"github.com/rollchains/rollchains/interchaintest/setup"
 )
 
+// TestBasicChain starts a rollchain chain and restores a celestia account in tiablob
 func TestBasicChain(t *testing.T) {
 	cf := interchaintest.NewBuiltinChainFactory(zaptest.NewLogger(t), []*interchaintest.ChainSpec{
-		&DefaultChainSpec,
+		setup.RollchainChainSpec(t.Name(), 1, "local", 0),
 	})
 
 	chains, err := cf.Chains(t.Name())
@@ -43,13 +46,13 @@ func TestBasicChain(t *testing.T) {
 	t.Log(string(stdout), string(stderr))
 
 	// faucet funds to the user
-	users := interchaintest.GetAndFundTestUsers(t, ctx, "default", GenesisFundsAmount, chain)
+	users := interchaintest.GetAndFundTestUsers(t, ctx, "default", FundsAmount, chain)
 	user := users[0]
 
 	// balance check
-	balance, err := chain.GetBalance(ctx, user.FormattedAddress(), Denom)
+	balance, err := chain.GetBalance(ctx, user.FormattedAddress(), chain.Config().Denom)
 	require.NoError(t, err)
-	require.True(t, balance.Equal(GenesisFundsAmount), "user balance should be equal to genesis funds")
+	require.True(t, balance.Equal(FundsAmount), "user balance should be equal to fund amount")
 
-	require.NoError(t, testutil.WaitForBlocks(ctx, 100, chain))
+	require.NoError(t, testutil.WaitForBlocks(ctx, 2, chain))
 }

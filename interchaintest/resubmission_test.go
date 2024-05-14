@@ -2,111 +2,91 @@ package e2e
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
-	"cosmossdk.io/math"
-	"github.com/strangelove-ventures/interchaintest/v8"
 	"github.com/strangelove-ventures/interchaintest/v8/chain/cosmos"
-	"github.com/strangelove-ventures/interchaintest/v8/ibc"
 	"github.com/strangelove-ventures/interchaintest/v8/testutil"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zaptest"
+
+	"github.com/rollchains/rollchains/interchaintest/api/rollchain"
+	"github.com/rollchains/rollchains/interchaintest/setup"
 )
 
+// TestResubmission sets up celestia and a rollchain chains.
+// Proves 20 blocks, pauses Celestia for 1 minute and resumes, recovering blocks that weren't posted when Celestia was down.
+// go test -timeout 15m -v -run TestResubmission . -count 1
 func TestResubmission(t *testing.T) {
-	celestiaAppHostname := fmt.Sprintf("%s-val-0-%s", celestiaChainID, t.Name())            // celestia-1-val-0-TestPublish
-	celestiaNodeHostname := fmt.Sprintf("%s-celestia-node-0-%s", celestiaChainID, t.Name()) // celestia-1-celestia-node-0-TestPublish
-
-	rollchainChainSpec := DefaultChainSpec //nolint:copylockss
-	nv := 2
-	rollchainChainSpec.NumValidators = &nv
-	rollchainChainSpec.ConfigFileOverrides = testutil.Toml{
-		"config/app.toml": testutil.Toml{
-			"celestia": testutil.Toml{
-				"app-rpc-url":  fmt.Sprintf("http://%s:26657", celestiaAppHostname),
-				"node-rpc-url": fmt.Sprintf("http://%s:26658", celestiaNodeHostname),
-			},
-		},
-	}
-	celestiaChainSpec := CelestiaChainSpec //nolint:copylockss
-	cf := interchaintest.NewBuiltinChainFactory(zaptest.NewLogger(t), []*interchaintest.ChainSpec{
-		&rollchainChainSpec,
-		&celestiaChainSpec,
-	})
-
-	chains, err := cf.Chains(t.Name())
-	require.NoError(t, err)
-
-	rollchainChain := chains[0].(*cosmos.CosmosChain)
-	celestiaChain := chains[1].(*cosmos.CosmosChain)
-
-	ic := interchaintest.NewInterchain().
-		AddChain(rollchainChain).
-		AddChain(celestiaChain, ibc.WalletAmount{
-			Address: "celestia1dr3gwf5kulm4e4k0pctwzn0htw6wrvevdgjdlf",
-			Amount:  math.NewInt(100_000_000_000), // 100,000 tia
-			Denom:   celestiaChainSpec.Denom,
-		})
-
 	ctx := context.Background()
-	client, network := interchaintest.DockerSetup(t)
+	chains := setup.StartCelestiaAndRollchains(t, ctx, 1)
 
-	require.NoError(t, ic.Build(ctx, nil, interchaintest.InterchainBuildOptions{
-		TestName:         t.Name(),
-		Client:           client,
-		NetworkID:        network,
-		SkipPathCreation: true,
-		//BlockDatabaseFile: interchaintest.DefaultBlockDatabaseFilepath(),
-	}))
-	t.Cleanup(func() {
-		_ = ic.Close()
-	})
-
-	for i := 0; i < nv; i++ {
-		// celestia1dr3gwf5kulm4e4k0pctwzn0htw6wrvevdgjdlf
-		stdout, stderr, err := rollchainChain.Validators[i].ExecBin(ctx, "keys", "tiablob", "restore", "kick raven pave wild outdoor dismiss happy start lunch discover job evil code trim network emerge summer mad army vacant chest birth subject seek")
-		require.NoError(t, err, "stdout: %s, stderr: %s", stdout, stderr)
-		t.Log(string(stdout), string(stderr))
-	}
-
-	fundAmount := math.NewInt(100_000_000)
-	users := interchaintest.GetAndFundTestUsers(t, ctx, "default", fundAmount, rollchainChain, celestiaChain)
-	rollchainUser := users[0]
-	celestiaUser := users[1]
-	err = testutil.WaitForBlocks(ctx, 2, rollchainChain, celestiaChain) // Only waiting 1 block is flaky for parachain
-	require.NoError(t, err, "celestia chain failed to make blocks")
-
-	// Check balances are correct
-	rollchainUserAmount, err := rollchainChain.GetBalance(ctx, rollchainUser.FormattedAddress(), rollchainChain.Config().Denom)
-	require.NoError(t, err)
-	require.True(t, rollchainUserAmount.Equal(fundAmount), "Initial rollchain user amount not expected")
-	celestiaUserAmount, err := celestiaChain.GetBalance(ctx, celestiaUser.FormattedAddress(), celestiaChain.Config().Denom)
-	require.NoError(t, err)
-	require.True(t, celestiaUserAmount.Equal(fundAmount), "Initial celestia user amount not expected")
-
-	_ = StartCelestiaNode(t, ctx, celestiaChain, client, network)
-
-	proveXBlocks(t, ctx, rollchainChain, 20)
-	pauseCelestiaForX(t, ctx, celestiaChain, 4*time.Minute-15*time.Second)
-	proveXBlocks(t, ctx, rollchainChain, 150)
+	proveXBlocks(t, ctx, chains.RollchainChain, 20)
+	pauseCelestiaAndRecover(t, ctx, chains.RollchainChain, chains.CelestiaChain, time.Minute)
 }
 
+// TestResubmission2 sets up celestia and 2 rollchain chains, each with a different namespace, both posting to Celestia. 
+// Proves 20 blocks, pauses Celestia for 1 minute and resumes (repeats twice), recovering blocks that weren't posted when Celestia was down.
+// go test -timeout 15m -v -run TestResubmission2 . -count 1
+func TestResubmission2(t *testing.T) {
+	ctx := context.Background()
+	chains := setup.StartCelestiaAndRollchains(t, ctx, 2)
+
+	proveXBlocks(t, ctx, chains.RollchainChain, 20)
+	pauseCelestiaAndRecover(t, ctx, chains.RollchainChain, chains.CelestiaChain, time.Minute) 
+	pauseCelestiaAndRecover(t, ctx, chains.RollchainChain, chains.CelestiaChain, time.Minute)
+}
+
+
+// TestResubmissionHour is an hour long running test.
+// It sets up celestia and 3 rollchain chains, each with a different namespace, all posting to Celestia. 
+// It pauses Celestia a number of times for different lengths
+// go test -timeout 60m -v -run TestResubmissionHour . -count 1
+func TestResubmissionHour(t *testing.T) {
+	ctx := context.Background()
+	chains := setup.StartCelestiaAndRollchains(t, ctx, 3)
+
+	proveXBlocks(t, ctx, chains.RollchainChain, 20)
+	pauseCelestiaAndRecover(t, ctx, chains.RollchainChain, chains.CelestiaChain, time.Minute) 
+	pauseCelestiaAndRecover(t, ctx, chains.RollchainChain, chains.CelestiaChain, time.Minute)
+	pauseCelestiaAndRecover(t, ctx, chains.RollchainChain, chains.CelestiaChain, 2*time.Minute)
+	pauseCelestiaAndRecover(t, ctx, chains.RollchainChain, chains.CelestiaChain, 10*time.Minute)
+	pauseCelestiaAndRecover(t, ctx, chains.RollchainChain, chains.CelestiaChain, 5*time.Minute)
+	pauseCelestiaAndRecover(t, ctx, chains.RollchainChain, chains.CelestiaChain, time.Minute)
+}
+
+// Expects 2 second block times
+func pauseCelestiaAndRecover(t *testing.T, ctx context.Context, rollchainChain *cosmos.CosmosChain, celestiaChain *cosmos.CosmosChain, pauseTime time.Duration) {
+	pauseCelestiaForX(t, ctx, celestiaChain, pauseTime)
+	proveHeight := int64(pauseTime.Seconds() / 2) + 30 // Number of rollchain blocks to recover + 30 (buffer)
+	proveXBlocks(t, ctx, rollchainChain, proveHeight)
+}
+
+// Prove a certain number of blocks
+// Will time out after 2x + 20 blocks (2x is max catchup time + 15 blocks for polling period)
+// Expects max polling period <= 30 seconds
 func proveXBlocks(t *testing.T, ctx context.Context, chain *cosmos.CosmosChain, prove int64) {
-	startingProvedHeight := GetProvenHeight(t, ctx, chain)
+	startingProvedHeight := rollchain.GetProvenHeight(t, ctx, chain)
+	startingHeight, err := chain.Height(ctx)
+	require.NoError(t, err)
+
+	timeoutHeight := startingHeight + 2 * prove + 20 // Error after this height
 	for provedHeight := startingProvedHeight; provedHeight < startingProvedHeight+prove; {
-		provedHeight = GetProvenHeight(t, ctx, chain)
+		provedHeight = rollchain.GetProvenHeight(t, ctx, chain)
 		t.Log("Proved height: ", provedHeight)
 
-		pendingBlocks := GetPendingBlocks(t, ctx, chain)
+		pendingBlocks := rollchain.GetPendingBlocks(t, ctx, chain)
 		t.Log("Pending blocks: ", len(pendingBlocks.PendingBlocks))
 
-		expiredBlocks := GetExpiredBlocks(t, ctx, chain)
+		expiredBlocks := rollchain.GetExpiredBlocks(t, ctx, chain)
 		t.Log("Expired blocks: ", len(expiredBlocks.ExpiredBlocks))
 		t.Log("Current time: ", expiredBlocks.CurrentTime)
 
-		err := testutil.WaitForBlocks(ctx, 1, chain)
+		currentHeight, err := chain.Height(ctx)
+		require.NoError(t, err)
+
+		require.True(t, currentHeight <= timeoutHeight, "proveXBlocks timed out")
+
+		err = testutil.WaitForBlocks(ctx, 1, chain)
 		require.NoError(t, err, "failed to wait for 1 block")
 	}
 }
