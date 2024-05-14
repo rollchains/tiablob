@@ -15,7 +15,7 @@ import (
 
 // TestResubmission sets up celestia and a rollchain chains.
 // Proves 20 blocks, pauses Celestia for 1 minute and resumes, recovering blocks that weren't posted when Celestia was down.
-// go test -timeout 15m -v -run TestResubmission . -count 1
+// go test -timeout 15m -v -run TestResubmission$ . -count 1
 func TestResubmission(t *testing.T) {
 	ctx := context.Background()
 	chains := setup.StartCelestiaAndRollchains(t, ctx, 1)
@@ -25,7 +25,8 @@ func TestResubmission(t *testing.T) {
 }
 
 // TestResubmission2 sets up celestia and 2 rollchain chains, each with a different namespace, both posting to Celestia. 
-// Proves 20 blocks, pauses Celestia for 1 minute and resumes (repeats twice), recovering blocks that weren't posted when Celestia was down.
+// Proves 20 blocks, pauses Celestia for 1 minute and resumes, recovering blocks that weren't posted when Celestia was down.
+// Repeats with 2 minute pause (longer than expiration)
 // go test -timeout 15m -v -run TestResubmission2 . -count 1
 func TestResubmission2(t *testing.T) {
 	ctx := context.Background()
@@ -33,6 +34,35 @@ func TestResubmission2(t *testing.T) {
 
 	proveXBlocks(t, ctx, chains.RollchainChain, 20)
 	pauseCelestiaAndRecover(t, ctx, chains.RollchainChain, chains.CelestiaChain, time.Minute) 
+	pauseCelestiaAndRecover(t, ctx, chains.RollchainChain, chains.CelestiaChain, 2*time.Minute)
+}
+
+// TestResubmission3 sets up celestia and 3 rollchain chains, each with a different namespace, all posting to Celestia. 
+// Proves 20 blocks, pauses Celestia for 1 minute and resumes, recovering blocks that weren't posted when Celestia was down.
+// Repeats with 2 minute pause (longer than expiration) and another 1 min pause
+// go test -timeout 20m -v -run TestResubmission3 . -count 1
+func TestResubmission3(t *testing.T) {
+	ctx := context.Background()
+	chains := setup.StartCelestiaAndRollchains(t, ctx, 3)
+
+	proveXBlocks(t, ctx, chains.RollchainChain, 20)
+	pauseCelestiaAndRecover(t, ctx, chains.RollchainChain, chains.CelestiaChain, time.Minute) 
+	pauseCelestiaAndRecover(t, ctx, chains.RollchainChain, chains.CelestiaChain, 2*time.Minute)
+	pauseCelestiaAndRecover(t, ctx, chains.RollchainChain, chains.CelestiaChain, time.Minute)
+}
+
+// TestResubmission4 sets up celestia and 4 rollchain chains, each with a different namespace, all posting to Celestia. 
+// Proves 20 blocks, pauses Celestia for 1 minute and resumes, recovering blocks that weren't posted when Celestia was down.
+// Repeats with 2 minute pause (longer than expiration) and another (2) 1 min pauses
+// go test -timeout 20m -v -run TestResubmission4 . -count 1
+func TestResubmission4(t *testing.T) {
+	ctx := context.Background()
+	chains := setup.StartCelestiaAndRollchains(t, ctx, 4)
+
+	proveXBlocks(t, ctx, chains.RollchainChain, 20)
+	pauseCelestiaAndRecover(t, ctx, chains.RollchainChain, chains.CelestiaChain, time.Minute) 
+	pauseCelestiaAndRecover(t, ctx, chains.RollchainChain, chains.CelestiaChain, 2 * time.Minute)
+	pauseCelestiaAndRecover(t, ctx, chains.RollchainChain, chains.CelestiaChain, time.Minute)
 	pauseCelestiaAndRecover(t, ctx, chains.RollchainChain, chains.CelestiaChain, time.Minute)
 }
 

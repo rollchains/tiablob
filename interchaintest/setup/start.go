@@ -14,12 +14,8 @@ import (
 	"go.uber.org/zap/zaptest"
 )
 
-// StartCelestiaAndRollchains is a helper function for quickly starting up celestia and up to 6 rollchain chains
-// The max number of rollchain chain's limit is only due to the pre-defined celestia wallets
-// TODO: generate celestia mnemonic/addresses as needed
-func StartCelestiaAndRollchains(t *testing.T, ctx context.Context, numRollChains int) *Chains {
-	rollchainChainSpecs := RollchainChainSpecs(t.Name(), numRollChains)
-	celestiaChainSpec := CelestiaChainSpec()
+// Start up chains with given chain specs, the first rollchain chain spec is the primary rollchain under test
+func StartWithSpecs(t *testing.T, ctx context.Context, celestiaChainSpec *interchaintest.ChainSpec, rollchainChainSpecs []*interchaintest.ChainSpec) *Chains {
 	chainSpecs := append(rollchainChainSpecs, celestiaChainSpec)
 	cf := interchaintest.NewBuiltinChainFactory(zaptest.NewLogger(t), chainSpecs)
 
@@ -94,4 +90,13 @@ func StartCelestiaAndRollchains(t *testing.T, ctx context.Context, numRollChains
 	chains.CelestiaNode = StartCelestiaNode(t, ctx, chains.CelestiaChain, client, network)
 
 	return chains
+}
+
+// StartCelestiaAndRollchains is a helper function for quickly starting up celestia and up to 6 rollchain chains
+// The max number of rollchain chain's limit is only due to the pre-defined celestia wallets
+// TODO: generate celestia mnemonic/addresses as needed
+func StartCelestiaAndRollchains(t *testing.T, ctx context.Context, numRollChains int) *Chains {
+	rollchainChainSpecs := RollchainChainSpecs(t.Name(), numRollChains)
+	celestiaChainSpec := CelestiaChainSpec()
+	return StartWithSpecs(t, ctx, celestiaChainSpec, rollchainChainSpecs)
 }

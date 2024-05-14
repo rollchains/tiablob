@@ -2,6 +2,7 @@ package relayer
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	protoblocktypes "github.com/cometbft/cometbft/proto/tendermint/types"
@@ -88,6 +89,7 @@ func (r *Relayer) checkForNewBlockProofs(ctx context.Context, latestClientState 
 				return
 			}
 			squareSize = block.Block.Data.SquareSize
+			fmt.Println("Celestia height: ", queryHeight, "SquareSize:", squareSize) // TODO: remove, debug only
 			if err = r.getBlobProofs(ctx, blobs, queryHeight, squareSize, latestClientState); err != nil {
 				r.logger.Error("getting blob proofs", "error", err)
 			}

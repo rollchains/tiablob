@@ -10,6 +10,8 @@ import (
 	"github.com/rollchains/tiablob/celestia/appconsts"
 	blobtypes "github.com/rollchains/tiablob/celestia/blob/types"
 	tmtypes "github.com/tendermint/tendermint/types"
+
+	"github.com/avast/retry-go/v4"
 )
 
 const (
@@ -119,51 +121,57 @@ func (r *Relayer) postBlocks(ctx sdk.Context, blocks []int64) {
 	ws.Mu.Lock()
 	defer ws.Mu.Unlock()
 
-	seq, txBz, err := r.celestiaProvider.Sign(
-		ctx,
-		ws,
-		r.celestiaChainID,
-		r.celestiaGasPrice,
-		r.celestiaGasAdjustment,
-		gasLimit,
-		celestiaBech32Prefix,
-		CelestiaPublishKeyName,
-		feeGranter,
-		[]sdk.Msg{msg},
-		celestiaBlobPostMemo,
-	)
-	if err != nil {
-		// Account sequence mismatch errors can happen on the simulated transaction also.
-		if strings.Contains(err.Error(), legacyerrors.ErrWrongSequence.Error()) {
-			ws.HandleAccountSequenceMismatchError(err)
+	if err := retry.Do(func() error {
+		seq, txBz, err := r.celestiaProvider.Sign(
+			ctx,
+			ws,
+			r.celestiaChainID,
+			r.celestiaGasPrice,
+			r.celestiaGasAdjustment,
+			gasLimit,
+			celestiaBech32Prefix,
+			CelestiaPublishKeyName,
+			feeGranter,
+			[]sdk.Msg{msg},
+			celestiaBlobPostMemo,
+		)
+		if err != nil {
+			// Account sequence mismatch errors can happen on the simulated transaction also.
+			if strings.Contains(err.Error(), legacyerrors.ErrWrongSequence.Error()) {
+				ws.HandleAccountSequenceMismatchError(err)
+			}
+			return fmt.Errorf("Error signing blob tx, %w", err)
 		}
-
-		r.logger.Error("Error signing blob tx", "error", err)
-		return
-	}
-
-	blobTx, err := tmtypes.MarshalBlobTx(txBz, blobs...)
-	if err != nil {
-		r.logger.Error("Error marshaling blob tx", "error", err)
-		return
-	}
-
-	res, err := r.celestiaProvider.Broadcast(ctx, seq, ws, blobTx)
-	if err != nil {
-		if strings.Contains(err.Error(), legacyerrors.ErrWrongSequence.Error()) {
-			ws.HandleAccountSequenceMismatchError(err)
+	
+		blobTx, err := tmtypes.MarshalBlobTx(txBz, blobs...)
+		if err != nil {
+			return fmt.Errorf("Error marshaling blob tx, %w", err)
 		}
+	
+		res, err := r.celestiaProvider.Broadcast(ctx, seq, ws, blobTx)
+		if err != nil {
+			if strings.Contains(err.Error(), legacyerrors.ErrWrongSequence.Error()) {
+				ws.HandleAccountSequenceMismatchError(err)
+			}
+			return fmt.Errorf("Error broadcasting blob tx, %w", err)
+		}
+		
+		r.logger.Info("Posted block(s) to Celestia",
+			"height_start", blocks[0],
+			"height_end", blocks[len(blocks)-1],
+			"celestia_height", res.Height,
+			"tx_hash", hex.EncodeToString(res.Hash),
+			"url", fmt.Sprintf("https://mocha.celenium.io/tx/%s", hex.EncodeToString(res.Hash)),
+		)
 
-		r.logger.Error("Error broadcasting blob tx", "error", err)
-
-		return
+		return nil
+	}, retry.Context(ctx), retry.Attempts(uint(2)), retry.OnRetry(func(n uint, err error) {
+		r.logger.Info(
+			"Failed to published blobs",
+			"attempt", n+1,
+			"error", err,
+		)
+	})); err != nil {
+		r.logger.Error("Error blobs not published")
 	}
-
-	r.logger.Info("Posted block(s) to Celestia",
-		"height_start", blocks[0],
-		"height_end", blocks[len(blocks)-1],
-		"celestia_height", res.Height,
-		"tx_hash", hex.EncodeToString(res.Hash),
-		"url", fmt.Sprintf("https://mocha.celenium.io/tx/%s", hex.EncodeToString(res.Hash)),
-	)
 }

@@ -23,6 +23,7 @@ require (
 	cosmossdk.io/store v1.1.0
 	cosmossdk.io/x/feegrant v0.1.0
 	cosmossdk.io/x/upgrade v0.1.2
+	github.com/avast/retry-go/v4 v4.5.1
 	github.com/celestiaorg/nmt v0.20.0
 	github.com/celestiaorg/rsmt2d v0.12.0
 	github.com/cometbft/cometbft v0.38.6
