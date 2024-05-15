@@ -1,6 +1,5 @@
 package setup
 
-
 import (
 	"context"
 	"testing"
@@ -41,7 +40,6 @@ func StartWithSpecs(t *testing.T, ctx context.Context, celestiaChainSpec *interc
 			Address: celestiaWallets[i+1].Address,
 			Amount:  math.NewInt(100_000_000_000), // 100,000 tia
 			Denom:   celestiaChainSpec.Denom,
-
 		})
 	}
 	ic = ic.AddChain(chains.CelestiaChain, addCelestiaWallets...)
@@ -93,9 +91,7 @@ func StartWithSpecs(t *testing.T, ctx context.Context, celestiaChainSpec *interc
 	return chains
 }
 
-// StartCelestiaAndRollchains is a helper function for quickly starting up celestia and up to 6 rollchain chains
-// The max number of rollchain chain's limit is only due to the pre-defined celestia wallets
-// TODO: generate celestia mnemonic/addresses as needed
+// StartCelestiaAndRollchains is a helper function for quickly starting up celestia and a number of rollchain chains
 func StartCelestiaAndRollchains(t *testing.T, ctx context.Context, numRollChains int) *Chains {
 	rollchainChainSpecs := RollchainChainSpecs(t.Name(), numRollChains)
 	celestiaChainSpec := CelestiaChainSpec()

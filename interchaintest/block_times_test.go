@@ -1,6 +1,5 @@
 package e2e
 
-
 import (
 	"context"
 	"testing"
@@ -77,7 +76,7 @@ func setCelestiaBlockTime(blockTime int) testutil.Toml {
 	return testutil.Toml{
 		"config/config.toml": testutil.Toml{
 			"consensus": testutil.Toml{
-				"timeout_commit": blockT,
+				"timeout_commit":  blockT,
 				"timeout_propose": blockT,
 			},
 		},

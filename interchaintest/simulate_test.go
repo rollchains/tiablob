@@ -36,7 +36,7 @@ func rollchainChainSpecs(t *testing.T) []*interchaintest.ChainSpec {
 			rollchainChainSpecs[i] = setup.RollchainChainSpec(t.Name(), 8, i, fmt.Sprintf("rc_demo%d", i))
 		} else {
 			rollchainChainSpecs[i] = setup.RollchainChainSpec(t.Name(), 1, i, fmt.Sprintf("rc_demo%d", i))
-			if i%2 == 0  {
+			if i%2 == 0 {
 				rollchainChainSpecs[i].ConfigFileOverrides["config/config.toml"] = setRollchainBlockTime(3)
 			}
 		}
@@ -54,7 +54,7 @@ func setRollchainBlockTime(blockTime int) testutil.Toml {
 	blockT := (time.Duration(blockTime) * time.Second).String()
 	return testutil.Toml{
 		"consensus": testutil.Toml{
-			"timeout_commit": blockT,
+			"timeout_commit":  blockT,
 			"timeout_propose": blockT,
 		},
 	}

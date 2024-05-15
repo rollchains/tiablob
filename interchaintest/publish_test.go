@@ -12,11 +12,11 @@ import (
 
 	blocktypes "github.com/cometbft/cometbft/proto/tendermint/types"
 
+	node "github.com/rollchains/rollchains/interchaintest/api/celestia-node"
 	"github.com/rollchains/rollchains/interchaintest/setup"
-	"github.com/rollchains/rollchains/interchaintest/api/celestia-node"
 )
 
-var celestiaNodeHome  = "/var/cosmos-chain/celestia-node"
+var celestiaNodeHome = "/var/cosmos-chain/celestia-node"
 
 // TestPublish verifies on celestia node that rollchains is posting blobs, it does not check proved heights
 func TestPublish(t *testing.T) {

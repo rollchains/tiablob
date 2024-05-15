@@ -10,11 +10,12 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/cosmos/cosmos-sdk/types"
-	
+
 	"github.com/stretchr/testify/require"
 )
+
 type CelestiaWallet struct {
-	Address string
+	Address  string
 	Mnemonic string
 }
 
@@ -34,7 +35,7 @@ func BuildCelestiaWallets(t *testing.T, numWallets int) []CelestiaWallet {
 			hd.Secp256k1,
 		)
 		require.NoError(t, err)
-	
+
 		addrBytes, err := info.GetAddress()
 		require.NoError(t, err)
 

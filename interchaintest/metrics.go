@@ -10,18 +10,18 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/rollchains/rollchains/interchaintest/api/rollchain"
-	
+
 	"github.com/rollchains/tiablob"
 )
 
 // Semi-interesting, not all too accurate metrics
 type Metrics struct {
-	MaxProvenHeight int64
+	MaxProvenHeight            int64
 	PreviousProvenHeightChange time.Time
-	MaxTimeToProveHeight time.Duration
-	MinTimeToProveHeight time.Duration
-	MaxPendingBlocks int
-	MaxExpiredBlocks int
+	MaxTimeToProveHeight       time.Duration
+	MinTimeToProveHeight       time.Duration
+	MaxPendingBlocks           int
+	MaxExpiredBlocks           int
 }
 
 func NewMetrics() *Metrics {
@@ -33,7 +33,7 @@ func NewMetrics() *Metrics {
 // Expects 2 second block times
 func (m *Metrics) pauseCelestiaAndRecover(t *testing.T, ctx context.Context, rollchainChain *cosmos.CosmosChain, celestiaChain *cosmos.CosmosChain, pauseTime time.Duration) {
 	m.pauseCelestiaForX(t, ctx, celestiaChain, pauseTime)
-	proveHeight := int64(pauseTime.Seconds() / 2) + 30 // Number of rollchain blocks to recover + 30 (buffer)
+	proveHeight := int64(pauseTime.Seconds()/2) + 30 // Number of rollchain blocks to recover + 30 (buffer)
 	m.proveXBlocks(t, ctx, rollchainChain, proveHeight)
 }
 
@@ -46,7 +46,7 @@ func (m *Metrics) proveXBlocks(t *testing.T, ctx context.Context, chain *cosmos.
 	startingHeight, err := chain.Height(ctx)
 	require.NoError(t, err)
 
-	timeoutHeight := startingHeight + 2 * prove + 60 // Error after this height
+	timeoutHeight := startingHeight + 2*prove + 60 // Error after this height
 	for provedHeight := startingProvedHeight; provedHeight < startingProvedHeight+prove; {
 		provedHeight = rollchain.GetProvenHeight(t, ctx, chain)
 		t.Log("Proved height: ", provedHeight)
@@ -115,7 +115,7 @@ func (m *Metrics) injestState(provedHeight int64, pendingBlocks *tiablob.QueryPe
 }
 
 func (m *Metrics) PrintMetrics(t *testing.T) {
-	t.Log("Metrics: ", 
+	t.Log("Metrics: ",
 		"MaxProvenHeight=", m.MaxProvenHeight,
 		"MaxPendingBlocks=", m.MaxPendingBlocks,
 		"MaxExpiredBlocks=", m.MaxExpiredBlocks,

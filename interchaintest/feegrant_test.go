@@ -59,12 +59,12 @@ func TestFeegrant(t *testing.T) {
 	// Add feegrant wallet to broadcasting node
 	_, err = celestiaChain.BuildWallet(ctx, "feegrant", "kick raven pave wild outdoor dismiss happy start lunch discover job evil code trim network emerge summer mad army vacant chest birth subject seek")
 	require.NoError(t, err)
-	
+
 	// Send a transaction to a random address to get the feegrant pub key on chain
 	err = celestiaChain.SendFunds(ctx, "feegrant", ibc.WalletAmount{
 		Address: "celestia1l34yq0xgya2hey0mzj3cmxcknegw2axz3dvhwt",
-		Amount: sdkmath.OneInt(),
-		Denom: celestiaChain.Config().Denom,
+		Amount:  sdkmath.OneInt(),
+		Denom:   celestiaChain.Config().Denom,
 	})
 	require.NoError(t, err)
 	require.NoError(t, testutil.WaitForBlocks(ctx, 2, celestiaChain))

@@ -142,12 +142,12 @@ func (r *Relayer) postBlocks(ctx sdk.Context, blocks []int64) {
 			}
 			return fmt.Errorf("Error signing blob tx, %w", err)
 		}
-	
+
 		blobTx, err := tmtypes.MarshalBlobTx(txBz, blobs...)
 		if err != nil {
 			return fmt.Errorf("Error marshaling blob tx, %w", err)
 		}
-	
+
 		res, err := r.celestiaProvider.Broadcast(ctx, seq, ws, blobTx)
 		if err != nil {
 			if strings.Contains(err.Error(), legacyerrors.ErrWrongSequence.Error()) {
@@ -155,7 +155,7 @@ func (r *Relayer) postBlocks(ctx sdk.Context, blocks []int64) {
 			}
 			return fmt.Errorf("Error broadcasting blob tx, %w", err)
 		}
-		
+
 		r.logger.Info("Posted block(s) to Celestia",
 			"height_start", blocks[0],
 			"height_end", blocks[len(blocks)-1],

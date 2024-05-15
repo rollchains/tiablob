@@ -19,8 +19,8 @@ var (
 	VotingPeriod     = "15s"
 	MaxDepositPeriod = "10s"
 
-	Denom   = "urc"
-	Binary  = "rcd"
+	Denom  = "urc"
+	Binary = "rcd"
 	Bech32 = "rc"
 
 	GenesisFundsAmount = sdkmath.NewInt(1000_000000) // 1k tokens
@@ -89,8 +89,8 @@ func RollchainChainSpec(testName string, numVals int, index int, namespace strin
 		ConfigFileOverrides: testutil.Toml{
 			"config/app.toml": testutil.Toml{
 				"celestia": testutil.Toml{
-					"app-rpc-url":  fmt.Sprintf("http://%s:26657", celestiaAppHostname),
-					"node-rpc-url": fmt.Sprintf("http://%s:26658", celestiaNodeHostname),
+					"app-rpc-url":        fmt.Sprintf("http://%s:26657", celestiaAppHostname),
+					"node-rpc-url":       fmt.Sprintf("http://%s:26658", celestiaNodeHostname),
 					"override-namespace": namespace,
 				},
 			},
