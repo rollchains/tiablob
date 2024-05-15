@@ -71,6 +71,3 @@ By default, nodes will drop a transaction if it does not get included in 5 block
 ```
 In cases where transactions are not included within a 75-second window, resubmission is necessary.
 ```
-
-# Backoff logic
-Celestia may halt for any number of reasons. If a proposer detects a halt, they will not attempt to publish blocks until the chain has resumed producing blocks. Immediately after celestia resumes producing blocks, congestion may further delay publication. Catchup logic will conservatively attempt to publish one rollchain block per celestia block. Every 10 successfully published block will double the published blocks until the target limit has been reached.
