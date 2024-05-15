@@ -79,6 +79,10 @@ func NewRelayer(
 		return nil, err
 	}
 
+	if cfg.OverrideNamespace != "" {
+		celestiaNamespace = appns.MustNewV0([]byte(cfg.OverrideNamespace))
+	}
+
 	return &Relayer{
 		logger: logger,
 

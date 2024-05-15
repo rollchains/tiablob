@@ -160,6 +160,7 @@ func (r *Relayer) postBlocks(ctx sdk.Context, blocks []int64) {
 			"height_start", blocks[0],
 			"height_end", blocks[len(blocks)-1],
 			"celestia_height", res.Height,
+			"namespace", string(r.celestiaNamespace.ID),
 			"tx_hash", hex.EncodeToString(res.Hash),
 			"url", fmt.Sprintf("https://mocha.celenium.io/tx/%s", hex.EncodeToString(res.Hash)),
 		)

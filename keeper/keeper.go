@@ -50,6 +50,14 @@ func NewKeeper(
 	cfg := tiablobrelayer.CelestiaConfigFromAppOpts(appOpts)
 	sb := collections.NewSchemaBuilder(storeService)
 
+	if cfg.OverrideNamespace != "" {
+		var err error
+		celestiaNamespace, err = share.NewBlobNamespaceV0([]byte(cfg.OverrideNamespace))
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	return &Keeper{
 		stakingKeeper: sk,
 		upgradeKeeper: uk,

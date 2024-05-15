@@ -8,15 +8,16 @@ import (
 )
 
 const (
-	FlagAppRpcURL     = "celestia.app-rpc-url"
-	FlagAppRpcTimeout = "celestia.app-rpc-timeout"
-	FlagChainID       = "celestia.chain-id"
-	FlagGasPrices     = "celestia.gas-prices"
-	FlagGasAdjustment = "celestia.gas-adjustment"
-	FlagNodeRpcURL    = "celestia.node-rpc-url"
-	FlagNodeAuthToken = "celestia.node-auth-token"
-	FlagQueryInterval = "celestia.proof-query-interval"
-	FlagMaxFlushSize  = "celestia.max-flush-size"
+	FlagAppRpcURL         = "celestia.app-rpc-url"
+	FlagAppRpcTimeout     = "celestia.app-rpc-timeout"
+	FlagChainID           = "celestia.chain-id"
+	FlagGasPrices         = "celestia.gas-prices"
+	FlagGasAdjustment     = "celestia.gas-adjustment"
+	FlagNodeRpcURL        = "celestia.node-rpc-url"
+	FlagNodeAuthToken     = "celestia.node-auth-token"
+	FlagOverrideNamespace = "celestia.override-namespace"
+	FlagQueryInterval     = "celestia.proof-query-interval"
+	FlagMaxFlushSize      = "celestia.max-flush-size"
 
 	DefaultConfigTemplate = `
 
@@ -41,6 +42,9 @@ const (
 
 	# Auth token for celestia-node RPC, n/a if --rpc.skip-auth is used on start
 	node-auth-token = "auth-token"
+
+	# Overrides the expected chain's namespace, expected for test-only
+	override-namespace = ""
 	
 	# Query celestia for new block proofs this often
 	proof-query-interval = "12s"
@@ -87,6 +91,9 @@ type CelestiaConfig struct {
 	// RPC Timeout for celestia-node
 	NodeAuthToken string `mapstructure:"node-auth-token"`
 
+	// Overrides built-in namespace used
+	OverrideNamespace string `mapstructure:"override-namespace"`
+
 	// Query Celestia for new block proofs this often
 	ProofQueryInterval time.Duration `mapstructure:"proof-query-interval"`
 
@@ -103,6 +110,7 @@ func CelestiaConfigFromAppOpts(appOpts servertypes.AppOptions) CelestiaConfig {
 		GasAdjustment:      cast.ToFloat64(appOpts.Get(FlagGasAdjustment)),
 		NodeRpcURL:         cast.ToString(appOpts.Get(FlagNodeRpcURL)),
 		NodeAuthToken:      cast.ToString(appOpts.Get(FlagNodeAuthToken)),
+		OverrideNamespace:  cast.ToString(appOpts.Get(FlagOverrideNamespace)),
 		ProofQueryInterval: cast.ToDuration(appOpts.Get(FlagQueryInterval)),
 		MaxFlushSize:       cast.ToInt(appOpts.Get(FlagMaxFlushSize)),
 	}

@@ -29,15 +29,13 @@ var (
 )
 
 // RollchainChainSpecs is a helper function for setting up 1 or more rollchains, use the RollchainChainSpec helper function for more control.
-// local is default, local with a number suffix are test docker images that must be built (generally with different namespaces)
-// TODO: may add overwrite capability for chain namespace so we can just use "local"
 func RollchainChainSpecs(testName string, numRc int) []*interchaintest.ChainSpec {
 	chainSpecs := make([]*interchaintest.ChainSpec, numRc)
 	for i := 0; i < numRc; i++ {
 		if i == 0 {
-			chainSpecs[i] = RollchainChainSpec(testName, 2, "local", 0)
+			chainSpecs[i] = RollchainChainSpec(testName, 2, i)
 		} else {
-			chainSpecs[i] = RollchainChainSpec(testName, 1, fmt.Sprintf("local%d", i), i)
+			chainSpecs[i] = RollchainChainSpec(testName, 1, i)
 		}
 	}
 	return chainSpecs
@@ -46,15 +44,14 @@ func RollchainChainSpecs(testName string, numRc int) []*interchaintest.ChainSpec
 // Set up default rollchain chain spec with custom values
 // testName: to generate celestia's app and node hostnames
 // numVals: each chain will want this custom (non-primaries expected to be 1)
-// version: docker version to use, i.e. primary == "local", others = "local2", "local3", etc. May want multiple "local"s for namespace collisions
-func RollchainChainSpec(testName string, numVals int, version string, index int) *interchaintest.ChainSpec {
+func RollchainChainSpec(testName string, numVals int, index int) *interchaintest.ChainSpec {
 	NumberFullNodes := 0
 	celestiaAppHostname := fmt.Sprintf("%s-val-0-%s", celestiaChainID, testName)            // celestia-1-val-0-TestPublish
 	celestiaNodeHostname := fmt.Sprintf("%s-celestia-node-0-%s", celestiaChainID, testName) // celestia-1-celestia-node-0-TestPublish
 
 	chainID := fmt.Sprintf("rollchain-%d", index)
 	name := fmt.Sprintf("Rollchain%d", index)
-	chainImage := ibc.NewDockerImage("rollchain", version, "1025:1025")
+	chainImage := ibc.NewDockerImage("rollchain", "local", "1025:1025")
 
 	defaultGenesis := []cosmos.GenesisKV{
 		// default
@@ -94,6 +91,7 @@ func RollchainChainSpec(testName string, numVals int, version string, index int)
 				"celestia": testutil.Toml{
 					"app-rpc-url":  fmt.Sprintf("http://%s:26657", celestiaAppHostname),
 					"node-rpc-url": fmt.Sprintf("http://%s:26658", celestiaNodeHostname),
+					"override-namespace": fmt.Sprintf("rc_demo%d", index),
 				},
 			},
 		},
