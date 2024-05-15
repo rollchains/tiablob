@@ -22,7 +22,10 @@ func TestSimulateRealNetwork(t *testing.T) {
 	ctx := context.Background()
 	chains := setup.StartWithSpecs(t, ctx, celestiaChainSpec(), rollchainChainSpecs(t))
 
-	proveXBlocks(t, ctx, chains.RollchainChain, 43000)
+	m := NewMetrics()
+	defer m.PrintMetrics(t)
+
+	m.proveXBlocks(t, ctx, chains.RollchainChain, 43000)
 }
 
 func rollchainChainSpecs(t *testing.T) []*interchaintest.ChainSpec {

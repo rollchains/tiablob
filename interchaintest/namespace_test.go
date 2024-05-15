@@ -22,7 +22,10 @@ func TestNamespaceCollision(t *testing.T) {
 	ctx := context.Background()
 	chains := setup.StartWithSpecs(t, ctx, celestiaChainSpec(), rollchainChainSpecs)
 
-	proveXBlocks(t, ctx, chains.RollchainChain, 20)
-	pauseCelestiaAndRecover(t, ctx, chains.RollchainChain, chains.CelestiaChain, 2*time.Minute)
-	proveXBlocks(t, ctx, chains.RollchainChain, 20)
+	m := NewMetrics()
+	defer m.PrintMetrics(t)
+
+	m.proveXBlocks(t, ctx, chains.RollchainChain, 20)
+	m.pauseCelestiaAndRecover(t, ctx, chains.RollchainChain, chains.CelestiaChain, 2*time.Minute)
+	m.proveXBlocks(t, ctx, chains.RollchainChain, 20)
 }

@@ -13,7 +13,10 @@ func TestProveBlocksShort(t *testing.T) {
 	ctx := context.Background()
 	chains := setup.StartCelestiaAndRollchains(t, ctx, 1)
 
-	proveXBlocks(t, ctx, chains.RollchainChain, 20)
+	m := NewMetrics()
+	defer m.PrintMetrics(t)
+
+	m.proveXBlocks(t, ctx, chains.RollchainChain, 20)
 }
 
 // TestProveBlocksLong verifies that rollchains is proving blocks/heights for 5 hours
@@ -23,5 +26,8 @@ func TestProveBlocksLong(t *testing.T) {
 	ctx := context.Background()
 	chains := setup.StartCelestiaAndRollchains(t, ctx, 1)
 
-	proveXBlocks(t, ctx, chains.RollchainChain, 9000)
+	m := NewMetrics()
+	defer m.PrintMetrics(t)
+
+	m.proveXBlocks(t, ctx, chains.RollchainChain, 9000)
 }

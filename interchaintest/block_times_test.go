@@ -24,9 +24,12 @@ func TestBlockTime4(t *testing.T) {
 	celestiaChainSpec.ConfigFileOverrides = setCelestiaBlockTime(blockTime)
 	chains := setup.StartWithSpecs(t, ctx, celestiaChainSpec, rollchainChainSpecs)
 
-	proveXBlocks(t, ctx, chains.RollchainChain, 20)
+	m := NewMetrics()
+	defer m.PrintMetrics(t)
+
+	m.proveXBlocks(t, ctx, chains.RollchainChain, 20)
 	// pause and recover to submit multiple PFB in a block
-	pauseCelestiaAndRecover(t, ctx, chains.RollchainChain, chains.CelestiaChain, 2*time.Minute)
+	m.pauseCelestiaAndRecover(t, ctx, chains.RollchainChain, chains.CelestiaChain, 2*time.Minute)
 }
 
 // TestBlockTime8 sets up celestia and a rollchain chains.
@@ -42,8 +45,11 @@ func TestBlockTime8(t *testing.T) {
 	celestiaChainSpec.ConfigFileOverrides = setCelestiaBlockTime(blockTime)
 	chains := setup.StartWithSpecs(t, ctx, celestiaChainSpec, rollchainChainSpecs)
 
-	proveXBlocks(t, ctx, chains.RollchainChain, 20)
-	pauseCelestiaAndRecover(t, ctx, chains.RollchainChain, chains.CelestiaChain, 2*time.Minute)
+	m := NewMetrics()
+	defer m.PrintMetrics(t)
+
+	m.proveXBlocks(t, ctx, chains.RollchainChain, 20)
+	m.pauseCelestiaAndRecover(t, ctx, chains.RollchainChain, chains.CelestiaChain, 2*time.Minute)
 }
 
 // TestBlockTime16 sets up celestia and a rollchain chains.
@@ -59,8 +65,11 @@ func TestBlockTime16(t *testing.T) {
 	celestiaChainSpec.ConfigFileOverrides = setCelestiaBlockTime(blockTime)
 	chains := setup.StartWithSpecs(t, ctx, celestiaChainSpec, rollchainChainSpecs)
 
-	proveXBlocks(t, ctx, chains.RollchainChain, 20)
-	pauseCelestiaAndRecover(t, ctx, chains.RollchainChain, chains.CelestiaChain, 2*time.Minute)
+	m := NewMetrics()
+	defer m.PrintMetrics(t)
+
+	m.proveXBlocks(t, ctx, chains.RollchainChain, 20)
+	m.pauseCelestiaAndRecover(t, ctx, chains.RollchainChain, chains.CelestiaChain, 2*time.Minute)
 }
 
 func setCelestiaBlockTime(blockTime int) testutil.Toml {
