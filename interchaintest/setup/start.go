@@ -16,6 +16,7 @@ import (
 
 // Start up chains with given chain specs, the first rollchain chain spec is the primary rollchain under test
 func StartWithSpecs(t *testing.T, ctx context.Context, celestiaChainSpec *interchaintest.ChainSpec, rollchainChainSpecs []*interchaintest.ChainSpec) *Chains {
+	celestiaWallets := BuildCelestiaWallets(t, len(rollchainChainSpecs))
 	chainSpecs := append(rollchainChainSpecs, celestiaChainSpec)
 	cf := interchaintest.NewBuiltinChainFactory(zaptest.NewLogger(t), chainSpecs)
 
