@@ -15,8 +15,8 @@ import (
 
 // TestResubmission sets up celestia and a rollchain chains.
 // Proves 20 blocks, pauses Celestia for 1 minute and resumes, recovering blocks that weren't posted when Celestia was down.
-// go test -timeout 15m -v -run TestResubmission$ . -count 1
-func TestResubmission(t *testing.T) {
+// go test -timeout 15m -v -run TestResubmission . -count 1
+func TestResubmission1(t *testing.T) {
 	ctx := context.Background()
 	chains := setup.StartCelestiaAndRollchains(t, ctx, 1)
 
@@ -66,6 +66,20 @@ func TestResubmission4(t *testing.T) {
 	pauseCelestiaAndRecover(t, ctx, chains.RollchainChain, chains.CelestiaChain, time.Minute)
 }
 
+// TestResubmission9 sets up celestia and 9 rollchain chains, each with a different namespace, all posting to Celestia. 
+// Proves 20 blocks, pauses Celestia for 1 minute and resumes, recovering blocks that weren't posted when Celestia was down.
+// Repeats with 2 minute pause (longer than expiration) and another (2) 1 min pauses
+// go test -timeout 20m -v -run TestResubmission9 . -count 1
+func TestResubmission9(t *testing.T) {
+	ctx := context.Background()
+	chains := setup.StartCelestiaAndRollchains(t, ctx, 9)
+
+	proveXBlocks(t, ctx, chains.RollchainChain, 20)
+	pauseCelestiaAndRecover(t, ctx, chains.RollchainChain, chains.CelestiaChain, time.Minute) 
+	pauseCelestiaAndRecover(t, ctx, chains.RollchainChain, chains.CelestiaChain, 2 * time.Minute)
+	pauseCelestiaAndRecover(t, ctx, chains.RollchainChain, chains.CelestiaChain, time.Minute)
+	pauseCelestiaAndRecover(t, ctx, chains.RollchainChain, chains.CelestiaChain, time.Minute)
+}
 
 // TestResubmissionHour is an hour long running test.
 // It sets up celestia and 3 rollchain chains, each with a different namespace, all posting to Celestia. 
@@ -92,14 +106,15 @@ func pauseCelestiaAndRecover(t *testing.T, ctx context.Context, rollchainChain *
 }
 
 // Prove a certain number of blocks
-// Will time out after 2x + 20 blocks (2x is max catchup time + 15 blocks for polling period)
+// Timeout is the 2x (# of blocks to prove) + 45 blocks (publishing timeout) + 15 blocks (max polling period)
+// Timeout is generous, but needed due to this bug: https://github.com/celestiaorg/celestia-app/pull/2208
 // Expects max polling period <= 30 seconds
 func proveXBlocks(t *testing.T, ctx context.Context, chain *cosmos.CosmosChain, prove int64) {
 	startingProvedHeight := rollchain.GetProvenHeight(t, ctx, chain)
 	startingHeight, err := chain.Height(ctx)
 	require.NoError(t, err)
 
-	timeoutHeight := startingHeight + 2 * prove + 20 // Error after this height
+	timeoutHeight := startingHeight + 2 * prove + 60 // Error after this height
 	for provedHeight := startingProvedHeight; provedHeight < startingProvedHeight+prove; {
 		provedHeight = rollchain.GetProvenHeight(t, ctx, chain)
 		t.Log("Proved height: ", provedHeight)

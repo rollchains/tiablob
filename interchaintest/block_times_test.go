@@ -11,24 +11,17 @@ import (
 	"github.com/rollchains/rollchains/interchaintest/setup"
 )
 
-// TestResubmission sets up celestia and a rollchain chains.
-// Proves 20 blocks, pauses Celestia for 1 minute and resumes, recovering blocks that weren't posted when Celestia was down.
-// go test -timeout 15m -v -run TestResubmission$ . -count 1
+// TestBlockTime4 sets up celestia and a rollchain chains.
+// Rollchain has 2 sec block times (default) and Celestia has 4 sec block times
+// Prove 20 blocks and the pause Celestia for 2 minutes and recover
+// go test -timeout 15m -v -run TestBlockTime4 . -count 1
 func TestBlockTime4(t *testing.T) {
 	blockTime := 4
-	blockT := (time.Duration(blockTime) * time.Second).String()
 
 	ctx := context.Background()
 	rollchainChainSpecs := setup.RollchainChainSpecs(t.Name(), 1)
 	celestiaChainSpec := setup.CelestiaChainSpec()
-	celestiaChainSpec.ConfigFileOverrides = testutil.Toml{
-		"config/config.toml": testutil.Toml{
-			"consensus": testutil.Toml{
-				"timeout_commit": blockT,
-				"timeout_propose": blockT,
-			},
-		},
-	}
+	celestiaChainSpec.ConfigFileOverrides = setCelestiaBlockTime(blockTime)
 	chains := setup.StartWithSpecs(t, ctx, celestiaChainSpec, rollchainChainSpecs)
 
 	proveXBlocks(t, ctx, chains.RollchainChain, 20)
@@ -36,35 +29,43 @@ func TestBlockTime4(t *testing.T) {
 	pauseCelestiaAndRecover(t, ctx, chains.RollchainChain, chains.CelestiaChain, 2*time.Minute)
 }
 
+// TestBlockTime8 sets up celestia and a rollchain chains.
+// Rollchain has 2 sec block times (default) and Celestia has 8 sec block times
+// Prove 20 blocks and the pause Celestia for 2 minutes and recover
+// go test -timeout 15m -v -run TestBlockTime8 . -count 1
 func TestBlockTime8(t *testing.T) {
 	blockTime := 8
-	blockT := (time.Duration(blockTime) * time.Second).String()
 
 	ctx := context.Background()
 	rollchainChainSpecs := setup.RollchainChainSpecs(t.Name(), 1)
 	celestiaChainSpec := setup.CelestiaChainSpec()
-	celestiaChainSpec.ConfigFileOverrides = testutil.Toml{
-		"config/config.toml": testutil.Toml{
-			"consensus": testutil.Toml{
-				"timeout_commit": blockT,
-				"timeout_propose": blockT,
-			},
-		},
-	}
+	celestiaChainSpec.ConfigFileOverrides = setCelestiaBlockTime(blockTime)
 	chains := setup.StartWithSpecs(t, ctx, celestiaChainSpec, rollchainChainSpecs)
 
 	proveXBlocks(t, ctx, chains.RollchainChain, 20)
 	pauseCelestiaAndRecover(t, ctx, chains.RollchainChain, chains.CelestiaChain, 2*time.Minute)
 }
 
+// TestBlockTime16 sets up celestia and a rollchain chains.
+// Rollchain has 2 sec block times (default) and Celestia has 16 sec block times
+// Prove 20 blocks and the pause Celestia for 2 minutes and recover
+// go test -timeout 15m -v -run TestBlockTime16 . -count 1
 func TestBlockTime16(t *testing.T) {
 	blockTime := 16
-	blockT := (time.Duration(blockTime) * time.Second).String()
 
 	ctx := context.Background()
 	rollchainChainSpecs := setup.RollchainChainSpecs(t.Name(), 1)
 	celestiaChainSpec := setup.CelestiaChainSpec()
-	celestiaChainSpec.ConfigFileOverrides = testutil.Toml{
+	celestiaChainSpec.ConfigFileOverrides = setCelestiaBlockTime(blockTime)
+	chains := setup.StartWithSpecs(t, ctx, celestiaChainSpec, rollchainChainSpecs)
+
+	proveXBlocks(t, ctx, chains.RollchainChain, 20)
+	pauseCelestiaAndRecover(t, ctx, chains.RollchainChain, chains.CelestiaChain, 2*time.Minute)
+}
+
+func setCelestiaBlockTime(blockTime int) testutil.Toml {
+	blockT := (time.Duration(blockTime) * time.Second).String()
+	return testutil.Toml{
 		"config/config.toml": testutil.Toml{
 			"consensus": testutil.Toml{
 				"timeout_commit": blockT,
@@ -72,8 +73,4 @@ func TestBlockTime16(t *testing.T) {
 			},
 		},
 	}
-	chains := setup.StartWithSpecs(t, ctx, celestiaChainSpec, rollchainChainSpecs)
-
-	proveXBlocks(t, ctx, chains.RollchainChain, 20)
-	pauseCelestiaAndRecover(t, ctx, chains.RollchainChain, chains.CelestiaChain, 2*time.Minute)
 }

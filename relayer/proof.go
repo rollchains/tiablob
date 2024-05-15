@@ -122,21 +122,21 @@ func (r *Relayer) tryGetAggregatedProof(ctx context.Context, blobs []*blob.Blob,
 		// Replace blob data with our data for proof verification
 		heights[i], mBlob.Data = r.getBlobHeightAndData(ctx, mBlob, queryHeight, r.latestProvenHeight)
 		if heights[i] == 0 || mBlob.Data == nil {
-			r.logger.Error("aggregate, getBlobHeightAndData bail", "error", err)
+			r.logger.Info("aggregate, getBlobHeightAndData bail", "error", err)
 			// bail immediately and try individual block proofs
 			return false
 		}
 
 		// Non-sequential set of blocks check
 		if i > 0 && heights[i] != heights[i-1]+1 {
-			r.logger.Error("aggregate, blobs not sequential", "current", heights[i], "previous", heights[i-1])
+			r.logger.Info("aggregate, blobs not sequential", "current", heights[i], "previous", heights[i-1])
 			return false
 		}
 	}
 
 	shares, err := blob.BlobsToShares(blobs...)
 	if err != nil {
-		r.logger.Error("aggregate, blobs to shares", "error", err)
+		r.logger.Info("aggregate, blobs to shares", "error", err)
 		return false
 	}
 
@@ -145,7 +145,7 @@ func (r *Relayer) tryGetAggregatedProof(ctx context.Context, blobs []*blob.Blob,
 	// Get all shares from celestia node, confirm our shares are present
 	proverShareProof, err := r.celestiaProvider.ProveShares(ctx, uint64(queryHeight), shareIndex, shareIndex+uint64(len(shares)))
 	if err != nil {
-		r.logger.Error("aggregate, error calling ProveShares", "error", err)
+		r.logger.Info("aggregate, error calling ProveShares", "note", "may be a namespace collision", "error", err)
 		return false
 	}
 
@@ -154,7 +154,7 @@ func (r *Relayer) tryGetAggregatedProof(ctx context.Context, blobs []*blob.Blob,
 	if header == nil {
 		header = r.fetchNewHeader(ctx, queryHeight, latestClientState)
 		if header == nil {
-			r.logger.Error("aggregate, fetch header is nil")
+			r.logger.Info("aggregate, fetch header is nil")
 			return false
 		}
 	}
@@ -162,7 +162,7 @@ func (r *Relayer) tryGetAggregatedProof(ctx context.Context, blobs []*blob.Blob,
 	proverShareProof.Data = shares // Replace with retrieved shares
 	err = proverShareProof.Validate(header.SignedHeader.Header.DataHash)
 	if err != nil {
-		r.logger.Error("aggregate, failed verify membership", "error", err)
+		r.logger.Info("aggregate, failed verify membership", "error", err)
 		return false
 	}
 
@@ -233,7 +233,7 @@ func (r *Relayer) getBlobProof(ctx context.Context, mBlob *blob.Blob, queryHeigh
 	proverShareProof.Data = shares // Replace with retrieved shares
 	err = proverShareProof.Validate(header.SignedHeader.Header.DataHash)
 	if err != nil {
-		r.logger.Error("failed verify membership", "error", err)
+		r.logger.Info("failed verify membership", "note", "may be a namespace collision", "error", err)
 		return nil
 	}
 
@@ -259,7 +259,7 @@ func (r *Relayer) getBlobHeightAndData(ctx context.Context, mBlob *blob.Blob, qu
 	var blobBlockProto protoblocktypes.Block
 	err := blobBlockProto.Unmarshal(mBlob.GetData())
 	if err != nil {
-		r.logger.Error("blob unmarshal", "height", queryHeight, "error", err)
+		r.logger.Info("blob unmarshal", "note", "may be a namespace collision", "height", queryHeight, "error", err)
 		return 0, nil
 	}
 
@@ -286,7 +286,7 @@ func (r *Relayer) GetLocalBlockAtHeight(ctx context.Context, rollchainBlockHeigh
 	expectedBlock, err := r.localProvider.GetBlockAtHeight(ctx, rollchainBlockHeight)
 	if err != nil {
 		// TODO: add retries, bad if this errors
-		r.logger.Error("getting local block", "rollchain height", rollchainBlockHeight, "err", err)
+		r.logger.Error("getting local block", "note", "may be a namespace collision", "rollchain height", rollchainBlockHeight, "err", err)
 		return nil, err
 	}
 
