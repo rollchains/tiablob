@@ -15,7 +15,7 @@ import (
 
 // TestResubmission sets up celestia and a rollchain chains.
 // Proves 20 blocks, pauses Celestia for 1 minute and resumes, recovering blocks that weren't posted when Celestia was down.
-// go test -timeout 15m -v -run TestResubmission . -count 1
+// go test -timeout 15m -v -run TestResubmission1 . -count 1
 func TestResubmission1(t *testing.T) {
 	ctx := context.Background()
 	chains := setup.StartCelestiaAndRollchains(t, ctx, 1)

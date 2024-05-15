@@ -52,7 +52,7 @@ func watchForPublishedBlocks(
 		require.NoError(t, err, "error getting celestia height")
 
 		for ; celestiaHeight < celestiaLatestHeight; celestiaHeight++ {
-			blobs, err := celestiaNodeClient.GetAllBlobs(ctx, uint64(celestiaHeight), "0x"+hex.EncodeToString([]byte("rc_demo")))
+			blobs, err := celestiaNodeClient.GetAllBlobs(ctx, uint64(celestiaHeight), "0x"+hex.EncodeToString([]byte("rc_demo0")))
 			require.NoError(t, err, fmt.Sprintf("error getting all blobs at height: %d, %v", celestiaHeight, err))
 			t.Log("GetAllBlobs, celestia height: ", celestiaHeight)
 			if len(blobs) == 0 {
