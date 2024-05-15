@@ -8,13 +8,12 @@ replace github.com/rollchains/tiablob => ../
 // overrides
 replace (
 	cosmossdk.io/core => cosmossdk.io/core v0.11.0
-	cosmossdk.io/x/upgrade => cosmossdk.io/x/upgrade v0.1.1
-	//	github.com/ChainSafe/go-schnorrkel => github.com/ChainSafe/go-schnorrkel v1.1.0
+	cosmossdk.io/x/upgrade => cosmossdk.io/x/upgrade v0.1.1 // Remove once cosmos-sdk fork has been updated to latest v0.50.6
 	github.com/cosmos/cosmos-sdk => github.com/agouin/cosmos-sdk v0.50.6-0.20240402230622-aeacbc20f38d
-	github.com/prometheus/client_golang => github.com/prometheus/client_golang v1.18.0 // indirect
-	github.com/prometheus/client_model => github.com/prometheus/client_model v0.6.0 // indirect
-	github.com/prometheus/common => github.com/prometheus/common v0.47.0
-	github.com/prometheus/procfs => github.com/prometheus/procfs v0.12.0 // indirect
+	github.com/prometheus/client_golang => github.com/prometheus/client_golang v1.18.0 // Remove once cosmos-sdk fork has been updated to latest v0.50.6
+	github.com/prometheus/client_model => github.com/prometheus/client_model v0.6.0 // Remove once cosmos-sdk fork has been updated to latest v0.50.6
+	github.com/prometheus/common => github.com/prometheus/common v0.47.0 // Remove once cosmos-sdk fork has been updated to latest v0.50.6
+	github.com/prometheus/procfs => github.com/prometheus/procfs v0.12.0 // Remove once cosmos-sdk fork has been updated to latest v0.50.6
 	github.com/spf13/viper => github.com/spf13/viper v1.17.0 // v1.18+ breaks app overrides
 	github.com/tendermint/tendermint => github.com/celestiaorg/celestia-core v1.35.0-tm-v0.34.29
 )
