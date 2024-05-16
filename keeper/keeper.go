@@ -58,6 +58,10 @@ func NewKeeper(
 		}
 	}
 
+	if cfg.OverridePubInterval > 0 {
+		publishToCelestiaBlockInterval = cfg.OverridePubInterval
+	}
+
 	return &Keeper{
 		stakingKeeper: sk,
 		upgradeKeeper: uk,

@@ -15,12 +15,12 @@ import (
 // go test -timeout 12m -v -run TestNamespaceCollision . -count 1
 func TestNamespaceCollision(t *testing.T) {
 	rollchainChainSpecs := []*interchaintest.ChainSpec{
-		setup.RollchainChainSpec(t.Name(), 2, 0, "rc_demo"),
-		setup.RollchainChainSpec(t.Name(), 2, 1, "rc_demo"),
+		setup.RollchainChainSpec(t.Name(), 2, 0, "rc_demo", 0),
+		setup.RollchainChainSpec(t.Name(), 2, 1, "rc_demo", 0),
 	}
 
 	ctx := context.Background()
-	chains := setup.StartWithSpecs(t, ctx, celestiaChainSpec(), rollchainChainSpecs)
+	chains := setup.StartWithSpecs(t, ctx, celestiaChainSpec(2), rollchainChainSpecs)
 
 	m := NewMetrics()
 	defer m.PrintMetrics(t)
