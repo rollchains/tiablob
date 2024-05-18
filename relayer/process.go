@@ -9,13 +9,8 @@ import (
 )
 
 // Start begins the relayer process
-func (r *Relayer) Start(
-	ctx context.Context,
-	provenHeight int64,
-	commitHeight int64,
-) error {
-	r.latestProvenHeight = provenHeight
-	r.latestCommitHeight = commitHeight
+func (r *Relayer) Start() error {
+	ctx := context.Background()
 
 	if err := r.celestiaProvider.CreateKeystore(); err != nil {
 		return err
@@ -56,7 +51,7 @@ func (r *Relayer) NotifyProvenHeight(height int64) {
 // updateHeight is called when the provenHeight has changed
 func (r *Relayer) updateHeight(height int64) {
 	if height > r.latestProvenHeight {
-		fmt.Println("Latest proven height:", height)
+		fmt.Println("Latest proven height:", height) // TODO: remove, debug only
 		r.latestProvenHeight = height
 		r.pruneCache(height)
 	}

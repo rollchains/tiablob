@@ -15,6 +15,9 @@ Within the imported packages, add the `tiablob` dependencies.
 ```golang
 import (
     // ...
+	nodens "github.com/rollchains/tiablob/celestia-node/share"
+	appns "github.com/rollchains/tiablob/celestia/namespace"
+
 	"github.com/rollchains/tiablob"
 	tiablobkeeper "github.com/rollchains/tiablob/keeper"
 	tiablobmodule "github.com/rollchains/tiablob/module"
@@ -72,19 +75,27 @@ func NewChainApp(
 	)
 
     // ...
-
+	nodeNamespace, err := nodens.NewBlobNamespaceV0([]byte(celestiaNamespace))
+	if err != nil {
+		panic(err)
+	}
     // TODO: make sure this is after the `app.StakingKeeper` is initialized.
     // Initialize rollchains tiablob keeper
     app.TiaBlobKeeper = tiablobkeeper.NewKeeper(
 		appCodec,
+		appOpts,
 		runtime.NewKVStoreService(keys[tiablob.StoreKey]),
 		app.StakingKeeper,
+		app.UpgradeKeeper,
 		keys[tiablob.StoreKey],
+		publishToCelestiaBlockInterval,
+		nodeNamespace,
 	)
 
     // Initialize rollchains tiablob relayer
 	app.TiaBlobRelayer, err = tiablobrelayer.NewRelayer(
 		logger,
+		appCodec,
 		appOpts,
 		appns.MustNewV0([]byte(celestiaNamespace)),
 		filepath.Join(homePath, "keys"),
@@ -140,6 +151,14 @@ func NewChainApp(
         tiablob.ModuleName,
     }
 
+	// NOTE: register tiablob snapshot extension
+	if manager := app.SnapshotManager(); manager != nil {
+		err := manager.RegisterExtensions(
+			tiablobkeeper.NewTiablobSnapshotter(app.CommitMultiStore(), app.TiaBlobKeeper),
+		)
+		// ...
+	}
+
     // ...
 }
 ```
@@ -157,7 +176,7 @@ func (app *ChainApp) FinalizeBlock(req *abci.RequestFinalizeBlock) (*abci.Respon
 		return res, err
 	}
 
-	app.TiaBlobRelayer.NotifyCommitHeight(uint64(req.Height))
+	app.TiaBlobRelayer.NotifyCommitHeight(req.Height)
 
 	return res, nil
 }
@@ -187,26 +206,7 @@ func (app *ChainApp) RegisterNodeService(clientCtx client.Context, cfg config.Co
 
 	app.TiaBlobRelayer.SetClientContext(clientCtx)
 
-	ctx := app.NewContext(false)
-
-	// TODO: Do these steps in PostSetup and PostSetupStandalone in SDK v0.51+ since app is accessible
-	latestProvenHeight, err := app.TiaBlobKeeper.GetProvenHeight(ctx)
-	if err != nil {
-		panic(err)
-	}
-
-	appInfo, err := app.Info(nil)
-	if err != nil {
-		panic(err)
-	}
-	latestCommitHeight := uint64(appInfo.LastBlockHeight)
-
-	go app.TiaBlobRelayer.Start(
-		ctx,
-		latestProvenHeight,
-		latestCommitHeight,
-	)
-	// END TODO
+	go app.TiaBlobRelayer.Start()
 }
 ```
 

@@ -966,7 +966,9 @@ func NewChainApp(
 	// requires the snapshot store to be created and registered as a BaseAppOption
 	// see cmd/rcd/root.go: 206 - 214 approx
 	if manager := app.SnapshotManager(); manager != nil {
-		err := manager.RegisterExtensions()
+		err := manager.RegisterExtensions(
+			tiablobkeeper.NewTiablobSnapshotter(app.CommitMultiStore(), app.TiaBlobKeeper),
+		)
 		if err != nil {
 			panic(fmt.Errorf("failed to register snapshot extension: %s", err))
 		}
@@ -1261,26 +1263,7 @@ func (app *ChainApp) RegisterNodeService(clientCtx client.Context, cfg config.Co
 
 	app.TiaBlobRelayer.SetClientContext(clientCtx)
 
-	ctx := app.NewContext(false)
-
-	// TODO: Do these steps in PostSetup and PostSetupStandalone in SDK v0.51+ since app is accessible
-	latestProvenHeight, err := app.TiaBlobKeeper.GetProvenHeight(ctx)
-	if err != nil {
-		panic(err)
-	}
-
-	appInfo, err := app.Info(nil)
-	if err != nil {
-		panic(err)
-	}
-	latestCommitHeight := appInfo.LastBlockHeight
-
-	go app.TiaBlobRelayer.Start(
-		ctx,
-		latestProvenHeight,
-		latestCommitHeight,
-	)
-	// END TODO
+	go app.TiaBlobRelayer.Start()
 }
 
 // GetMaccPerms returns a copy of the module account permissions

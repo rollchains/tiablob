@@ -300,7 +300,6 @@ func appExport(
 		traceStore,
 		height == -1,
 		appOpts,
-		nil,
 	)
 
 	if height != -1 {

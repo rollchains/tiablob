@@ -2,6 +2,9 @@ package rollchain
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"strconv"
 	"testing"
 
 	"github.com/strangelove-ventures/interchaintest/v8/chain/cosmos"
@@ -56,4 +59,35 @@ func GetExpiredBlocks(t *testing.T, ctx context.Context, chain *cosmos.CosmosCha
 	require.NoError(t, err)
 
 	return &expiredBlocks
+}
+
+func GetTrustedHeightAndHash(t *testing.T, ctx context.Context, chain *cosmos.CosmosChain) (int, string) {
+	node := chain.GetNode()
+
+	cmd := []string{"status", "--node", fmt.Sprintf("tcp://%s:26657", node.HostName())}
+	stdout, _, err := node.ExecBin(ctx, cmd...)
+	require.NoError(t, err)
+
+	fmt.Println("GetState:", string(stdout))
+
+	var status Status
+	err = json.Unmarshal(stdout, &status)
+	require.NoError(t, err)
+
+	fmt.Println("Height:", status.SyncInfo.LatestBlockHeight)
+	fmt.Println("Hash:", status.SyncInfo.LatestBlockHash)
+
+	height, err := strconv.Atoi(status.SyncInfo.LatestBlockHeight)
+	require.NoError(t, err)
+
+	return height, status.SyncInfo.LatestBlockHash
+}
+
+type Status struct {
+	SyncInfo SyncInfo `json:"sync_info"`
+}
+
+type SyncInfo struct {
+	LatestBlockHash string `json:"latest_block_hash"`
+	LatestBlockHeight string `json:"latest_block_height"`
 }

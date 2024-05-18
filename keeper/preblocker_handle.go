@@ -50,7 +50,11 @@ func (k *Keeper) preblockerProofs(ctx sdk.Context, proofs []*celestia.BlobProof)
 				// State sync will need to sync from a snapshot + the unproven blocks
 				blockProtoBz, err := k.relayer.GetLocalBlockAtHeight(ctx, height)
 				if err != nil {
-					return fmt.Errorf("preblocker proofs, get local block at height: %d, %v", height, err)
+					// Check for cached unprovenBlocks
+					blockProtoBz = k.unprovenBlocks[height]
+					if blockProtoBz == nil {
+						return fmt.Errorf("preblocker proofs, get local block at height: %d, %v", height, err)
+					}
 				}
 
 				// create blob from local data
@@ -107,4 +111,13 @@ func (k *Keeper) notifyProvenHeight(ctx sdk.Context) {
 	}
 
 	k.relayer.NotifyProvenHeight(provenHeight)
+	k.pruneUnprovenBlocksMap(provenHeight)
+}
+
+func (k *Keeper) pruneUnprovenBlocksMap(provenHeight int64) {
+	for h, _ := range k.unprovenBlocks {
+		if h <= provenHeight {
+			delete(k.unprovenBlocks, h)
+		}
+	}
 }

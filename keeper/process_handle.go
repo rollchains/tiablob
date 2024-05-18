@@ -53,7 +53,11 @@ func (k Keeper) processProofs(ctx sdk.Context, clients []*celestia.Header, proof
 				// State sync will need to sync from a snapshot + the unproven blocks
 				blockProtoBz, err := k.relayer.GetLocalBlockAtHeight(ctx, height)
 				if err != nil {
-					return fmt.Errorf("process proofs, get local block at height: %d, %v", height, err)
+					// Check for cached unprovenBlocks, verify we want validators to check their cache from a state sync.
+					blockProtoBz = k.unprovenBlocks[height]
+					if blockProtoBz == nil {
+						return fmt.Errorf("process proofs, get local block at height: %d, %v", height, err)
+					}
 				}
 
 				// create blob from local data

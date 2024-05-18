@@ -94,6 +94,10 @@ func RollchainChainSpec(testName string, numVals int, index int, namespace strin
 					"override-namespace":    namespace,
 					"override-pub-interval": pubInterval,
 				},
+				"state-sync": testutil.Toml{
+					"snapshot-interval": 100,
+					"snapshot-keep-recent": 2,
+				},
 			},
 		},
 	}

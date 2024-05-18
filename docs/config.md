@@ -24,7 +24,13 @@ The `tiablob` configuration is located in `config/app.toml` and is used for conn
 
 	# Auth token for celestia-node RPC, n/a if --rpc.skip-auth is used on start
 	node-auth-token = "auth-token"
-	
+
+	# Overrides the expected chain's namespace, test-only
+	override-namespace = ""
+
+	# Overrides the expected chain's publish-to-celestia block interval, test-only
+	override-pub-interval = 0
+		
 	# Query celestia for new block proofs this often
 	proof-query-interval = "12s"
 

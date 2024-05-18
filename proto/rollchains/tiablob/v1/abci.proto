@@ -16,3 +16,8 @@ message InjectedData {
 message PendingBlocks {
     repeated int64 block_heights = 1;
 }
+
+message UnprovenBlock {
+    int64 height = 1;
+    bytes block = 2;
+}
