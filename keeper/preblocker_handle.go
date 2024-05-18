@@ -115,7 +115,7 @@ func (k *Keeper) notifyProvenHeight(ctx sdk.Context) {
 }
 
 func (k *Keeper) pruneUnprovenBlocksMap(provenHeight int64) {
-	for h, _ := range k.unprovenBlocks {
+	for h := range k.unprovenBlocks {
 		if h <= provenHeight {
 			delete(k.unprovenBlocks, h)
 		}
