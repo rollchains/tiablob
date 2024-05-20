@@ -76,7 +76,10 @@ func (s *TiaBlobSnapshotter) SnapshotExtension(height uint64, payloadWriter snap
 	for unprovenHeight := provenHeight + 1; unprovenHeight <= int64(height); unprovenHeight++ {
 		blockProtoBz, err := s.keeper.relayer.GetLocalBlockAtHeight(ctx, unprovenHeight)
 		if err != nil {
-			return err
+			blockProtoBz = s.keeper.unprovenBlocks[unprovenHeight]
+			if blockProtoBz == nil {
+				return err
+			}
 		}
 
 		unprovenBlock := UnprovenBlock{
