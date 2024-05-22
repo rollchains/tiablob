@@ -18,22 +18,13 @@ func (k *Keeper) InitGenesis(ctx sdk.Context, data *tiablob.GenesisState) error 
 		}
 	}
 
-	if err := k.SetProvenHeight(ctx, data.ProvenHeight); err != nil {
+	// Set proven height to genesis height, we do not init any pending block on a genesis init/restart
+	if err := k.SetProvenHeight(ctx, ctx.HeaderInfo().Height); err != nil {
 		return err
 	}
+	k.relayer.NotifyProvenHeight(ctx.HeaderInfo().Height)
 
 	k.SetCelestiaGenesisState(ctx, data.CelestiaGenesisState)
-
-	for _, pendingBlock := range data.PendingBlocks {
-		height := pendingBlock.Height
-		expiration := pendingBlock.Expiration.UnixNano()
-		if err := k.PendingBlocksToTimeouts.Set(ctx, height, expiration); err != nil {
-			return err
-		}
-		if err := k.AddPendingBlockToTimeoutsMap(ctx, height, expiration); err != nil {
-			return err
-		}
-	}
 
 	return nil
 }

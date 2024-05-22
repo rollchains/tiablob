@@ -21,6 +21,7 @@ replace (
 
 require (
 	cosmossdk.io/math v1.3.0
+	cosmossdk.io/x/upgrade v0.1.1
 	github.com/cometbft/cometbft v0.38.5
 	github.com/cosmos/cosmos-sdk v0.50.4
 	github.com/docker/docker v24.0.7+incompatible
@@ -46,7 +47,6 @@ require (
 	cosmossdk.io/store v1.0.2 // indirect
 	cosmossdk.io/x/feegrant v0.1.0 // indirect
 	cosmossdk.io/x/tx v0.13.1 // indirect
-	cosmossdk.io/x/upgrade v0.1.1 // indirect
 	filippo.io/edwards25519 v1.0.0 // indirect
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
 	github.com/99designs/keyring v1.2.2 // indirect
@@ -260,6 +260,7 @@ require (
 	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gotest.tools/v3 v3.5.1 // indirect
 	lukechampine.com/blake3 v1.2.1 // indirect

@@ -82,7 +82,7 @@ func (s *TiaBlobSnapshotter) SnapshotExtension(height uint64, payloadWriter snap
 			}
 		}
 
-		unprovenBlock := UnprovenBlock{
+		unprovenBlock := tiablob.UnprovenBlock{
 			Height: unprovenHeight,
 			Block: blockProtoBz,
 		}
@@ -133,7 +133,7 @@ func (s *TiaBlobSnapshotter) processAllItems(
 }
 
 func restoreV1(k *Keeper, height int64, unprovenBlockBz []byte) error {
-	var unprovenBlock UnprovenBlock
+	var unprovenBlock tiablob.UnprovenBlock
 	if err := k.cdc.Unmarshal(unprovenBlockBz, &unprovenBlock); err != nil {
 		return errorsmod.Wrap(err, "failed to unmarshal unproven block")
 	}

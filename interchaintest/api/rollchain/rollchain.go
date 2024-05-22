@@ -68,14 +68,9 @@ func GetTrustedHeightAndHash(t *testing.T, ctx context.Context, chain *cosmos.Co
 	stdout, _, err := node.ExecBin(ctx, cmd...)
 	require.NoError(t, err)
 
-	fmt.Println("GetState:", string(stdout))
-
 	var status Status
 	err = json.Unmarshal(stdout, &status)
 	require.NoError(t, err)
-
-	fmt.Println("Height:", status.SyncInfo.LatestBlockHeight)
-	fmt.Println("Hash:", status.SyncInfo.LatestBlockHash)
 
 	height, err := strconv.Atoi(status.SyncInfo.LatestBlockHeight)
 	require.NoError(t, err)
@@ -90,4 +85,14 @@ type Status struct {
 type SyncInfo struct {
 	LatestBlockHash string `json:"latest_block_hash"`
 	LatestBlockHeight string `json:"latest_block_height"`
+}
+
+func ResetState(t *testing.T, ctx context.Context, node *cosmos.ChainNode) {
+	cmd := []string{"comet", "reset-state"}
+	_, _, err := node.ExecBin(ctx, cmd...)
+	require.NoError(t, err)
+
+	cmd = []string{"reset-app"}
+	_, _, err = node.ExecBin(ctx, cmd...)
+	require.NoError(t, err)
 }

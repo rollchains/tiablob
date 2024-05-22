@@ -3,6 +3,8 @@ package keeper
 import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	"github.com/rollchains/tiablob"
 )
 
 type ProofOfBlobProposalHandler struct {
@@ -38,7 +40,7 @@ func (h *ProofOfBlobProposalHandler) PrepareProposal(ctx sdk.Context, req *abci.
 	}
 
 	injectData := h.keeper.prepareInjectData(ctx, req.Time, latestProvenHeight)
-	injectDataBz := injectData.marshalMaxBytes(h.keeper, req.MaxTxBytes, latestProvenHeight)
+	injectDataBz := h.keeper.marshalMaxBytes(&injectData, req.MaxTxBytes, latestProvenHeight)
 	resp.Txs = h.keeper.addTiablobDataToTxs(injectDataBz, req.MaxTxBytes, resp.Txs)
 
 	return resp, nil
@@ -83,52 +85,13 @@ func (k *Keeper) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlock) err
 	return nil
 }
 
-func (k *Keeper) getInjectedData(txs [][]byte) *InjectedData {
+func (k *Keeper) getInjectedData(txs [][]byte) *tiablob.InjectedData {
 	if len(txs) != 0 {
-		var injectedData InjectedData
+		var injectedData tiablob.InjectedData
 		err := k.cdc.Unmarshal(txs[0], &injectedData)
 		if err == nil {
 			return &injectedData
 		}
 	}
 	return nil
-}
-
-func (d InjectedData) IsEmpty() bool {
-	if d.CreateClient != nil || len(d.Headers) != 0 || len(d.Proofs) != 0 || d.PendingBlocks.BlockHeights != nil {
-		return false
-	}
-	return true
-}
-
-// MarshalMaxBytes will marshal the injected data ensuring it fits within the max bytes.
-// If it does not fit, it will decrement the number of proofs to inject by 1 and retry.
-// This new configuration will persist until the node is restarted. If a decrement is required,
-// there was most likely a misconfiguration for block proof cache limit.
-// Injected data is roughly 1KB/proof
-func (d InjectedData) marshalMaxBytes(keeper *Keeper, maxBytes int64, latestProvenHeight int64) []byte {
-	if d.IsEmpty() {
-		return nil
-	}
-
-	injectDataBz, err := keeper.cdc.Marshal(&d)
-	if err != nil {
-		return nil
-	}
-
-	proofLimit := keeper.injectedProofsLimit
-	for int64(len(injectDataBz)) > maxBytes {
-		proofLimit = proofLimit - 1
-		d.Proofs = keeper.relayer.GetCachedProofs(proofLimit, latestProvenHeight)
-		d.Headers = keeper.relayer.GetCachedHeaders(proofLimit, latestProvenHeight)
-		if len(d.Proofs) == 0 {
-			return nil
-		}
-		injectDataBz, err = keeper.cdc.Marshal(&d)
-		if err != nil {
-			return nil
-		}
-	}
-
-	return injectDataBz
 }

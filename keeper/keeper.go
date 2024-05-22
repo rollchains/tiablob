@@ -24,7 +24,7 @@ type Keeper struct {
 	ClientID                collections.Item[string]
 	ProvenHeight            collections.Item[int64]
 	PendingBlocksToTimeouts collections.Map[int64, int64]
-	TimeoutsToPendingBlocks collections.Map[int64, PendingBlocks]
+	TimeoutsToPendingBlocks collections.Map[int64, tiablob.PendingBlocks]
 
 	storeKey storetypes2.StoreKey
 
@@ -72,7 +72,7 @@ func NewKeeper(
 		ClientID:                collections.NewItem(sb, tiablob.ClientIDKey, "client_id", collections.StringValue),
 		ProvenHeight:            collections.NewItem(sb, tiablob.ProvenHeightKey, "proven_height", collections.Int64Value),
 		PendingBlocksToTimeouts: collections.NewMap(sb, tiablob.PendingBlocksToTimeouts, "pending_blocks_to_timeouts", collections.Int64Key, collections.Int64Value),
-		TimeoutsToPendingBlocks: collections.NewMap(sb, tiablob.TimeoutsToPendingBlocks, "timeouts_to_pending_blocks", collections.Int64Key, codec.CollValue[PendingBlocks](cdc)),
+		TimeoutsToPendingBlocks: collections.NewMap(sb, tiablob.TimeoutsToPendingBlocks, "timeouts_to_pending_blocks", collections.Int64Key, codec.CollValue[tiablob.PendingBlocks](cdc)),
 
 		storeKey: key,
 

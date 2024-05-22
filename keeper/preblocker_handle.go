@@ -8,6 +8,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/rollchains/tiablob/celestia-node/blob"
 	"github.com/rollchains/tiablob/lightclients/celestia"
+	
+	"github.com/rollchains/tiablob"
 )
 
 func (k *Keeper) preblockerCreateClient(ctx sdk.Context, createClient *celestia.CreateClient) error {
@@ -88,7 +90,7 @@ func (k *Keeper) preblockerProofs(ctx sdk.Context, proofs []*celestia.BlobProof)
 	return nil
 }
 
-func (k *Keeper) preblockerPendingBlocks(ctx sdk.Context, blockTime time.Time, proposerAddr []byte, pendingBlocks *PendingBlocks) error {
+func (k *Keeper) preblockerPendingBlocks(ctx sdk.Context, blockTime time.Time, proposerAddr []byte, pendingBlocks *tiablob.PendingBlocks) error {
 	if pendingBlocks != nil {
 		if reflect.DeepEqual(k.proposerAddress, proposerAddr) {
 			k.relayer.PostBlocks(ctx, pendingBlocks.BlockHeights)

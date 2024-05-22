@@ -7,6 +7,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/rollchains/tiablob/celestia-node/blob"
 	"github.com/rollchains/tiablob/lightclients/celestia"
+	
+	"github.com/rollchains/tiablob"
 )
 
 func (k Keeper) processCreateClient(ctx sdk.Context, createClient *celestia.CreateClient) error {
@@ -97,7 +99,7 @@ func (k Keeper) processProofs(ctx sdk.Context, clients []*celestia.Header, proof
 	return nil
 }
 
-func (k Keeper) processPendingBlocks(ctx sdk.Context, currentBlockTime time.Time, pendingBlocks *PendingBlocks) error {
+func (k Keeper) processPendingBlocks(ctx sdk.Context, currentBlockTime time.Time, pendingBlocks *tiablob.PendingBlocks) error {
 	if pendingBlocks != nil {
 		height := ctx.BlockHeight()
 		numBlocks := len(pendingBlocks.BlockHeights)
@@ -121,7 +123,11 @@ func (k Keeper) processPendingBlocks(ctx sdk.Context, currentBlockTime time.Time
 			}
 		}
 		// Ensure publish boundries includes new blocks, once they are on-chain, they will be tracked appropriately
-		newBlocks := k.relayer.ProposePostNextBlocks(ctx)
+		provenHeight, err := k.GetProvenHeight(ctx)
+		if err != nil {
+			return fmt.Errorf("process pending blocks, getting proven height, %v", err)
+		}
+		newBlocks := k.relayer.ProposePostNextBlocks(ctx, provenHeight)
 		for i, newBlock := range newBlocks {
 			if newBlock != pendingBlocks.BlockHeights[i] {
 				return fmt.Errorf("process pending blocks, block (%d) must be included", newBlock)
