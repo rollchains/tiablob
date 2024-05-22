@@ -2,7 +2,6 @@ package e2e
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"testing"
 	"time"
@@ -26,6 +25,7 @@ import (
 // TestUpgradeInPlaceMigration performs an upgrade without a genesis restart
 // Pre-reqs: build local2 verison of rollchains with version in makefile set to 2
 //   heighliner build -c rollchain --local -f chains.yaml --go-version 1.22.1 -g local2
+// go test -timeout 20m -v -run TestUpgradeInPlaceMigration . -count 1
 func TestUpgradeInPlaceMigration(t *testing.T) {
 	ctx := context.Background()
 	chains := setup.StartCelestiaAndRollchains(t, ctx, 1)
@@ -152,13 +152,9 @@ func TestUpgradeGenesisRestart(t *testing.T) {
 	require.Greater(t, latestProvedHeight, provedHeightAtGenesis)
 
 	// Add a new full node, with state sync configured, it should sync from block 200
-	celestiaAppHostname := fmt.Sprintf("%s-val-0-%s", chains.CelestiaChain.Config().ChainID, t.Name())            // celestia-1-val-0-TestPublish
-	celestiaNodeHostname := fmt.Sprintf("%s-celestia-node-0-%s", chains.CelestiaChain.Config().ChainID, t.Name()) // celestia-1-celestia-node-0-TestPublish
 	err = chains.RollchainChain.AddFullNodes(ctx, testutil.Toml{
 		"config/app.toml": testutil.Toml{
 			"celestia": testutil.Toml{
-				"app-rpc-url":           fmt.Sprintf("http://%s:26657", celestiaAppHostname),
-				"node-rpc-url":          fmt.Sprintf("http://%s:26658", celestiaNodeHostname),
 				"override-namespace":    "rc_demo0",
 			},
 		},

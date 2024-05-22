@@ -277,6 +277,10 @@ func initRootCmd(
 }
 ```
 
+## Existing chains
+
+Existing chains will have an additional step. An upgrade handler will be needed to set the proven height to the upgrade height.
+
 ## Complete
 
 The `tiablob` module is now ready to be used in your application.

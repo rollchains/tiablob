@@ -14,6 +14,9 @@ import (
 	"github.com/rollchains/rollchains/interchaintest/setup"
 )
 
+// TestStateSync produces >210 blocks (2 snapshots), gets trusted height/hash for fullnode, starts/syncs fullnode with statesync
+// verifies all nodes are producing blocks and the state sync'd fullnode does not have blocks earlier than the snapshot height
+// go test -timeout 20m -v -run TestStateSync . -count 1
 func TestStateSync(t *testing.T) {
 	ctx := context.Background()
 	chains := setup.StartCelestiaAndRollchains(t, ctx, 1)
@@ -36,15 +39,11 @@ func TestStateSync(t *testing.T) {
 
 
 	// Add a new full node, with state sync configured, it should sync from block 200
-	celestiaAppHostname := fmt.Sprintf("%s-val-0-%s", chains.CelestiaChain.Config().ChainID, t.Name())            // celestia-1-val-0-TestPublish
-	celestiaNodeHostname := fmt.Sprintf("%s-celestia-node-0-%s", chains.CelestiaChain.Config().ChainID, t.Name()) // celestia-1-celestia-node-0-TestPublish
 	rollchainVal0Hostname := fmt.Sprintf("%s-val-0-%s", chains.RollchainChain.Config().ChainID, t.Name())
 	rollchainVal1Hostname := fmt.Sprintf("%s-val-1-%s", chains.RollchainChain.Config().ChainID, t.Name())
 	err = chains.RollchainChain.AddFullNodes(ctx, testutil.Toml{
 		"config/app.toml": testutil.Toml{
 			"celestia": testutil.Toml{
-				"app-rpc-url":           fmt.Sprintf("http://%s:26657", celestiaAppHostname),
-				"node-rpc-url":          fmt.Sprintf("http://%s:26658", celestiaNodeHostname),
 				"override-namespace":    "rc_demo0",
 			},
 		},
@@ -74,5 +73,14 @@ func TestStateSync(t *testing.T) {
 		height, err := node.Height(ctx)
 		require.NoError(t, err)
 		require.Greater(t, height, int64(250), "a node has not increased height enough")
+	}
+
+	// Test assumes no fullnodes sync'd from genesis
+	// verify that a block before the snapshot height (200) does not exist
+	height := int64(150)
+	for _, fn := range chains.RollchainChain.FullNodes {
+		_, err = fn.Client.Block(ctx, &height)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "height 150 is not available, lowest height is 201")
 	}
 }
