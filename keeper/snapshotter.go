@@ -31,7 +31,7 @@ type TiaBlobSnapshotter struct {
 }
 
 // NewTiablobSnapshotter creates and returns a new snapshot.ExtensionSnapshotter implementation for tiablob.
-func NewTiablobSnapshotter(cms storetypes.MultiStore,keeper *Keeper) snapshot.ExtensionSnapshotter {
+func NewTiablobSnapshotter(cms storetypes.MultiStore, keeper *Keeper) snapshot.ExtensionSnapshotter {
 	return &TiaBlobSnapshotter{
 		cms:    cms,
 		keeper: keeper,
@@ -84,7 +84,7 @@ func (s *TiaBlobSnapshotter) SnapshotExtension(height uint64, payloadWriter snap
 
 		unprovenBlock := tiablob.UnprovenBlock{
 			Height: unprovenHeight,
-			Block: blockProtoBz,
+			Block:  blockProtoBz,
 		}
 
 		unprovenBlockBz, err := unprovenBlock.Marshal()

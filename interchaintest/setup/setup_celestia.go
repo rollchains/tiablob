@@ -23,8 +23,8 @@ var (
 	celestiaAppImage     = ibc.DockerImage{
 		Repository: "celestia",
 		//Repository: "ghcr.io/strangelove-ventures/heighliner/celestia",
-		Version:    "v1.10.1",
-		UidGid:     "1025:1025",
+		Version: "v1.10.1",
+		UidGid:  "1025:1025",
 	}
 	celestiaNodeHome  = "/var/cosmos-chain/celestia-node"
 	celestiaNodeType  = "bridge"

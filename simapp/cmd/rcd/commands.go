@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	"errors"
-	"path/filepath"
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	cmtcfg "github.com/cometbft/cometbft/config"
 	dbm "github.com/cosmos/cosmos-db"
@@ -133,19 +133,19 @@ func initRootCmd(
 // Removes application.db, expected to be used with "comet reset-state"
 func resetCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use: "reset-app",
+		Use:   "reset-app",
 		Short: "Reset application database (test-only)",
-		Long: "Reset application database delete application.db",
+		Long:  "Reset application database delete application.db",
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
 				return err
 			}
 			appdb := filepath.Join(clientCtx.HomeDir, filepath.Join("data", "application.db"))
-			
+
 			if err := os.RemoveAll(appdb); err != nil {
 				return fmt.Errorf("failed to remove %s", appdb)
-			} 
+			}
 
 			return nil
 		},

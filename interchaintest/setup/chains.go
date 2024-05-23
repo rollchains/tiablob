@@ -2,7 +2,7 @@ package setup
 
 import (
 	"github.com/docker/docker/client"
-	
+
 	"github.com/strangelove-ventures/interchaintest/v8/chain/cosmos"
 	"github.com/strangelove-ventures/interchaintest/v8/ibc"
 )

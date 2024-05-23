@@ -6,25 +6,27 @@ import (
 	"testing"
 	"time"
 
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	"github.com/cosmos/cosmos-sdk/types"
 	"cosmossdk.io/math"
-	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
+	"github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 
 	"github.com/strangelove-ventures/interchaintest/v8"
 	"github.com/strangelove-ventures/interchaintest/v8/chain/cosmos"
 	"github.com/strangelove-ventures/interchaintest/v8/testutil"
 	"github.com/stretchr/testify/require"
 
-	"github.com/rollchains/rollchains/interchaintest/setup"
 	"github.com/rollchains/rollchains/interchaintest/api/rollchain"
+	"github.com/rollchains/rollchains/interchaintest/setup"
 )
 
 // TestUpgradeInPlaceMigration performs an upgrade without a genesis restart
 // Pre-reqs: build local2 verison of rollchains with version in makefile set to 2
-//   heighliner build -c rollchain --local -f chains.yaml --go-version 1.22.1 -g local2
+//
+//	heighliner build -c rollchain --local -f chains.yaml --go-version 1.22.1 -g local2
+//
 // go test -timeout 20m -v -run TestUpgradeInPlaceMigration . -count 1
 func TestUpgradeInPlaceMigration(t *testing.T) {
 	ctx := context.Background()
@@ -43,19 +45,19 @@ func TestUpgradeInPlaceMigration(t *testing.T) {
 	upgradeMsg := &upgradetypes.MsgSoftwareUpgrade{
 		Authority: types.MustBech32ifyAddressBytes(chains.RollchainChain.Config().Bech32Prefix, authtypes.NewModuleAddress(govtypes.ModuleName)),
 		Plan: upgradetypes.Plan{
-			Name: "2",
+			Name:   "2",
 			Height: haltHeight,
-			Info: "",
+			Info:   "",
 		},
 	}
 	prop, err := chains.RollchainChain.BuildProposal(
 		[]cosmos.ProtoMessage{upgradeMsg},
-		"Upgrade proposal 1", // title
+		"Upgrade proposal 1",  // title
 		"first chain upgrade", // summary
-		"[]", // metadata
-		"500000000" + chains.RollchainChain.Config().Denom, // deposit
-		user.FormattedAddress(), // proposer
-		false, // expedited
+		"[]",                  // metadata
+		"500000000"+chains.RollchainChain.Config().Denom, // deposit
+		user.FormattedAddress(),                          // proposer
+		false,                                            // expedited
 	)
 	require.NoError(t, err)
 
@@ -155,7 +157,7 @@ func TestUpgradeGenesisRestart(t *testing.T) {
 	err = chains.RollchainChain.AddFullNodes(ctx, testutil.Toml{
 		"config/app.toml": testutil.Toml{
 			"celestia": testutil.Toml{
-				"override-namespace":    "rc_demo0",
+				"override-namespace": "rc_demo0",
 			},
 		},
 	}, 1)
@@ -166,7 +168,7 @@ func TestUpgradeGenesisRestart(t *testing.T) {
 
 	previousHeight, err := chains.RollchainChain.Height(ctx)
 	require.NoError(t, err)
-	
+
 	// wait for 10 blocks, new full node should be fully caught up
 	err = testutil.WaitForBlocks(timeoutCtx, 10, chains.RollchainChain)
 	require.NoError(t, err, "chain did not produce blocks after adding fullnode")

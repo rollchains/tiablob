@@ -7,7 +7,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/rollchains/tiablob/celestia-node/blob"
 	"github.com/rollchains/tiablob/lightclients/celestia"
-	
+
 	"github.com/rollchains/tiablob"
 )
 

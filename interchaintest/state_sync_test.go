@@ -1,6 +1,5 @@
 package e2e
 
-
 import (
 	"context"
 	"fmt"
@@ -9,7 +8,7 @@ import (
 
 	"github.com/strangelove-ventures/interchaintest/v8/testutil"
 	"github.com/stretchr/testify/require"
-	
+
 	"github.com/rollchains/rollchains/interchaintest/api/rollchain"
 	"github.com/rollchains/rollchains/interchaintest/setup"
 )
@@ -37,22 +36,21 @@ func TestStateSync(t *testing.T) {
 	err = testutil.WaitForBlocks(timeoutCtx, 10, chains.RollchainChain)
 	require.NoError(t, err, "chain did not produce blocks after halt2")
 
-
 	// Add a new full node, with state sync configured, it should sync from block 200
 	rollchainVal0Hostname := fmt.Sprintf("%s-val-0-%s", chains.RollchainChain.Config().ChainID, t.Name())
 	rollchainVal1Hostname := fmt.Sprintf("%s-val-1-%s", chains.RollchainChain.Config().ChainID, t.Name())
 	err = chains.RollchainChain.AddFullNodes(ctx, testutil.Toml{
 		"config/app.toml": testutil.Toml{
 			"celestia": testutil.Toml{
-				"override-namespace":    "rc_demo0",
+				"override-namespace": "rc_demo0",
 			},
 		},
 		"config/config.toml": testutil.Toml{
 			"statesync": testutil.Toml{
-				"enable": true,
-				"rpc_servers": fmt.Sprintf("%s:26657,%s:26657", rollchainVal0Hostname, rollchainVal1Hostname),
+				"enable":       true,
+				"rpc_servers":  fmt.Sprintf("%s:26657,%s:26657", rollchainVal0Hostname, rollchainVal1Hostname),
 				"trust_height": trustedHeight,
-				"trust_hash": trustedHash,
+				"trust_hash":   trustedHash,
 				"trust_period": "1h",
 			},
 		},
@@ -61,7 +59,7 @@ func TestStateSync(t *testing.T) {
 
 	timeoutCtx, timeoutCtxCancel = context.WithTimeout(ctx, time.Minute*2)
 	defer timeoutCtxCancel()
-	
+
 	// wait for 30 blocks, new full node should be fully caught up
 	err = testutil.WaitForBlocks(timeoutCtx, 30, chains.RollchainChain)
 	require.NoError(t, err, "chain did not produce blocks after halt")
