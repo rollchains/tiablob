@@ -34,7 +34,7 @@ type Client struct {
 	//DAS    das.API
 	//P2P    p2p.API
 	//Node   node.API
-	Blob   blob.API
+	Blob blob.API
 	//DA     da.API
 
 	closer multiClientCloser
@@ -93,7 +93,14 @@ func moduleMap(client *Client) map[string]interface{} {
 		//"das":    &client.DAS.Internal,
 		//"p2p":    &client.P2P.Internal,
 		//"node":   &client.Node.Internal,
+<<<<<<< HEAD
+		"blob": &client.Blob.Internal,
+		//"da":     &client.DA.Internal,
+	}
+}
+=======
 		"blob":   &client.Blob.Internal,
 		//"da":     &client.DA.Internal,
 	}
 }
+>>>>>>> main

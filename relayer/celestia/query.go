@@ -1,24 +1,16 @@
-package cosmos
+package celestia
 
 import (
 	"context"
 	"fmt"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	rpcclient "github.com/cometbft/cometbft/rpc/client"
-	coretypes "github.com/cometbft/cometbft/rpc/core/types"
-	querytypes "github.com/cosmos/cosmos-sdk/types/query"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-)
 
-func defaultPageRequest() *querytypes.PageRequest {
-	return &querytypes.PageRequest{
-		Key:        []byte(""),
-		Offset:     0,
-		Limit:      1000,
-		CountTotal: false,
-	}
-}
+	abci "github.com/tendermint/tendermint/abci/types"
+	rpcclient "github.com/tendermint/tendermint/rpc/client"
+	coretypes "github.com/tendermint/tendermint/rpc/core/types"
+	types "github.com/tendermint/tendermint/types"
+)
 
 // QueryABCI performs an ABCI query and returns the appropriate response and error sdk error code.
 func (cc *CosmosProvider) QueryABCI(ctx context.Context, req abci.RequestQuery) (abci.ResponseQuery, error) {
@@ -78,4 +70,12 @@ func (cc *CosmosProvider) QueryChainID(ctx context.Context) (string, error) {
 		return "", err
 	}
 	return status.NodeInfo.Network, nil
+}
+
+func (cc *CosmosProvider) ProveShares(ctx context.Context, height uint64, startShare uint64, endShare uint64) (*types.ShareProof, error) {
+	res, err := cc.rpcClient.ProveShares(ctx, height, startShare, endShare)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
 }

@@ -1,17 +1,19 @@
-package cosmos
+package celestia
 
 import (
 	"context"
 	"fmt"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	coretypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
+	abci "github.com/tendermint/tendermint/abci/types"
+	coretypes "github.com/tendermint/tendermint/rpc/core/types"
+
+	comettypes "github.com/cometbft/cometbft/types"
 )
 
 func (cc *CosmosProvider) SignAndBroadcast(
@@ -135,8 +137,8 @@ func (cc *CosmosProvider) Broadcast(
 		return res, fmt.Errorf("failed to broadcast, CheckTx failed: %d - %s - %s - %s", res.CheckTx.Code, res.CheckTx.Codespace, res.CheckTx.Log, string(res.CheckTx.Data))
 	}
 
-	if res.TxResult.Code != 0 {
-		return res, fmt.Errorf("failed to broadcast, Tx execution failed: %d - %s - %s - %s", res.TxResult.Code, res.TxResult.Codespace, res.TxResult.Log, string(res.TxResult.Data))
+	if res.DeliverTx.Code != 0 {
+		return res, fmt.Errorf("failed to broadcast, Tx execution failed: %d - %s - %s - %s", res.DeliverTx.Code, res.DeliverTx.Codespace, res.DeliverTx.Log, string(res.DeliverTx.Data))
 	}
 
 	walletState.updateNextAccountSequence(sequence + 1)
@@ -171,6 +173,20 @@ func (cc *CosmosProvider) EstimateGas(ctx context.Context, txf tx.Factory, pubKe
 	}
 
 	return simRes.GasInfo.GasUsed, err
+}
+
+// QueryLightBlock returns the IBC compatible block header (TendermintIBCHeader) at a specific height.
+func (cc *CosmosProvider) QueryLightBlock(ctx context.Context, h int64) (*comettypes.LightBlock, error) {
+	if h == 0 {
+		return nil, fmt.Errorf("height cannot be 0")
+	}
+
+	lightBlock, err := cc.lightProvider.LightBlock(ctx, h)
+	if err != nil {
+		return nil, err
+	}
+
+	return tm2CometLightBlock(lightBlock), nil
 }
 
 // BuildSimTx creates an unsigned tx with an empty single signature and returns

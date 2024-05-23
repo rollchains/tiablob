@@ -160,8 +160,8 @@ const (
 	// TODO: Change me
 	celestiaNamespace = "rc_demo"
 
-	// publish blocks to celestia every n blocks.
-	publishToCelestiaBlockInterval = 10
+	// publish blocks to celestia every n rollchain blocks.
+	publishToCelestiaBlockInterval = 5 // smaller size == faster testing
 )
 
 // These constants are derived from the above variables.
@@ -721,6 +721,7 @@ func NewChainApp(
 		appCodec,
 		runtime.NewKVStoreService(keys[tiablob.StoreKey]),
 		app.StakingKeeper,
+		keys[tiablob.StoreKey],
 	)
 
 	app.TiaBlobRelayer, err = tiablobrelayer.NewRelayer(
@@ -738,7 +739,8 @@ func NewChainApp(
 	app.TiaBlobKeeper.SetRelayer(app.TiaBlobRelayer)
 
 	// Proof-of-blob proposal handling
-	tiaBlobProposalHandler := tiablobkeeper.NewProofOfBlobProposalHandler(app.TiaBlobKeeper, app.TiaBlobRelayer, bApp.Mempool(), bApp)
+	dph := baseapp.NewDefaultProposalHandler(bApp.Mempool(), bApp)
+	tiaBlobProposalHandler := tiablobkeeper.NewProofOfBlobProposalHandler(app.TiaBlobKeeper, dph.PrepareProposalHandler(), dph.ProcessProposalHandler())
 	bApp.SetPrepareProposal(tiaBlobProposalHandler.PrepareProposal)
 	bApp.SetProcessProposal(tiaBlobProposalHandler.ProcessProposal)
 
@@ -1063,7 +1065,11 @@ func (app *ChainApp) setPostHandler() {
 func (app *ChainApp) Name() string { return app.BaseApp.Name() }
 
 // PreBlocker application updates every pre block
-func (app *ChainApp) PreBlocker(ctx sdk.Context, _ *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
+func (app *ChainApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
+	err := app.TiaBlobKeeper.PreBlocker(ctx, req)
+	if err != nil {
+		return nil, err
+	}
 	return app.ModuleManager.PreBlock(ctx)
 }
 

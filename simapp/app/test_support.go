@@ -8,7 +8,6 @@ import (
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
-
 )
 
 func (app *ChainApp) GetIBCKeeper() *ibckeeper.Keeper {
@@ -34,4 +33,3 @@ func (app *ChainApp) GetStakingKeeper() *stakingkeeper.Keeper {
 func (app *ChainApp) GetAccountKeeper() authkeeper.AccountKeeper {
 	return app.AccountKeeper
 }
-

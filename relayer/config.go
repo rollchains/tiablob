@@ -10,6 +10,7 @@ import (
 const (
 	FlagAppRpcURL     = "celestia.app-rpc-url"
 	FlagAppRpcTimeout = "celestia.app-rpc-timeout"
+	FlagChainID       = "celestia.chain-id"
 	FlagGasPrices     = "celestia.gas-prices"
 	FlagGasAdjustment = "celestia.gas-adjustment"
 	FlagNodeRpcURL    = "celestia.node-rpc-url"
@@ -20,12 +21,14 @@ const (
 	DefaultConfigTemplate = `
 
 	[celestia]
-	# RPC URL of celestia-app node for posting block data
-	# TODO remove hardcoded URL
+	# RPC URL of celestia-app node for posting block data, querying proofs & light blocks
 	app-rpc-url = "https://rpc-mocha.pops.one:443"
 
 	# RPC Timeout for transaction broadcasts and queries to celestia-app node
 	app-rpc-timeout = "30s"
+
+	# Celestia chain id
+	chain-id = "celestia-1"
 
 	# Gas price to pay for celestia transactions
 	gas-prices = "0.01utia"
@@ -33,16 +36,18 @@ const (
 	# Gas adjustment for celestia transactions
 	gas-adjustment = 1.0
 
-	# RPC URL of celestia-node for querying proofs
+	# RPC URL of celestia-node for querying blobs
 	node-rpc-url = "http://127.0.0.1:26658"
 
-	# Auth token for celestia-node RPC
+	# Auth token for celestia-node RPC, n/a if --rpc.skip-auth is used on start
 	node-auth-token = "auth-token"
 	
 	# Query celestia for new block proofs this often
 	proof-query-interval = "12s"
 
 	# Only flush at most this many block proofs in an injected tx per block proposal
+	# Must be greater than 0 and less than 100, proofs are roughly 1KB each
+	# tiablob will try to aggregate multiple blobs published at the same height w/ a single proof
 	max-flush-size = 32
 	`
 )
@@ -50,6 +55,7 @@ const (
 var DefaultCelestiaConfig = CelestiaConfig{
 	AppRpcURL:          "https://rpc-mocha.pops.one:443", // TODO remove hardcoded URL
 	AppRpcTimeout:      30 * time.Second,
+	ChainID:            "celestia-1",
 	GasPrice:           "0.01utia",
 	GasAdjustment:      1.0,
 	NodeRpcURL:         "http://127.0.0.1:26658",
@@ -65,6 +71,9 @@ type CelestiaConfig struct {
 
 	// RPC Timeout for celestia-app
 	AppRpcTimeout time.Duration `mapstructure:"app-rpc-timeout"`
+
+	// Celestia chain ID
+	ChainID string `mapstructure:"chain-id"`
 
 	// Gas price to pay for Celestia transactions
 	GasPrice string `mapstructure:"gas-prices"`
@@ -89,6 +98,7 @@ func CelestiaConfigFromAppOpts(appOpts servertypes.AppOptions) CelestiaConfig {
 	return CelestiaConfig{
 		AppRpcURL:          cast.ToString(appOpts.Get(FlagAppRpcURL)),
 		AppRpcTimeout:      cast.ToDuration(appOpts.Get(FlagAppRpcTimeout)),
+		ChainID:            cast.ToString(appOpts.Get(FlagChainID)),
 		GasPrice:           cast.ToString(appOpts.Get(FlagGasPrices)),
 		GasAdjustment:      cast.ToFloat64(appOpts.Get(FlagGasAdjustment)),
 		NodeRpcURL:         cast.ToString(appOpts.Get(FlagNodeRpcURL)),

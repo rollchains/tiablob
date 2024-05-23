@@ -18,5 +18,3 @@ type GasPrice float64
 func DefaultGasPrice() GasPrice {
 	return -1.0
 }
-
-

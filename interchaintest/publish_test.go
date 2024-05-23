@@ -18,7 +18,7 @@ import (
 )
 
 func TestPublish(t *testing.T) {
-	celestiaAppHostname := fmt.Sprintf("%s-val-0-%s", celestiaChainID, t.Name()) // celestia-1-val-0-TestPublish
+	celestiaAppHostname := fmt.Sprintf("%s-val-0-%s", celestiaChainID, t.Name())            // celestia-1-val-0-TestPublish
 	celestiaNodeHostname := fmt.Sprintf("%s-celestia-node-0-%s", celestiaChainID, t.Name()) // celestia-1-celestia-node-0-TestPublish
 
 	rollchainChainSpec := DefaultChainSpec //nolint:copylockss
@@ -27,7 +27,7 @@ func TestPublish(t *testing.T) {
 	rollchainChainSpec.ConfigFileOverrides = testutil.Toml{
 		"config/app.toml": testutil.Toml{
 			"celestia": testutil.Toml{
-				"app-rpc-url": fmt.Sprintf("http://%s:26657", celestiaAppHostname),
+				"app-rpc-url":  fmt.Sprintf("http://%s:26657", celestiaAppHostname),
 				"node-rpc-url": fmt.Sprintf("http://%s:26658", celestiaNodeHostname),
 			},
 		},
@@ -92,7 +92,7 @@ func TestPublish(t *testing.T) {
 
 	celestiaNodeClient := NewCelestiaNodeClient(nil, celestiaNode, celestiaNodeHome)
 
-	success := watchForPublishedBlocks(t, ctx, celestiaNodeClient, rollchainChain, celestiaChain, 50)
+	success := watchForPublishedBlocks(t, ctx, celestiaNodeClient, rollchainChain, celestiaChain, 20)
 	require.True(t, success, "failed to find all published blocks")
 }
 

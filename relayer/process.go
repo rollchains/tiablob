@@ -5,85 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	"cosmossdk.io/log"
-	"github.com/cosmos/cosmos-sdk/client"
-	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	appns "github.com/rollchains/tiablob/celestia/namespace"
-	"github.com/rollchains/tiablob/relayer/cosmos"
-	"github.com/rollchains/tiablob/celestia-node/blob"
+
+	"github.com/rollchains/tiablob/lightclients/celestia"
 )
-
-// Relayer is responsible for posting new blocks to Celestia and relaying block proofs from Celestia via the current proposer
-type Relayer struct {
-	logger log.Logger
-
-	provenHeights      chan uint64
-	latestProvenHeight uint64
-
-	commitHeights      chan uint64
-	latestCommitHeight uint64
-
-	pollInterval time.Duration
-
-	blockProofCache      map[uint64]*blob.Proof
-	blockProofCacheLimit int
-
-	provider  *cosmos.CosmosProvider
-	clientCtx client.Context
-	
-	nodeRpcUrl    string
-	nodeAuthToken string
-
-	celestiaChainID              string
-	celestiaNamespace            appns.Namespace
-	celestiaGasPrice             string
-	celestiaGasAdjustment        float64
-	celestiaPublishBlockInterval int
-	celestiaLastQueriedHeight    int64
-}
-
-// NewRelayer creates a new Relayer instance
-func NewRelayer(
-	logger log.Logger,
-	appOpts servertypes.AppOptions,
-	celestiaNamespace appns.Namespace,
-	keyDir string,
-	celestiaPublishBlockInterval int,
-) (*Relayer, error) {
-	cfg := CelestiaConfigFromAppOpts(appOpts)
-
-	provider, err := cosmos.NewProvider(cfg.AppRpcURL, keyDir, cfg.AppRpcTimeout)
-	if err != nil {
-		return nil, err
-	}
-
-	return &Relayer{
-		logger: logger,
-
-		pollInterval: cfg.ProofQueryInterval,
-
-		provenHeights: make(chan uint64, 10000),
-		commitHeights: make(chan uint64, 10000),
-
-		provider:                     provider,
-		celestiaNamespace:            celestiaNamespace,
-		celestiaGasPrice:             cfg.GasPrice,
-		celestiaGasAdjustment:        cfg.GasAdjustment,
-		celestiaPublishBlockInterval: celestiaPublishBlockInterval,
-		celestiaLastQueriedHeight:    0, // Start at 0 for now, but we'll get this from the latest client state
-
-		nodeRpcUrl:    cfg.NodeRpcURL,
-		nodeAuthToken: cfg.NodeAuthToken,
-
-		blockProofCache:      make(map[uint64]*blob.Proof),
-		blockProofCacheLimit: cfg.MaxFlushSize,
-	}, nil
-}
-
-func (r *Relayer) SetClientContext(clientCtx client.Context) {
-	r.clientCtx = clientCtx
-}
 
 // Start begins the relayer process
 func (r *Relayer) Start(
@@ -94,16 +19,9 @@ func (r *Relayer) Start(
 	r.latestProvenHeight = provenHeight
 	r.latestCommitHeight = commitHeight
 
-	if err := r.provider.CreateKeystore(); err != nil {
+	if err := r.celestiaProvider.CreateKeystore(); err != nil {
 		return err
 	}
-
-	chainID, err := r.provider.QueryChainID(ctx)
-	if err != nil {
-		return fmt.Errorf("error querying celestia chain ID: %w", err)
-	}
-
-	r.celestiaChainID = chainID
 
 	timer := time.NewTimer(r.pollInterval)
 	defer timer.Stop()
@@ -115,6 +33,7 @@ func (r *Relayer) Start(
 			r.updateHeight(height)
 		case <-timer.C:
 			r.checkForNewBlockProofs(ctx)
+			r.shouldUpdateClient(ctx)
 			timer.Reset(r.pollInterval)
 		}
 	}
@@ -122,7 +41,7 @@ func (r *Relayer) Start(
 
 // NotifyCommitHeight is called by the app to notify the relayer of the latest commit height
 func (r *Relayer) NotifyCommitHeight(height uint64) {
-	r.provenHeights <- height
+	r.commitHeights <- height
 }
 
 // NotifyProvenHeight is called by the app to notify the relayer of the latest proven height
@@ -131,27 +50,48 @@ func (r *Relayer) NotifyProvenHeight(height uint64) {
 	r.provenHeights <- height
 }
 
+// updateHeight is called when the provenHeight has changed
 func (r *Relayer) updateHeight(height uint64) {
 	if height > r.latestProvenHeight {
+		fmt.Println("Latest proven height:", height)
 		r.latestProvenHeight = height
+		r.pruneCache(height)
+	}
+}
 
-		for h := range r.blockProofCache {
-			if h <= height {
-				// this height has been proven (either by us or another proposer), we can delete the cached proof
-				delete(r.blockProofCache, h)
+// pruneCache will delete any headers or proofs that are no longer needed
+func (r *Relayer) pruneCache(provenHeight uint64) {
+	for h, proof := range r.blockProofCache {
+		if h <= provenHeight {
+			if r.celestiaHeaderCache[proof.CelestiaHeight] != nil {
+				delete(r.celestiaHeaderCache, proof.CelestiaHeight)
 			}
+			// this height has been proven (either by us or another proposer), we can delete the cached proof
+			delete(r.blockProofCache, h)
 		}
 	}
 }
 
 // Reconcile is intended to be called by the current proposing validator during PrepareProposal and will:
-// - check the cache (no fetches here to minimize duration) if there are any new block proofs to be relayed from Celestia
-// - if there are any block proofs to relay, generate a MsgUpdateClient along with the MsgProveBlock message(s) and return them in a tx for injection into the proposal.
-// - if the Celestia light client is within 1/3 of the trusting period and there are no block proofs to relay, generate a MsgUpdateClient to update the light client and return it in a tx.
-// - in a non-blocking goroutine, post the next block (or chunk of blocks) above the last proven height to Celestia (does not include the block being proposed).
-func (r *Relayer) Reconcile(ctx sdk.Context) [][]byte {
+//   - call a non-blocking gorouting to post the next block (or chunk of blocks) above the last proven height to Celestia (does
+//     not include the block being proposed).
+//   - check the proofs cache (no fetches here to minimize duration) if there are any new block proofs to be relayed from Celestia
+//   - if there are any block proofs to relay, it will add any headers (update clients) that are also cached
+//   - if the Celestia light client is within 2/3 of the trusting period and there are no block proofs to relay, generate a
+//     MsgUpdateClient to update the light client and return it in a tx.
+func (r *Relayer) Reconcile(ctx sdk.Context) ([]*celestia.BlobProof, []*celestia.Header) {
 	go r.postNextBlocks(ctx, r.celestiaPublishBlockInterval)
 
-	// TODO check cache for new block proofs to relay
-	return nil
+	proofs := r.GetCachedProofs()
+	headers := r.GetCachedHeaders()
+
+	// if no headers are present, check to see if an update client is needed
+	// an update client present if it is needed
+	if len(headers) == 0 {
+		if r.updateClient != nil {
+			headers = append(headers, r.updateClient)
+		}
+	}
+
+	return proofs, headers
 }

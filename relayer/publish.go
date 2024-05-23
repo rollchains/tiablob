@@ -7,7 +7,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/rollchains/tiablob/celestia/appconsts"
 	blobtypes "github.com/rollchains/tiablob/celestia/blob/types"
 	tmtypes "github.com/tendermint/tendermint/types"
@@ -35,27 +34,31 @@ func (r *Relayer) postNextBlocks(ctx sdk.Context, n int) {
 		return
 	}
 
-	if !r.provider.KeyExists(CelestiaPublishKeyName) {
+	if !r.celestiaProvider.KeyExists(CelestiaPublishKeyName) {
 		r.logger.Error("No Celestia key found, please add with `tiablob keys add` command")
 		return
 	}
 
 	// if not set, will not use feegrant
-	feeGranter, _ := r.provider.GetKeyAddress(CelestiaFeegrantKeyName)
+	feeGranter, _ := r.celestiaProvider.GetKeyAddress(CelestiaFeegrantKeyName)
 
 	blobs := make([]*blobtypes.Blob, n)
 
-	txClient := txtypes.NewServiceClient(r.clientCtx)
-
 	for i := 0; i < n; i++ {
 		h := height - int64(n) + int64(i)
-		res, err := txClient.GetBlockWithTxs(ctx, &txtypes.GetBlockWithTxsRequest{Height: h})
+		res, err := r.localProvider.GetBlockAtHeight(ctx, h)
 		if err != nil {
-			r.logger.Error("Error getting block", "error", err)
+			r.logger.Error("Error getting block", "height:", h, "error", err)
 			return
 		}
 
-		blockBz, err := res.Block.Marshal()
+		blockProto, err := res.Block.ToProto()
+		if err != nil {
+			r.logger.Error("Error protoing block", "error", err)
+			return
+		}
+
+		blockBz, err := blockProto.Marshal()
 		if err != nil {
 			r.logger.Error("Error marshaling block", "error", err)
 			return
@@ -81,7 +84,7 @@ func (r *Relayer) postNextBlocks(ctx sdk.Context, n int) {
 		gasLimit = gasLimit + 12000
 	}
 
-	signer, err := r.provider.ShowAddress(CelestiaPublishKeyName, "celestia")
+	signer, err := r.celestiaProvider.ShowAddress(CelestiaPublishKeyName, "celestia")
 	if err != nil {
 		r.logger.Error("Error getting signer address", "error", err)
 		return
@@ -93,11 +96,11 @@ func (r *Relayer) postNextBlocks(ctx sdk.Context, n int) {
 		return
 	}
 
-	ws := r.provider.EnsureWalletState(CelestiaPublishKeyName)
+	ws := r.celestiaProvider.EnsureWalletState(CelestiaPublishKeyName)
 	ws.Mu.Lock()
 	defer ws.Mu.Unlock()
 
-	seq, txBz, err := r.provider.Sign(
+	seq, txBz, err := r.celestiaProvider.Sign(
 		ctx,
 		ws,
 		r.celestiaChainID,
@@ -126,7 +129,7 @@ func (r *Relayer) postNextBlocks(ctx sdk.Context, n int) {
 		return
 	}
 
-	res, err := r.provider.Broadcast(ctx, seq, ws, blobTx)
+	res, err := r.celestiaProvider.Broadcast(ctx, seq, ws, blobTx)
 	if err != nil {
 		if strings.Contains(err.Error(), legacyerrors.ErrWrongSequence.Error()) {
 			ws.HandleAccountSequenceMismatchError(err)

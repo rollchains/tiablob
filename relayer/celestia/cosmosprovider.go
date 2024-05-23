@@ -1,4 +1,4 @@
-package cosmos
+package celestia
 
 import (
 	"regexp"
@@ -6,13 +6,16 @@ import (
 	"sync"
 	"time"
 
+	provtypes "github.com/tendermint/tendermint/light/provider"
+	prov "github.com/tendermint/tendermint/light/provider/http"
+
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	gogogrpc "github.com/cosmos/gogoproto/grpc"
 
 	"google.golang.org/grpc/encoding"
 	"google.golang.org/grpc/encoding/proto"
 
-	client "github.com/strangelove-ventures/cometbft-client/client"
+	celestiarpc "github.com/tendermint/tendermint/rpc/client/http"
 )
 
 var _ gogogrpc.ClientConn = &CosmosProvider{}
@@ -22,9 +25,10 @@ var protoCodec = encoding.GetCodec(proto.Name)
 var accountSeqRegex = regexp.MustCompile("account sequence mismatch, expected ([0-9]+), got ([0-9]+)")
 
 type CosmosProvider struct {
-	cdc       Codec
-	rpcClient RPCClient
-	keybase   keyring.Keyring
+	cdc           Codec
+	lightProvider provtypes.Provider
+	rpcClient     *celestiarpc.HTTP
+	keybase       keyring.Keyring
 
 	keyDir string
 
@@ -60,15 +64,23 @@ func (cc *CosmosProvider) EnsureWalletState(address string) *WalletState {
 }
 
 // NewProvider validates the CosmosProviderConfig, instantiates a ChainClient and then instantiates a CosmosProvider
-func NewProvider(rpcURL string, keyDir string, timeout time.Duration) (*CosmosProvider, error) {
-	rpcClient, err := client.NewClient(rpcURL, timeout)
+func NewProvider(rpcURL string, keyDir string, timeout time.Duration, chainID string) (*CosmosProvider, error) {
+	// TODO: add cfg item for celestia chain id
+	lightProvider, err := prov.New(chainID, rpcURL)
+	if err != nil {
+		return nil, err
+	}
+
+	// Celestia client for their specific APIs, should we just use this instead of the client wrapper?
+	rpcClient, err := celestiarpc.NewWithTimeout(rpcURL, "/websocket", uint(timeout.Seconds()))
 	if err != nil {
 		return nil, err
 	}
 
 	cp := &CosmosProvider{
 		cdc:            makeCodec(ModuleBasics),
-		rpcClient:      NewRPCClient(rpcClient),
+		lightProvider:  lightProvider,
+		rpcClient:      rpcClient,
 		keyDir:         keyDir,
 		walletStateMap: make(map[string]*WalletState),
 	}
