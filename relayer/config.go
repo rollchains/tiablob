@@ -8,10 +8,12 @@ import (
 )
 
 const (
-	FlagRpcURL        = "celestia.rpc-url"
-	FlagRpcTimeout    = "celestia.rpc-timeout"
+	FlagAppRpcURL     = "celestia.app-rpc-url"
+	FlagAppRpcTimeout = "celestia.app-rpc-timeout"
 	FlagGasPrices     = "celestia.gas-prices"
 	FlagGasAdjustment = "celestia.gas-adjustment"
+	FlagNodeRpcURL    = "celestia.node-rpc-url"
+	FlagNodeAuthToken = "celestia.node-auth-token"
 	FlagQueryInterval = "celestia.proof-query-interval"
 	FlagMaxFlushSize  = "celestia.max-flush-size"
 
@@ -20,10 +22,10 @@ const (
 	[celestia]
 	# RPC URL of celestia-app node for posting block data
 	# TODO remove hardcoded URL
-	rpc-url = "https://rpc-mocha.pops.one:443"
+	app-rpc-url = "https://rpc-mocha.pops.one:443"
 
 	# RPC Timeout for transaction broadcasts and queries to celestia-app node
-	rpc-timeout = "30s"
+	app-rpc-timeout = "30s"
 
 	# Gas price to pay for celestia transactions
 	gas-prices = "0.01utia"
@@ -31,6 +33,12 @@ const (
 	# Gas adjustment for celestia transactions
 	gas-adjustment = 1.0
 
+	# RPC URL of celestia-node for querying proofs
+	node-rpc-url = "http://127.0.0.1:26658"
+
+	# Auth token for celestia-node RPC
+	node-auth-token = "auth-token"
+	
 	# Query celestia for new block proofs this often
 	proof-query-interval = "12s"
 
@@ -40,27 +48,35 @@ const (
 )
 
 var DefaultCelestiaConfig = CelestiaConfig{
-	RpcURL:             "https://rpc-mocha.pops.one:443", // TODO remove hardcoded URL
-	RpcTimeout:         30 * time.Second,
+	AppRpcURL:          "https://rpc-mocha.pops.one:443", // TODO remove hardcoded URL
+	AppRpcTimeout:      30 * time.Second,
 	GasPrice:           "0.01utia",
 	GasAdjustment:      1.0,
+	NodeRpcURL:         "http://127.0.0.1:26658",
+	NodeAuthToken:      "auth-token",
 	ProofQueryInterval: 12 * time.Second,
 	MaxFlushSize:       32,
 }
 
 // CelestiaConfig defines the configuration for the in-process Celestia relayer.
 type CelestiaConfig struct {
-	// RPC URL of Celestia
-	RpcURL string `mapstructure:"rpc-url"`
+	// RPC URL of celestia-app
+	AppRpcURL string `mapstructure:"app-rpc-url"`
 
-	// RPC Timeout
-	RpcTimeout time.Duration `mapstructure:"rpc-timeout"`
+	// RPC Timeout for celestia-app
+	AppRpcTimeout time.Duration `mapstructure:"app-rpc-timeout"`
 
 	// Gas price to pay for Celestia transactions
 	GasPrice string `mapstructure:"gas-prices"`
 
 	// Gas adjustment for Celestia transactions
 	GasAdjustment float64 `mapstructure:"gas-adjustment"`
+
+	// RPC URL of celestia-node
+	NodeRpcURL string `mapstructure:"node-rpc-url"`
+
+	// RPC Timeout for celestia-node
+	NodeAuthToken string `mapstructure:"node-auth-token"`
 
 	// Query Celestia for new block proofs this often
 	ProofQueryInterval time.Duration `mapstructure:"proof-query-interval"`
@@ -71,10 +87,12 @@ type CelestiaConfig struct {
 
 func CelestiaConfigFromAppOpts(appOpts servertypes.AppOptions) CelestiaConfig {
 	return CelestiaConfig{
-		RpcURL:             cast.ToString(appOpts.Get(FlagRpcURL)),
-		RpcTimeout:         cast.ToDuration(appOpts.Get(FlagRpcTimeout)),
+		AppRpcURL:          cast.ToString(appOpts.Get(FlagAppRpcURL)),
+		AppRpcTimeout:      cast.ToDuration(appOpts.Get(FlagAppRpcTimeout)),
 		GasPrice:           cast.ToString(appOpts.Get(FlagGasPrices)),
 		GasAdjustment:      cast.ToFloat64(appOpts.Get(FlagGasAdjustment)),
+		NodeRpcURL:         cast.ToString(appOpts.Get(FlagNodeRpcURL)),
+		NodeAuthToken:      cast.ToString(appOpts.Get(FlagNodeAuthToken)),
 		ProofQueryInterval: cast.ToDuration(appOpts.Get(FlagQueryInterval)),
 		MaxFlushSize:       cast.ToInt(appOpts.Get(FlagMaxFlushSize)),
 	}

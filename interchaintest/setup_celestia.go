@@ -7,7 +7,6 @@ import (
 
 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	blobtypes "github.com/rollchains/tiablob/celestia/blob/types"
-
 	"github.com/strangelove-ventures/interchaintest/v8"
 	"github.com/strangelove-ventures/interchaintest/v8/chain/cosmos"
 	"github.com/strangelove-ventures/interchaintest/v8/ibc"
@@ -71,7 +70,6 @@ var (
 
 func StartCelestiaNode(t *testing.T, ctx context.Context, celestiaChain *cosmos.CosmosChain, client *client.Client, network string) *cosmos.SidecarProcess {
 	celestiaVal0 := celestiaChain.GetNode()
-
 	genesisHash := getGenesisBlockHash(t, ctx, celestiaVal0)
 	fmt.Println("genesisHash: ", genesisHash)
 
@@ -93,6 +91,7 @@ func StartCelestiaNode(t *testing.T, ctx context.Context, celestiaChain *cosmos.
 			"--core.ip", celestiaVal0.HostName(),
 			"--gateway.addr", "0.0.0.0",
 			"--rpc.addr", "0.0.0.0",
+			"--rpc.skip-auth",
 		}, // start cmd
 		[]string{
 			fmt.Sprintf("CELESTIA_CUSTOM=%s:%s", celestiaChainID, genesisHash),
@@ -113,6 +112,7 @@ func StartCelestiaNode(t *testing.T, ctx context.Context, celestiaChain *cosmos.
 			"celestia", celestiaNodeType, "init",
 			"--p2p.network", celestiaChainID,
 			"--node.store", celestiaNodeHome,
+			"--rpc.skip-auth",
 		}, // cmd
 		[]string{
 			fmt.Sprintf("CELESTIA_CUSTOM=%s:%s", celestiaChainID, genesisHash),
