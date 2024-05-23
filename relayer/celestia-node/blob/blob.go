@@ -15,7 +15,6 @@ import (
 	//"github.com/rollchains/tiablob/celestia/appconsts"
 	//tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
-
 var _ Module = (*API)(nil)
 
 // Module defines the API related to interacting with the blobs
@@ -319,4 +318,8 @@ type ID []byte
 // ID reports ID of the Namespace.
 func (n Namespace) ID() ID {
 	return ID(n[appns.NamespaceVersionSize:])
+<<<<<<< HEAD
 }*/
+=======
+}*/
+>>>>>>> main

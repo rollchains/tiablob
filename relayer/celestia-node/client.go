@@ -93,7 +93,14 @@ func moduleMap(client *Client) map[string]interface{} {
 		//"das":    &client.DAS.Internal,
 		//"p2p":    &client.P2P.Internal,
 		//"node":   &client.Node.Internal,
+<<<<<<< HEAD
 		"blob": &client.Blob.Internal,
 		//"da":     &client.DA.Internal,
 	}
 }
+=======
+		"blob":   &client.Blob.Internal,
+		//"da":     &client.DA.Internal,
+	}
+}
+>>>>>>> main
