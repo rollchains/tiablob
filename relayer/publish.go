@@ -10,6 +10,8 @@ import (
 	"github.com/rollchains/tiablob/celestia/appconsts"
 	blobtypes "github.com/rollchains/tiablob/celestia/blob/types"
 	tmtypes "github.com/tendermint/tendermint/types"
+
+	"github.com/avast/retry-go/v4"
 )
 
 const (
@@ -19,18 +21,38 @@ const (
 	celestiaBlobPostMemo    = "Posted by tiablob https://rollchains.com"
 )
 
-// postNextBlocks will post the next block (or chunk of blocks) above the last proven height to Celestia (does not include the block being proposed).
-// Skip the last n blocks to give time for the previous proposer's transaction to succeed.
-func (r *Relayer) postNextBlocks(ctx sdk.Context, n int) {
-	// TODO post blocks since last proven height
+// PostNextBlocks is called by the current proposing validator during PrepareProposal.
+// If on the publish boundary, it will return the block heights that will be published
+// It will not publish the block being proposed.
+func (r *Relayer) ProposePostNextBlocks(ctx sdk.Context) []int64 {
 	height := ctx.BlockHeight()
 
 	if height <= 1 {
-		return
+		return nil
 	}
 
-	// only publish every n blocks
-	if (height-1)%int64(n) != 0 {
+	// only publish new blocks on interval
+	if (height-1)%int64(r.celestiaPublishBlockInterval) != 0 {
+		return nil
+	}
+
+	var blocks []int64
+	for block := height - int64(r.celestiaPublishBlockInterval); block < height; block++ {
+		blocks = append(blocks, block)
+	}
+
+	return blocks
+}
+
+// PostBlocks is call in the preblocker, the proposer will publish at this point with their block accepted
+func (r *Relayer) PostBlocks(ctx sdk.Context, blocks []int64) {
+	go r.postBlocks(ctx, blocks)
+}
+
+// postBlocks will publish rollchain blocks to celestia
+// start height is inclusive, end height is exclusive
+func (r *Relayer) postBlocks(ctx sdk.Context, blocks []int64) {
+	if len(blocks) == 0 {
 		return
 	}
 
@@ -42,13 +64,12 @@ func (r *Relayer) postNextBlocks(ctx sdk.Context, n int) {
 	// if not set, will not use feegrant
 	feeGranter, _ := r.celestiaProvider.GetKeyAddress(CelestiaFeegrantKeyName)
 
-	blobs := make([]*blobtypes.Blob, n)
+	blobs := make([]*blobtypes.Blob, len(blocks))
 
-	for i := 0; i < n; i++ {
-		h := height - int64(n) + int64(i)
-		res, err := r.localProvider.GetBlockAtHeight(ctx, h)
+	for i, height := range blocks {
+		res, err := r.localProvider.GetBlockAtHeight(ctx, height)
 		if err != nil {
-			r.logger.Error("Error getting block", "height:", h, "error", err)
+			r.logger.Error("Error getting block", "height:", height, "error", err)
 			return
 		}
 
@@ -73,7 +94,7 @@ func (r *Relayer) postNextBlocks(ctx sdk.Context, n int) {
 		blobs[i] = blob
 	}
 
-	blobLens := make([]uint32, n)
+	blobLens := make([]uint32, len(blocks))
 	for i, blob := range blobs {
 		blobLens[i] = uint32(len(blob.Data))
 	}
@@ -100,51 +121,58 @@ func (r *Relayer) postNextBlocks(ctx sdk.Context, n int) {
 	ws.Mu.Lock()
 	defer ws.Mu.Unlock()
 
-	seq, txBz, err := r.celestiaProvider.Sign(
-		ctx,
-		ws,
-		r.celestiaChainID,
-		r.celestiaGasPrice,
-		r.celestiaGasAdjustment,
-		gasLimit,
-		celestiaBech32Prefix,
-		CelestiaPublishKeyName,
-		feeGranter,
-		[]sdk.Msg{msg},
-		celestiaBlobPostMemo,
-	)
-	if err != nil {
-		// Account sequence mismatch errors can happen on the simulated transaction also.
-		if strings.Contains(err.Error(), legacyerrors.ErrWrongSequence.Error()) {
-			ws.HandleAccountSequenceMismatchError(err)
+	if err := retry.Do(func() error {
+		seq, txBz, err := r.celestiaProvider.Sign(
+			ctx,
+			ws,
+			r.celestiaChainID,
+			r.celestiaGasPrice,
+			r.celestiaGasAdjustment,
+			gasLimit,
+			celestiaBech32Prefix,
+			CelestiaPublishKeyName,
+			feeGranter,
+			[]sdk.Msg{msg},
+			celestiaBlobPostMemo,
+		)
+		if err != nil {
+			// Account sequence mismatch errors can happen on the simulated transaction also.
+			if strings.Contains(err.Error(), legacyerrors.ErrWrongSequence.Error()) {
+				ws.HandleAccountSequenceMismatchError(err)
+			}
+			return fmt.Errorf("Error signing blob tx, %w", err)
 		}
 
-		r.logger.Error("Error signing blob tx", "error", err)
-		return
-	}
-
-	blobTx, err := tmtypes.MarshalBlobTx(txBz, blobs...)
-	if err != nil {
-		r.logger.Error("Error marshaling blob tx", "error", err)
-		return
-	}
-
-	res, err := r.celestiaProvider.Broadcast(ctx, seq, ws, blobTx)
-	if err != nil {
-		if strings.Contains(err.Error(), legacyerrors.ErrWrongSequence.Error()) {
-			ws.HandleAccountSequenceMismatchError(err)
+		blobTx, err := tmtypes.MarshalBlobTx(txBz, blobs...)
+		if err != nil {
+			return fmt.Errorf("Error marshaling blob tx, %w", err)
 		}
 
-		r.logger.Error("Error broadcasting blob tx", "error", err)
+		res, err := r.celestiaProvider.Broadcast(ctx, seq, ws, blobTx)
+		if err != nil {
+			if strings.Contains(err.Error(), legacyerrors.ErrWrongSequence.Error()) {
+				ws.HandleAccountSequenceMismatchError(err)
+			}
+			return fmt.Errorf("Error broadcasting blob tx, %w", err)
+		}
 
-		return
+		r.logger.Info("Posted block(s) to Celestia",
+			"height_start", blocks[0],
+			"height_end", blocks[len(blocks)-1],
+			"celestia_height", res.Height,
+			"namespace", string(r.celestiaNamespace.ID[18:]),
+			"tx_hash", hex.EncodeToString(res.Hash),
+			"url", fmt.Sprintf("https://mocha.celenium.io/tx/%s", hex.EncodeToString(res.Hash)),
+		)
+
+		return nil
+	}, retry.Context(ctx), retry.Attempts(uint(2)), retry.OnRetry(func(n uint, err error) {
+		r.logger.Info(
+			"Failed to published blobs",
+			"attempt", n+1,
+			"error", err,
+		)
+	})); err != nil {
+		r.logger.Error("Error blobs not published")
 	}
-
-	r.logger.Info("Posted block(s) to Celestia",
-		"height_start", height-int64(n),
-		"height_end", height-1,
-		"celestia_height", res.Height,
-		"tx_hash", hex.EncodeToString(res.Hash),
-		"url", fmt.Sprintf("https://mocha.celenium.io/tx/%s", hex.EncodeToString(res.Hash)),
-	)
 }

@@ -1,7 +1,7 @@
 package relayer
 
 import (
-	"context"
+	"sync"
 	"time"
 
 	"cosmossdk.io/log"
@@ -12,7 +12,7 @@ import (
 	celestiaprovider "github.com/rollchains/tiablob/relayer/celestia"
 	"github.com/rollchains/tiablob/relayer/local"
 
-	coretypes "github.com/cometbft/cometbft/rpc/core/types"
+	"github.com/cosmos/cosmos-sdk/codec"
 )
 
 const (
@@ -24,27 +24,26 @@ const (
 type Relayer struct {
 	logger log.Logger
 
-	provenHeights      chan uint64
-	latestProvenHeight uint64
+	provenHeights      chan int64
+	latestProvenHeight int64
 
-	commitHeights      chan uint64
-	latestCommitHeight uint64
+	commitHeights      chan int64
+	latestCommitHeight int64
 
-	pollInterval time.Duration
-
-	blockProofCache      map[uint64]*celestia.BlobProof
+	pollInterval         time.Duration
 	blockProofCacheLimit int
-	celestiaHeaderCache  map[uint64]*celestia.Header
+	nodeRpcUrl           string
+	nodeAuthToken        string
+
+	// These items are shared state, must be access with mutex
+	blockProofCache     map[int64]*celestia.BlobProof
+	celestiaHeaderCache map[int64]*celestia.Header
+	updateClient        *celestia.Header
+	mu                  sync.Mutex
 
 	celestiaProvider *celestiaprovider.CosmosProvider
 	localProvider    *local.CosmosProvider
 	clientCtx        client.Context
-
-	latestClientState *celestia.ClientState
-	updateClient      *celestia.Header
-
-	nodeRpcUrl    string
-	nodeAuthToken string
 
 	celestiaChainID              string
 	celestiaNamespace            appns.Namespace
@@ -57,6 +56,7 @@ type Relayer struct {
 // NewRelayer creates a new Relayer instance
 func NewRelayer(
 	logger log.Logger,
+	cdc codec.BinaryCodec,
 	appOpts servertypes.AppOptions,
 	celestiaNamespace appns.Namespace,
 	keyDir string,
@@ -74,15 +74,22 @@ func NewRelayer(
 		return nil, err
 	}
 
-	localProvider, err := local.NewProvider()
+	localProvider, err := local.NewProvider(cdc)
+	if err != nil {
+		return nil, err
+	}
+
+	if cfg.OverrideNamespace != "" {
+		celestiaNamespace = appns.MustNewV0([]byte(cfg.OverrideNamespace))
+	}
 
 	return &Relayer{
 		logger: logger,
 
 		pollInterval: cfg.ProofQueryInterval,
 
-		provenHeights: make(chan uint64, 10000),
-		commitHeights: make(chan uint64, 10000),
+		provenHeights: make(chan int64, 10000),
+		commitHeights: make(chan int64, 10000),
 
 		celestiaProvider:             celestiaProvider,
 		localProvider:                localProvider,
@@ -96,40 +103,12 @@ func NewRelayer(
 		nodeRpcUrl:    cfg.NodeRpcURL,
 		nodeAuthToken: cfg.NodeAuthToken,
 
-		blockProofCache:      make(map[uint64]*celestia.BlobProof),
+		blockProofCache:      make(map[int64]*celestia.BlobProof),
 		blockProofCacheLimit: cfg.MaxFlushSize,
-		celestiaHeaderCache:  make(map[uint64]*celestia.Header),
+		celestiaHeaderCache:  make(map[int64]*celestia.Header),
 	}, nil
 }
 
 func (r *Relayer) SetClientContext(clientCtx client.Context) {
 	r.clientCtx = clientCtx
-}
-
-// SetCelestiaLastQueriedHeight allows tiablob keeper to set a starting point for querying Celestia blocks on import genesis
-// This may not be needed if we query tx hashes for blob heights
-func (r *Relayer) SetCelestiaLastQueriedHeight(height int64) {
-	r.celestiaLastQueriedHeight = height
-}
-
-// SetLatestClientState updates client state
-func (r *Relayer) SetLatestClientState(clientState *celestia.ClientState) {
-	r.latestClientState = clientState
-}
-
-// GetLocalBlockAtAHeight allows keeper package to use the relayer's provider to fetch its blocks
-func (r *Relayer) GetLocalBlockAtHeight(ctx context.Context, height int64) (*coretypes.ResultBlock, error) {
-	return r.localProvider.GetBlockAtHeight(ctx, height)
-}
-
-// DecrementBlockProofCacheLimit will reduce the number of proofs injected into proposal by 1
-func (r *Relayer) DecrementBlockProofCacheLimit() {
-	r.blockProofCacheLimit = r.blockProofCacheLimit - 1
-}
-
-// ClearUpdateClient will set update client to nil.
-// This is done when the celestia light client has been updated.
-// It is only populated when the trusting period is 2/3 time from expiration.
-func (r *Relayer) ClearUpdateClient() {
-	r.updateClient = nil
 }

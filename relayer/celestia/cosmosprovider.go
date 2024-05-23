@@ -65,13 +65,11 @@ func (cc *CosmosProvider) EnsureWalletState(address string) *WalletState {
 
 // NewProvider validates the CosmosProviderConfig, instantiates a ChainClient and then instantiates a CosmosProvider
 func NewProvider(rpcURL string, keyDir string, timeout time.Duration, chainID string) (*CosmosProvider, error) {
-	// TODO: add cfg item for celestia chain id
 	lightProvider, err := prov.New(chainID, rpcURL)
 	if err != nil {
 		return nil, err
 	}
 
-	// Celestia client for their specific APIs, should we just use this instead of the client wrapper?
 	rpcClient, err := celestiarpc.NewWithTimeout(rpcURL, "/websocket", uint(timeout.Seconds()))
 	if err != nil {
 		return nil, err

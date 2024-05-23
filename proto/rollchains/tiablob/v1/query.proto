@@ -4,6 +4,7 @@ package rollchains.tiablob.v1;
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "rollchains/tiablob/v1/validator.proto";
+import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/rollchains/tiablob";
 
@@ -17,6 +18,18 @@ service Query {
 
   rpc CelestiaAddress(QueryCelestiaAddressRequest) returns (QueryCelestiaAddressResponse) {
     option (google.api.http).get = "/tiablob/v1/celestia_address";
+  }
+
+  rpc ProvenHeight(QueryProvenHeightRequest) returns (QueryProvenHeightResponse) {
+    option (google.api.http).get = "/tiablob/v1/proven_height";
+  }
+
+  rpc PendingBlocks(QueryPendingBlocksRequest) returns (QueryPendingBlocksResponse) {
+    option (google.api.http).get = "/tiablob/v1/pending_blocks";
+  }
+
+  rpc ExpiredBlocks(QueryExpiredBlocksRequest) returns (QueryExpiredBlocksResponse) {
+    option (google.api.http).get = "/tiablob/v1/expired_blocks";
   }
 }
 
@@ -37,4 +50,28 @@ message QueryCelestiaAddressRequest {
 // QueryCelestiaAddressResponse is the response type for the Query/CelestiaAddress RPC method.
 message QueryCelestiaAddressResponse {
   string celestia_address = 1;
+}
+
+message QueryProvenHeightRequest {}
+
+message QueryProvenHeightResponse {
+  int64 proven_height = 1;
+}
+
+message BlockWithExpiration {
+  int64 height = 1;
+  google.protobuf.Timestamp expiration = 2 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+}
+
+message QueryPendingBlocksRequest {}
+
+message QueryPendingBlocksResponse {
+  repeated BlockWithExpiration pending_blocks = 1;
+}
+
+message QueryExpiredBlocksRequest {}
+
+message QueryExpiredBlocksResponse {
+  google.protobuf.Timestamp current_time = 1 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  repeated BlockWithExpiration expired_blocks = 2;
 }

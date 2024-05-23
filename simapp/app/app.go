@@ -37,7 +37,6 @@ import (
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 	ibckeeper "github.com/cosmos/ibc-go/v8/modules/core/keeper"
 	ibctm "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
-	appns "github.com/rollchains/tiablob/celestia/namespace"
 	"github.com/spf13/cast"
 
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
@@ -147,6 +146,8 @@ import (
 	packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward/types"
 
 	"github.com/rollchains/tiablob"
+	nodens "github.com/rollchains/tiablob/celestia-node/share"
+	appns "github.com/rollchains/tiablob/celestia/namespace"
 	tiablobkeeper "github.com/rollchains/tiablob/keeper"
 	tiablobmodule "github.com/rollchains/tiablob/module"
 	tiablobrelayer "github.com/rollchains/tiablob/relayer"
@@ -717,15 +718,24 @@ func NewChainApp(
 		AddRoute(icahosttypes.SubModuleName, icaHostStack)
 	app.IBCKeeper.SetRouter(ibcRouter)
 
+	nodeNamespace, err := nodens.NewBlobNamespaceV0([]byte(celestiaNamespace))
+	if err != nil {
+		panic(err)
+	}
 	app.TiaBlobKeeper = tiablobkeeper.NewKeeper(
 		appCodec,
+		appOpts,
 		runtime.NewKVStoreService(keys[tiablob.StoreKey]),
 		app.StakingKeeper,
+		app.UpgradeKeeper,
 		keys[tiablob.StoreKey],
+		publishToCelestiaBlockInterval,
+		nodeNamespace,
 	)
 
 	app.TiaBlobRelayer, err = tiablobrelayer.NewRelayer(
 		logger,
+		appCodec,
 		appOpts,
 		appns.MustNewV0([]byte(celestiaNamespace)),
 		filepath.Join(homePath, "keys"),
@@ -1045,7 +1055,7 @@ func (app *ChainApp) FinalizeBlock(req *abci.RequestFinalizeBlock) (*abci.Respon
 		return res, err
 	}
 
-	app.TiaBlobRelayer.NotifyCommitHeight(uint64(req.Height))
+	app.TiaBlobRelayer.NotifyCommitHeight(req.Height)
 
 	return res, nil
 }
@@ -1263,7 +1273,7 @@ func (app *ChainApp) RegisterNodeService(clientCtx client.Context, cfg config.Co
 	if err != nil {
 		panic(err)
 	}
-	latestCommitHeight := uint64(appInfo.LastBlockHeight)
+	latestCommitHeight := appInfo.LastBlockHeight
 
 	go app.TiaBlobRelayer.Start(
 		ctx,

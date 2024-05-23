@@ -1,4 +1,4 @@
-package e2e
+package node
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// Celestia node client is use for celestia node apis, i.e. "blob get-all"
 type CelestiaNodeClient struct {
 	log *zap.Logger
 

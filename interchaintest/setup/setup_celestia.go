@@ -1,4 +1,4 @@
-package e2e
+package setup
 
 import (
 	"context"
@@ -57,8 +57,11 @@ var (
 		CoinType:      "118",
 		GasAdjustment: 1.5,
 	}
+)
 
-	CelestiaChainSpec = interchaintest.ChainSpec{
+// Default Celestia chain spec
+func CelestiaChainSpec() *interchaintest.ChainSpec {
+	return &interchaintest.ChainSpec{
 		Name:          CelestiaChainConfig.Name,
 		ChainName:     CelestiaChainConfig.Name,
 		Version:       CelestiaChainConfig.Images[0].Version,
@@ -66,7 +69,7 @@ var (
 		NumValidators: &numCelestiaVals,
 		NumFullNodes:  &numCelestiaFullNodes,
 	}
-)
+}
 
 func StartCelestiaNode(t *testing.T, ctx context.Context, celestiaChain *cosmos.CosmosChain, client *client.Client, network string) *cosmos.SidecarProcess {
 	celestiaVal0 := celestiaChain.GetNode()

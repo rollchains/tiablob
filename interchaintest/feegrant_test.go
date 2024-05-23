@@ -5,28 +5,43 @@ import (
 	"strings"
 	"testing"
 
+	sdkmath "cosmossdk.io/math"
+
 	"github.com/strangelove-ventures/interchaintest/v8"
 	"github.com/strangelove-ventures/interchaintest/v8/chain/cosmos"
+	"github.com/strangelove-ventures/interchaintest/v8/ibc"
 	"github.com/strangelove-ventures/interchaintest/v8/testutil"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
+
+	"github.com/rollchains/rollchains/interchaintest/setup"
 )
 
+var FundsAmount = sdkmath.NewInt(1000_000000) // 1k tokens
+
+// TestFeegrant verifies that validators can set up fee grant
 func TestFeegrant(t *testing.T) {
-	cs := DefaultChainSpec //nolint:copylocks
 	nv := 4
-	cs.NumValidators = &nv
+	rollchainCs := setup.RollchainChainSpec(t.Name(), nv, 0, "rc_demo")
+	celestiaCs := setup.CelestiaChainSpec()
 	cf := interchaintest.NewBuiltinChainFactory(zaptest.NewLogger(t), []*interchaintest.ChainSpec{
-		&cs,
+		rollchainCs,
+		celestiaCs,
 	})
 
 	chains, err := cf.Chains(t.Name())
 	require.NoError(t, err)
 
-	chain := chains[0].(*cosmos.CosmosChain)
+	rollchainChain := chains[0].(*cosmos.CosmosChain)
+	celestiaChain := chains[1].(*cosmos.CosmosChain)
 
 	ic := interchaintest.NewInterchain().
-		AddChain(chain)
+		AddChain(rollchainChain).
+		AddChain(celestiaChain, ibc.WalletAmount{
+			Address: "celestia1dr3gwf5kulm4e4k0pctwzn0htw6wrvevdgjdlf",
+			Amount:  sdkmath.NewInt(100_000_000_000), // 100,000 tia
+			Denom:   celestiaCs.Denom,
+		})
 
 	ctx := context.Background()
 	client, network := interchaintest.DockerSetup(t)
@@ -41,8 +56,21 @@ func TestFeegrant(t *testing.T) {
 		_ = ic.Close()
 	})
 
-	valCelestiaAddrs := make([]string, len(chain.Validators))
-	for i, v := range chain.Validators {
+	// Add feegrant wallet to broadcasting node
+	_, err = celestiaChain.BuildWallet(ctx, "feegrant", "kick raven pave wild outdoor dismiss happy start lunch discover job evil code trim network emerge summer mad army vacant chest birth subject seek")
+	require.NoError(t, err)
+
+	// Send a transaction to a random address to get the feegrant pub key on chain
+	err = celestiaChain.SendFunds(ctx, "feegrant", ibc.WalletAmount{
+		Address: "celestia1l34yq0xgya2hey0mzj3cmxcknegw2axz3dvhwt",
+		Amount:  sdkmath.OneInt(),
+		Denom:   celestiaChain.Config().Denom,
+	})
+	require.NoError(t, err)
+	require.NoError(t, testutil.WaitForBlocks(ctx, 2, celestiaChain))
+
+	valCelestiaAddrs := make([]string, len(rollchainChain.Validators))
+	for i, v := range rollchainChain.Validators {
 		stdout, stderr, err := v.ExecBin(ctx, "keys", "tiablob", "add")
 		require.NoError(t, err, "stdout: %s, stderr: %s", stdout, stderr)
 		t.Log("validator", i, string(stdout), string(stderr))
@@ -55,7 +83,7 @@ func TestFeegrant(t *testing.T) {
 		if i == 0 {
 			// Restore mnemonic into first val so that it can broadcast transactions
 			// celestia1dr3gwf5kulm4e4k0pctwzn0htw6wrvevdgjdlf
-			stdout, stderr, err := chain.Validators[0].ExecBin(ctx, "keys", "tiablob", "restore", "-f", "kick raven pave wild outdoor dismiss happy start lunch discover job evil code trim network emerge summer mad army vacant chest birth subject seek")
+			stdout, stderr, err := rollchainChain.Validators[0].ExecBin(ctx, "keys", "tiablob", "restore", "-f", "kick raven pave wild outdoor dismiss happy start lunch discover job evil code trim network emerge summer mad army vacant chest birth subject seek")
 			require.NoError(t, err, "stdout: %s, stderr: %s", stdout, stderr)
 			t.Log(string(stdout), string(stderr))
 		} else {
@@ -63,24 +91,23 @@ func TestFeegrant(t *testing.T) {
 			stdout, stderr, err = v.ExecBin(ctx, "keys", "tiablob", "add", "-f", "--address", "celestia1dr3gwf5kulm4e4k0pctwzn0htw6wrvevdgjdlf")
 			require.NoError(t, err, "stdout: %s, stderr: %s", stdout, stderr)
 		}
-
 	}
 
 	// feegrant all validators
 	cmd := []string{"tx", "tiablob", "feegrant"}
 	cmd = append(cmd, valCelestiaAddrs...)
-	stdout, stderr, err := chain.Validators[0].ExecBin(ctx, cmd...)
+	stdout, stderr, err := rollchainChain.Validators[0].ExecBin(ctx, cmd...)
 	require.NoError(t, err, "stdout: %s, stderr: %s", stdout, stderr)
 	t.Log(string(stdout), string(stderr))
 
 	// faucet funds to the user
-	users := interchaintest.GetAndFundTestUsers(t, ctx, "default", GenesisFundsAmount, chain)
+	users := interchaintest.GetAndFundTestUsers(t, ctx, "default", FundsAmount, rollchainChain)
 	user := users[0]
 
 	// balance check
-	balance, err := chain.GetBalance(ctx, user.FormattedAddress(), Denom)
+	balance, err := rollchainChain.GetBalance(ctx, user.FormattedAddress(), rollchainChain.Config().Denom)
 	require.NoError(t, err)
-	require.True(t, balance.Equal(GenesisFundsAmount), "user balance should be equal to genesis funds")
+	require.True(t, balance.Equal(FundsAmount), "user balance should be equal to fund amount")
 
-	require.NoError(t, testutil.WaitForBlocks(ctx, 100, chain))
+	require.NoError(t, testutil.WaitForBlocks(ctx, 2, rollchainChain))
 }

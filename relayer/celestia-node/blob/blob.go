@@ -318,8 +318,4 @@ type ID []byte
 // ID reports ID of the Namespace.
 func (n Namespace) ID() ID {
 	return ID(n[appns.NamespaceVersionSize:])
-<<<<<<< HEAD
 }*/
-=======
-}*/
->>>>>>> main

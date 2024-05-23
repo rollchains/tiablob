@@ -55,3 +55,19 @@ rcd keys tiablob add --feegrant --address celestia1dr3gwf5kulm4e4k0pctwzn0htw6wr
 
 TODO
 
+# Publish logic
+Proposers check the block interval, i.e. `publishToCelestiaBlockInterval`, defined in `app.go` for publishing blocks to celestia. If a proposer is on this boundary, they will determine the blocks to publish, inject the pending block heights to be published, and call a non-blocking goroutine publishing those blocks as blobs once their proposal is accepted.
+
+If rollchains halts, we shouldn't publish any blocks for a few blocks to ensure we don't find proofs for existing proofs.
+
+# Retry logic
+Proposers will check if pending published blocks have timed-out on non-publishing boundries. If they have, they will re-inject the block heights and publish those blocks again, up to the publishing limit. Pending published blocks will only be retried if they have timed out and there is no proof pending for the respective block. If chains publish every block, expired pending blocks will also be checked.
+
+[Dropped transactions](https://docs.celestia.org/developers/submit-data#submitting-multiple-transactions-in-one-block-from-the-same-account)
+```
+By default, nodes will drop a transaction if it does not get included in 5 blocks (roughly 1 minute). At this point, the user must resubmit their transaction if they want it to eventually be included.
+```
+[Transaction resubmission](https://docs.celestia.org/developers/transaction-resubmission)
+```
+In cases where transactions are not included within a 75-second window, resubmission is necessary.
+```

@@ -10,4 +10,9 @@ message InjectedData {
     .rollchains.tiablob.lightclients.celestia.v1.CreateClient create_client = 1;
     repeated rollchains.tiablob.lightclients.celestia.v1.Header headers = 2;
     repeated rollchains.tiablob.lightclients.celestia.v1.BlobProof proofs = 3;
+    PendingBlocks pending_blocks = 4 [ (gogoproto.nullable) = false ];
+}
+
+message PendingBlocks {
+    repeated int64 block_heights = 1;
 }

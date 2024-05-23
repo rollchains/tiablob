@@ -1,28 +1,13 @@
 package celestia
 
 import (
-	nodeblob "github.com/rollchains/tiablob/celestia-node/blob"
-	nodeshare "github.com/rollchains/tiablob/celestia-node/share"
-	appproto "github.com/rollchains/tiablob/celestia/blob"
-
 	tmtypes "github.com/tendermint/tendermint/types"
 
 	cometcrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 )
 
-// Just json marshal from one type, unmarshal to the other
-// TODO: optimize this
+// Convert celestia core' share proof to celestia light client's share proof
 func TmShareProofToProto(sp *tmtypes.ShareProof) ShareProof {
-	/*spBz, err := json.Marshal(sp)
-	if err != nil {
-		return nil, err
-	}
-
-	var shareProof ShareProof
-	if err = json.Unmarshal(spBz, &shareProof); err != nil {
-		return nil, err
-	}*/
-
 	rowRoots := make([][]byte, len(sp.RowProof.RowRoots))
 	rowProofs := make([]*cometcrypto.Proof, len(sp.RowProof.Proofs))
 
@@ -58,21 +43,4 @@ func TmShareProofToProto(sp *tmtypes.ShareProof) ShareProof {
 		},
 		NamespaceVersion: sp.NamespaceVersion,
 	}
-}
-
-func BlobToProto(blob *nodeblob.Blob) appproto.Blob {
-	return appproto.Blob{
-		NamespaceId:      blob.NamespaceId,
-		Data:             blob.Data,
-		ShareVersion:     blob.ShareVersion,
-		NamespaceVersion: blob.NamespaceVersion,
-	}
-}
-
-func BlobFromProto(blobProto *appproto.Blob) (*nodeblob.Blob, error) {
-	namespace, err := nodeshare.NewBlobNamespaceV0(blobProto.NamespaceId[18:])
-	if err != nil {
-		return nil, err
-	}
-	return nodeblob.NewBlobV0(namespace, blobProto.Data)
 }

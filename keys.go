@@ -14,6 +14,15 @@ var (
 
 	// ProvenHeightKey saves the current proven height.
 	ProvenHeightKey = collections.NewPrefix(2)
+
+	// PendingBlocksToTimeouts maps pending blocks to their timeout
+	PendingBlocksToTimeouts = collections.NewPrefix(3)
+
+	// TimeoutsToPendingBlocks maps timeouts to a set of pending blocks
+	TimeoutsToPendingBlocks = collections.NewPrefix(4)
+
+	// light client store key
+	ClientStoreKey = []byte("client_store/")
 )
 
 const (

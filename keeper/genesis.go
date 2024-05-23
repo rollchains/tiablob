@@ -24,6 +24,17 @@ func (k *Keeper) InitGenesis(ctx sdk.Context, data *tiablob.GenesisState) error 
 
 	k.SetCelestiaGenesisState(ctx, data.CelestiaGenesisState)
 
+	for _, pendingBlock := range data.PendingBlocks {
+		height := pendingBlock.Height
+		expiration := pendingBlock.Expiration.UnixNano()
+		if err := k.PendingBlocksToTimeouts.Set(ctx, height, expiration); err != nil {
+			return err
+		}
+		if err := k.AddPendingBlockToTimeoutsMap(ctx, height, expiration); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -39,10 +50,16 @@ func (k *Keeper) ExportGenesis(ctx sdk.Context) *tiablob.GenesisState {
 		panic(err)
 	}
 
+	pendingBlocks, err := k.GetPendingBlocksWithExpiration(ctx)
+	if err != nil {
+		panic(err)
+	}
+
 	return &tiablob.GenesisState{
 		Validators:           vals.Validators,
 		ProvenHeight:         provenHeight,
 		CelestiaGenesisState: k.GetCelestiaGenesisState(ctx),
+		PendingBlocks:        pendingBlocks,
 	}
 }
 
@@ -106,8 +123,6 @@ func (k Keeper) SetCelestiaGenesisState(ctx sdk.Context, gs *celestia.GenesisSta
 			store.Set(metadata.Key, metadata.Value)
 		}
 		celestia.SetClientState(store, k.cdc, &gs.ClientState)
-		k.relayer.SetLatestClientState(&gs.ClientState)
-		k.relayer.SetCelestiaLastQueriedHeight(int64(gs.ClientState.LatestHeight.RevisionHeight))
 		for _, consensusStateWithHeight := range gs.ConsensusStates {
 			celestia.SetConsensusState(store, k.cdc, &consensusStateWithHeight.ConsensusState, consensusStateWithHeight.Height)
 		}

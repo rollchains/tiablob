@@ -5,16 +5,14 @@ import (
 	"fmt"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	"github.com/rollchains/tiablob/lightclients/celestia"
 )
 
 // Start begins the relayer process
 func (r *Relayer) Start(
 	ctx context.Context,
-	provenHeight uint64,
-	commitHeight uint64,
+	provenHeight int64,
+	commitHeight int64,
 ) error {
 	r.latestProvenHeight = provenHeight
 	r.latestCommitHeight = commitHeight
@@ -29,29 +27,34 @@ func (r *Relayer) Start(
 		select {
 		case <-ctx.Done():
 			return nil
+		case height := <-r.commitHeights:
+			r.latestCommitHeight = height
 		case height := <-r.provenHeights:
 			r.updateHeight(height)
 		case <-timer.C:
-			r.checkForNewBlockProofs(ctx)
-			r.shouldUpdateClient(ctx)
+			if r.isValidatorAndCaughtUp(ctx) {
+				latestClientState := r.getClientState(ctx)
+				r.checkForNewBlockProofs(ctx, latestClientState)
+				r.shouldUpdateClient(ctx, latestClientState)
+			}
 			timer.Reset(r.pollInterval)
 		}
 	}
 }
 
 // NotifyCommitHeight is called by the app to notify the relayer of the latest commit height
-func (r *Relayer) NotifyCommitHeight(height uint64) {
+func (r *Relayer) NotifyCommitHeight(height int64) {
 	r.commitHeights <- height
 }
 
 // NotifyProvenHeight is called by the app to notify the relayer of the latest proven height
 // i.e. the height of the highest incremental block that was proven to be posted to Celestia.
-func (r *Relayer) NotifyProvenHeight(height uint64) {
+func (r *Relayer) NotifyProvenHeight(height int64) {
 	r.provenHeights <- height
 }
 
 // updateHeight is called when the provenHeight has changed
-func (r *Relayer) updateHeight(height uint64) {
+func (r *Relayer) updateHeight(height int64) {
 	if height > r.latestProvenHeight {
 		fmt.Println("Latest proven height:", height)
 		r.latestProvenHeight = height
@@ -60,7 +63,8 @@ func (r *Relayer) updateHeight(height uint64) {
 }
 
 // pruneCache will delete any headers or proofs that are no longer needed
-func (r *Relayer) pruneCache(provenHeight uint64) {
+func (r *Relayer) pruneCache(provenHeight int64) {
+	r.mu.Lock()
 	for h, proof := range r.blockProofCache {
 		if h <= provenHeight {
 			if r.celestiaHeaderCache[proof.CelestiaHeight] != nil {
@@ -70,28 +74,36 @@ func (r *Relayer) pruneCache(provenHeight uint64) {
 			delete(r.blockProofCache, h)
 		}
 	}
+	r.mu.Unlock()
 }
 
-// Reconcile is intended to be called by the current proposing validator during PrepareProposal and will:
-//   - call a non-blocking gorouting to post the next block (or chunk of blocks) above the last proven height to Celestia (does
-//     not include the block being proposed).
-//   - check the proofs cache (no fetches here to minimize duration) if there are any new block proofs to be relayed from Celestia
-//   - if there are any block proofs to relay, it will add any headers (update clients) that are also cached
-//   - if the Celestia light client is within 2/3 of the trusting period and there are no block proofs to relay, generate a
-//     MsgUpdateClient to update the light client and return it in a tx.
-func (r *Relayer) Reconcile(ctx sdk.Context) ([]*celestia.BlobProof, []*celestia.Header) {
-	go r.postNextBlocks(ctx, r.celestiaPublishBlockInterval)
+// only validators need to check for new block proofs and update clients
+// if a validator, they should not be querying celestia until they finished catching up
+func (r *Relayer) isValidatorAndCaughtUp(ctx context.Context) bool {
+	status, err := r.localProvider.Status(ctx)
+	if err != nil {
+		return false
+	}
+	if status.ValidatorInfo.VotingPower > 0 && !status.SyncInfo.CatchingUp {
+		return true
+	}
+	return false
+}
 
-	proofs := r.GetCachedProofs()
-	headers := r.GetCachedHeaders()
-
-	// if no headers are present, check to see if an update client is needed
-	// an update client present if it is needed
-	if len(headers) == 0 {
-		if r.updateClient != nil {
-			headers = append(headers, r.updateClient)
-		}
+func (r *Relayer) getClientState(ctx context.Context) *celestia.ClientState {
+	clientState, err := r.localProvider.QueryCelestiaClientState(ctx)
+	if err != nil {
+		return nil
 	}
 
-	return proofs, headers
+	if clientState.LatestHeight.RevisionHeight == 0 {
+		return nil
+	}
+
+	// update celestia's last queried height to avoid unnecessary queries
+	if r.celestiaLastQueriedHeight < int64(clientState.LatestHeight.RevisionHeight) {
+		r.celestiaLastQueriedHeight = int64(clientState.LatestHeight.RevisionHeight)
+	}
+
+	return clientState
 }
