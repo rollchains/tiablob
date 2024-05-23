@@ -15,7 +15,6 @@ import (
 	//"github.com/rollchains/tiablob/celestia/appconsts"
 	//tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
-
 var _ Module = (*API)(nil)
 
 // Module defines the API related to interacting with the blobs

@@ -19,7 +19,7 @@ deps:
   - remote: buf.build
     owner: googleapis
     repository: googleapis
-    commit: cc9c423640a448ec81a25b69927172cf
+    commit: 4383c33e6c714f8bb30a26a6d838e217
     digest: shake256:de26a277fc28b8b411ecf58729d78d32fcf15090ffd998a4469225b17889bfb51442eaab04bb7a8d88d203ecdf0a9febd4ffd52c18ed1c2229160c7bd353ca95
   - remote: buf.build
     owner: protocolbuffers

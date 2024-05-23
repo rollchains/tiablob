@@ -383,10 +383,9 @@ func (m *Height) XXX_DiscardUnknown() {
 var xxx_messageInfo_Height proto.InternalMessageInfo
 
 type BlobProof struct {
-	ShareProof ShareProof `protobuf:"bytes,1,opt,name=share_proof,json=shareProof,proto3" json:"share_proof"`
-	//repeated .celestia.core.v1.blob.Blob blob = 2 [(gogoproto.nullable) = false];
-	CelestiaHeight   int64   `protobuf:"varint,2,opt,name=celestia_height,json=celestiaHeight,proto3" json:"celestia_height,omitempty"`
-	RollchainHeights []int64 `protobuf:"varint,3,rep,packed,name=rollchain_heights,json=rollchainHeights,proto3" json:"rollchain_heights,omitempty"`
+	ShareProof       ShareProof `protobuf:"bytes,1,opt,name=share_proof,json=shareProof,proto3" json:"share_proof"`
+	CelestiaHeight   int64      `protobuf:"varint,2,opt,name=celestia_height,json=celestiaHeight,proto3" json:"celestia_height,omitempty"`
+	RollchainHeights []int64    `protobuf:"varint,3,rep,packed,name=rollchain_heights,json=rollchainHeights,proto3" json:"rollchain_heights,omitempty"`
 }
 
 func (m *BlobProof) Reset()         { *m = BlobProof{} }
