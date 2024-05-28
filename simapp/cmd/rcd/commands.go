@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
 
+	cmtlog "github.com/cometbft/cometbft/libs/log"
 	"cosmossdk.io/log"
 	confixcmd "cosmossdk.io/tools/confix/cmd"
 
@@ -40,6 +42,7 @@ import (
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	tiablobcli "github.com/rollchains/tiablob/client/cli"
 	"github.com/rollchains/tiablob/relayer"
+	"github.com/rollchains/tiablob/tiasync"
 )
 
 // initCometBFTConfig helps to override default CometBFT Config values.
@@ -147,6 +150,28 @@ func AddCommands(rootCmd *cobra.Command, defaultNodeHome string, appCreator type
 
 	startCmd := server.StartCmdWithOptions(appCreator, defaultNodeHome, server.StartCmdOptions{
 		PostSetup: func(svrCtx *server.Context, clientCtx client.Context, ctx context.Context, g *errgroup.Group) error {
+			/*svrCfg, err := getAndValidateConfig(svrCtx)
+			if err != nil {
+				return err
+			}*/
+			logger := cmtlog.NewTMLogger(cmtlog.NewSyncWriter(os.Stdout))
+			/*cometCfg, err := cmtcmd.ParseConfig(rootCmd)
+			if err != nil {
+				panic(err)
+			}*/
+			cometCfg := svrCtx.Config
+			//cometCfg := cmtcfg.DefaultConfig()
+			logger.Info("Comet config:", "Moniker", cometCfg.Moniker, "TimeoutCommit", cometCfg.Consensus.TimeoutCommit, "RootDir", cometCfg.RootDir, "defaultNodeHome", defaultNodeHome)
+			fmt.Println("Comet config:", "Moniker", cometCfg.Moniker, "TimeoutCommit", cometCfg.Consensus.TimeoutCommit, "RootDir", cometCfg.RootDir, "defaultNodeHome", defaultNodeHome)
+			logger.Info("Comet config:", "TimeoutPrecommit", cometCfg.Consensus.TimeoutPrecommit, "TimeoutPrevote", cometCfg.Consensus.TimeoutPrevote, "TimeoutPropose", cometCfg.Consensus.TimeoutPropose)
+			fmt.Println("Comet config:", "TimeoutPrecommit", cometCfg.Consensus.TimeoutPrecommit, "TimeoutPrevote", cometCfg.Consensus.TimeoutPrevote, "TimeoutPropose", cometCfg.Consensus.TimeoutPropose)
+			//homePath := cast.ToString(appOpts.Get(flags.FlagHome))
+			ts, err := tiasync.NewTiasync(cometCfg, logger)
+			if err != nil {
+				panic(err)
+			}
+
+			go ts.Start()
 			// TODO Start relayer here instead of in NewChainApp
 			// cannot access app here until v0.51
 
