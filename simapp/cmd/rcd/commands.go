@@ -38,8 +38,8 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
-	tiablobcli "github.com/rollchains/tiablob/client/cli"
-	"github.com/rollchains/tiablob/relayer"
+	//tiablobcli "github.com/rollchains/tiablob/client/cli"
+	//"github.com/rollchains/tiablob/relayer"
 )
 
 // initCometBFTConfig helps to override default CometBFT Config values.
@@ -62,7 +62,7 @@ func initAppConfig() (string, interface{}) {
 	type CustomAppConfig struct {
 		serverconfig.Config
 
-		Celestia *relayer.CelestiaConfig `mapstructure:"celestia"`
+		//Celestia *relayer.CelestiaConfig `mapstructure:"celestia"`
 	}
 
 	// Optionally allow the chain developer to overwrite the SDK's default
@@ -85,10 +85,10 @@ func initAppConfig() (string, interface{}) {
 
 	customAppConfig := CustomAppConfig{
 		Config:   *srvCfg,
-		Celestia: &relayer.DefaultCelestiaConfig,
+		//Celestia: &relayer.DefaultCelestiaConfig,
 	}
 
-	customAppTemplate := serverconfig.DefaultConfigTemplate + relayer.DefaultConfigTemplate
+	customAppTemplate := serverconfig.DefaultConfigTemplate //+ relayer.DefaultConfigTemplate
 
 	return customAppTemplate, customAppConfig
 }
@@ -115,7 +115,7 @@ func initRootCmd(
 	AddCommands(rootCmd, app.DefaultNodeHome, newApp, appExport, addModuleInitFlags)
 
 	keysCmd := keys.Commands()
-	keysCmd.AddCommand(tiablobcli.NewKeysCmd())
+	//keysCmd.AddCommand(tiablobcli.NewKeysCmd())
 
 	// add keybase, auxiliary RPC, query, genesis, and tx child commands
 	rootCmd.AddCommand(

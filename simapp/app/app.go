@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
+	//"path/filepath"
 	"sort"
 	"sync"
 
@@ -145,12 +145,12 @@ import (
 	packetforwardkeeper "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward/keeper"
 	packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward/types"
 
-	"github.com/rollchains/tiablob"
-	nodens "github.com/rollchains/tiablob/celestia-node/share"
-	appns "github.com/rollchains/tiablob/celestia/namespace"
-	tiablobkeeper "github.com/rollchains/tiablob/keeper"
-	tiablobmodule "github.com/rollchains/tiablob/module"
-	tiablobrelayer "github.com/rollchains/tiablob/relayer"
+	//"github.com/rollchains/tiablob"
+	//nodens "github.com/rollchains/tiablob/celestia-node/share"
+	//appns "github.com/rollchains/tiablob/celestia/namespace"
+	//tiablobkeeper "github.com/rollchains/tiablob/keeper"
+	//tiablobmodule "github.com/rollchains/tiablob/module"
+	//tiablobrelayer "github.com/rollchains/tiablob/relayer"
 )
 
 const (
@@ -246,8 +246,8 @@ type ChainApp struct {
 	TransferKeeper      ibctransferkeeper.Keeper
 
 	// Rollchains Celestia Publish
-	TiaBlobKeeper  *tiablobkeeper.Keeper
-	TiaBlobRelayer *tiablobrelayer.Relayer
+	//TiaBlobKeeper  *tiablobkeeper.Keeper
+	//TiaBlobRelayer *tiablobrelayer.Relayer
 
 	// Custom
 	POAKeeper           poakeeper.Keeper
@@ -360,7 +360,7 @@ func NewChainApp(
 		poa.StoreKey,
 		globalfeetypes.StoreKey,
 		packetforwardtypes.StoreKey,
-		tiablob.StoreKey,
+		//tiablob.StoreKey,
 	)
 
 	tkeys := storetypes.NewTransientStoreKeys(paramstypes.TStoreKey)
@@ -718,41 +718,41 @@ func NewChainApp(
 		AddRoute(icahosttypes.SubModuleName, icaHostStack)
 	app.IBCKeeper.SetRouter(ibcRouter)
 
-	nodeNamespace, err := nodens.NewBlobNamespaceV0([]byte(celestiaNamespace))
-	if err != nil {
-		panic(err)
-	}
-	app.TiaBlobKeeper = tiablobkeeper.NewKeeper(
-		appCodec,
-		appOpts,
-		runtime.NewKVStoreService(keys[tiablob.StoreKey]),
-		app.StakingKeeper,
-		app.UpgradeKeeper,
-		keys[tiablob.StoreKey],
-		publishToCelestiaBlockInterval,
-		nodeNamespace,
-	)
+	//nodeNamespace, err := nodens.NewBlobNamespaceV0([]byte(celestiaNamespace))
+	//if err != nil {
+	//	panic(err)
+	//}
+	//app.TiaBlobKeeper = tiablobkeeper.NewKeeper(
+	//	appCodec,
+	//	appOpts,
+	// 	runtime.NewKVStoreService(keys[tiablob.StoreKey]),
+	// 	app.StakingKeeper,
+	// 	app.UpgradeKeeper,
+	// 	keys[tiablob.StoreKey],
+	// 	publishToCelestiaBlockInterval,
+	// 	nodeNamespace,
+	// )
 
-	app.TiaBlobRelayer, err = tiablobrelayer.NewRelayer(
-		logger,
-		appCodec,
-		appOpts,
-		appns.MustNewV0([]byte(celestiaNamespace)),
-		filepath.Join(homePath, "keys"),
-		publishToCelestiaBlockInterval,
-	)
-	if err != nil {
-		panic(err)
-	}
+	// app.TiaBlobRelayer, err = tiablobrelayer.NewRelayer(
+	// 	logger,
+	// 	appCodec,
+	// 	appOpts,
+	// 	appns.MustNewV0([]byte(celestiaNamespace)),
+	// 	filepath.Join(homePath, "keys"),
+	// 	publishToCelestiaBlockInterval,
+	// )
+	// if err != nil {
+	// 	panic(err)
+	// }
 
-	// must be done after relayer is created
-	app.TiaBlobKeeper.SetRelayer(app.TiaBlobRelayer)
+	// // must be done after relayer is created
+	// app.TiaBlobKeeper.SetRelayer(app.TiaBlobRelayer)
 
 	// Proof-of-blob proposal handling
-	dph := baseapp.NewDefaultProposalHandler(bApp.Mempool(), bApp)
-	tiaBlobProposalHandler := tiablobkeeper.NewProofOfBlobProposalHandler(app.TiaBlobKeeper, dph.PrepareProposalHandler(), dph.ProcessProposalHandler())
-	bApp.SetPrepareProposal(tiaBlobProposalHandler.PrepareProposal)
-	bApp.SetProcessProposal(tiaBlobProposalHandler.ProcessProposal)
+	//dph := baseapp.NewDefaultProposalHandler(bApp.Mempool(), bApp)
+	//tiaBlobProposalHandler := tiablobkeeper.NewProofOfBlobProposalHandler(app.TiaBlobKeeper, dph.PrepareProposalHandler(), dph.ProcessProposalHandler())
+	//bApp.SetPrepareProposal(tiaBlobProposalHandler.PrepareProposal)
+	//bApp.SetProcessProposal(tiaBlobProposalHandler.ProcessProposal)
 
 	// --- Module Options ---
 
@@ -795,7 +795,7 @@ func NewChainApp(
 		ibctm.NewAppModule(),
 		crisis.NewAppModule(app.CrisisKeeper, skipGenesisInvariants, app.GetSubspace(crisistypes.ModuleName)),
 		// custom
-		tiablobmodule.NewAppModule(appCodec, app.TiaBlobKeeper),
+		//tiablobmodule.NewAppModule(appCodec, app.TiaBlobKeeper),
 		poamodule.NewAppModule(appCodec, app.POAKeeper),
 		globalfee.NewAppModule(appCodec, app.GlobalFeeKeeper),
 		packetforward.NewAppModule(app.PacketForwardKeeper, app.GetSubspace(packetforwardtypes.ModuleName)),
@@ -843,7 +843,7 @@ func NewChainApp(
 		icatypes.ModuleName,
 		ibcfeetypes.ModuleName,
 		packetforwardtypes.ModuleName,
-		tiablob.ModuleName,
+		//tiablob.ModuleName,
 	)
 
 	app.ModuleManager.SetOrderEndBlockers(
@@ -861,7 +861,7 @@ func NewChainApp(
 		icatypes.ModuleName,
 		ibcfeetypes.ModuleName,
 		packetforwardtypes.ModuleName,
-		tiablob.ModuleName,
+		//tiablob.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -888,7 +888,7 @@ func NewChainApp(
 		poa.ModuleName,
 		globalfeetypes.ModuleName,
 		packetforwardtypes.ModuleName,
-		tiablob.ModuleName,
+		//tiablob.ModuleName,
 	}
 	app.ModuleManager.SetOrderInitGenesis(genesisModuleOrder...)
 	app.ModuleManager.SetOrderExportGenesis(genesisModuleOrder...)
@@ -1055,7 +1055,7 @@ func (app *ChainApp) FinalizeBlock(req *abci.RequestFinalizeBlock) (*abci.Respon
 		return res, err
 	}
 
-	app.TiaBlobRelayer.NotifyCommitHeight(req.Height)
+	//app.TiaBlobRelayer.NotifyCommitHeight(req.Height)
 
 	return res, nil
 }
@@ -1076,10 +1076,10 @@ func (app *ChainApp) Name() string { return app.BaseApp.Name() }
 
 // PreBlocker application updates every pre block
 func (app *ChainApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
-	err := app.TiaBlobKeeper.PreBlocker(ctx, req)
-	if err != nil {
-		return nil, err
-	}
+	// err := app.TiaBlobKeeper.PreBlocker(ctx, req)
+	// if err != nil {
+	// 	return nil, err
+	// }
 	return app.ModuleManager.PreBlock(ctx)
 }
 
@@ -1259,27 +1259,27 @@ func (app *ChainApp) RegisterTendermintService(clientCtx client.Context) {
 func (app *ChainApp) RegisterNodeService(clientCtx client.Context, cfg config.Config) {
 	nodeservice.RegisterNodeService(clientCtx, app.GRPCQueryRouter(), cfg)
 
-	app.TiaBlobRelayer.SetClientContext(clientCtx)
+	// app.TiaBlobRelayer.SetClientContext(clientCtx)
 
-	ctx := app.NewContext(false)
+	// ctx := app.NewContext(false)
 
-	// TODO: Do these steps in PostSetup and PostSetupStandalone in SDK v0.51+ since app is accessible
-	latestProvenHeight, err := app.TiaBlobKeeper.GetProvenHeight(ctx)
-	if err != nil {
-		panic(err)
-	}
+	// // TODO: Do these steps in PostSetup and PostSetupStandalone in SDK v0.51+ since app is accessible
+	// latestProvenHeight, err := app.TiaBlobKeeper.GetProvenHeight(ctx)
+	// if err != nil {
+	// 	panic(err)
+	// }
 
-	appInfo, err := app.Info(nil)
-	if err != nil {
-		panic(err)
-	}
-	latestCommitHeight := appInfo.LastBlockHeight
+	// appInfo, err := app.Info(nil)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// latestCommitHeight := appInfo.LastBlockHeight
 
-	go app.TiaBlobRelayer.Start(
-		ctx,
-		latestProvenHeight,
-		latestCommitHeight,
-	)
+	// go app.TiaBlobRelayer.Start(
+	// 	ctx,
+	// 	latestProvenHeight,
+	// 	latestCommitHeight,
+	// )
 	// END TODO
 }
 
