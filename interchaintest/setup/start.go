@@ -71,6 +71,7 @@ func StartWithSpecs(t *testing.T, ctx context.Context, celestiaChainSpec *interc
 			t.Log(string(stdout), string(stderr))
 		}
 	}
+	chains.CelestiaWallets = celestiaWallets
 
 	fundAmount := math.NewInt(100_000_000)
 	users := interchaintest.GetAndFundTestUsers(t, ctx, "default", fundAmount, chains.RollchainChain, chains.CelestiaChain)

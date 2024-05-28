@@ -13,6 +13,7 @@ type Chains struct {
 	RollchainChain *cosmos.CosmosChain   // primary rollchain under test
 	OtherRcChains  []*cosmos.CosmosChain // other rollchains running (could also be under test)
 	Client         *client.Client
+	CelestiaWallets []CelestiaWallet
 }
 
 func NewChains(chains []ibc.Chain) *Chains {

@@ -10,7 +10,7 @@ import (
 )
 
 // Upgrades list of chain upgrades
-var Upgrades = []upgrades.Upgrade{}
+var Upgrades = []upgrades.Upgrade{upgrades.V2Upgrade}
 
 // RegisterUpgradeHandlers registers the chain upgrade handlers
 func (app *ChainApp) RegisterUpgradeHandlers() {
@@ -28,6 +28,7 @@ func (app *ChainApp) RegisterUpgradeHandlers() {
 		IBCKeeper:             app.IBCKeeper,
 		Codec:                 app.appCodec,
 		GetStoreKey:           app.GetKey,
+		TiablobKeeper:         app.TiaBlobKeeper,
 	}
 	app.GetStoreKeys()
 	// register all upgrade handlers
