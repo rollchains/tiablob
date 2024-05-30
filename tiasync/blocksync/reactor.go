@@ -202,26 +202,13 @@ func (bcR *Reactor) respondToPeer(msg *bcproto.BlockRequest, src p2p.Peer) (queu
 		})
 	}
 
-	//state, err := bcR.blockExec.Store().Load()
-	//if err != nil {
-	//	bcR.Logger.Error("loading state", "err", err)
-	//	return false
-	//}
-	var extCommit *types.ExtendedCommit
-	//if state.ConsensusParams.ABCI.VoteExtensionsEnabled(msg.Height) {
-	//	extCommit = bcR.store.LoadBlockExtendedCommit(msg.Height)
-	//	if extCommit == nil {
-	//		bcR.Logger.Error("found block in store with no extended commit", "block", block)
-	//		return false
-	//	}
-	//}
-
 	bl, err := block.ToProto()
 	if err != nil {
 		bcR.Logger.Error("could not convert msg to protobuf", "err", err)
 		return false
 	}
 
+	var extCommit *types.ExtendedCommit
 	return src.TrySend(p2p.Envelope{
 		ChannelID: BlocksyncChannel,
 		Message: &bcproto.BlockResponse{
@@ -267,9 +254,6 @@ func (bcR *Reactor) poolRoutine(stateSynced bool) {
 	trySyncTicker := time.NewTicker(trySyncIntervalMS * time.Millisecond)
 	defer trySyncTicker.Stop()
 
-	statusUpdateTicker := time.NewTicker(statusUpdateIntervalSeconds * time.Second)
-	defer statusUpdateTicker.Stop()
-
 	blocksSynced := uint64(0)
 
 	chainID := bcR.initialState.ChainID
@@ -279,9 +263,6 @@ func (bcR *Reactor) poolRoutine(stateSynced bool) {
 	lastRate := 0.0
 
 	didProcessCh := make(chan struct{}, 1)
-
-	//initialCommitHasExtensions := (bcR.initialState.LastBlockHeight > 0 && bcR.store.LoadBlockExtendedCommit(bcR.initialState.LastBlockHeight) != nil)
-
 
 FOR_LOOP:
 	for {
@@ -318,11 +299,7 @@ FOR_LOOP:
 				// Panicking because this is an obvious bug in the block pool, which is totally under our control
 				panic(fmt.Errorf("heights of first and second block are not consecutive; expected %d, got %d", state.LastBlockHeight, first.Height))
 			}
-			if extCommit == nil && state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height) {
-				// See https://github.com/tendermint/tendermint/pull/8433#discussion_r866790631
-				panic(fmt.Errorf("peeked first block without extended commit at height %d - possible node store corruption", first.Height))
-			}
-
+	
 			// Before priming didProcessCh for another check on the next
 			// iteration, break the loop if the BlockPool or the Reactor itself
 			// has quit. This avoids case ambiguity of the outer select when two
@@ -354,27 +331,12 @@ FOR_LOOP:
 				// validate the block before we persist it
 				err = bcR.blockExec.ValidateBlock(state, first)
 			}
-			if err == nil {
-				// if vote extensions were required at this height, ensure they exist.
-				if state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height) {
-					err = extCommit.EnsureExtensions(true)
-				} else {
-					if extCommit != nil {
-						err = fmt.Errorf("received non-nil extCommit for height %d (extensions disabled)", first.Height)
-					}
-				}
-			}
-
-			// TODO: batch saves so we dont persist to disk every block
-			if state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height) {
-				bcR.store.SaveBlockWithExtendedCommit(first, firstParts, extCommit)
-			} else {
-				// We use LastCommit here instead of extCommit. extCommit is not
-				// guaranteed to be populated by the peer if extensions are not enabled.
-				// Currently, the peer should provide an extCommit even if the vote extension data are absent
-				// but this may change so using second.LastCommit is safer.
-				bcR.store.SaveBlock(first, firstParts, second.LastCommit)
-			}
+			
+			// We use LastCommit here instead of extCommit. extCommit is not
+			// guaranteed to be populated by the peer if extensions are not enabled.
+			// Currently, the peer should provide an extCommit even if the vote extension data are absent
+			// but this may change so using second.LastCommit is safer.
+			bcR.store.SaveBlock(first, firstParts, second.LastCommit)
 
 			// TODO: same thing for app - but we would need a way to
 			// get the hash without persisting the state
@@ -388,8 +350,9 @@ FOR_LOOP:
 
 			if blocksSynced%100 == 0 {
 				lastRate = 0.9*lastRate + 0.1*(100/time.Since(lastHundred).Seconds())
-				bcR.Logger.Info("Block Sync Rate", "height", bcR.pool.height,
-					"max_peer_height", bcR.pool.MaxPeerHeight(), "blocks/s", lastRate)
+				bcR.Logger.Info("Block Sync Rate", //"height", bcR.pool.height,
+					//"max_peer_height", bcR.pool.MaxPeerHeight(), 
+					"blocks/s", lastRate)
 				lastHundred = time.Now()
 			}
 
