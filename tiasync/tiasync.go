@@ -191,6 +191,7 @@ func NewTiasync(
 		}
 	}
 
+	// TODO: replace true below, checking if state sync is running
 	bcReactor := blocksync.NewReactor(state.Copy(), blockExec, blockStore, true, bsMetrics, offlineStateSyncHeight)
 	bcReactor.SetLogger(logger.With("tsmodule", "tsblocksync"))
 

@@ -3,7 +3,7 @@ package blocksync
 import (
 	"fmt"
 	"reflect"
-	"sync"
+	//"sync"
 	"time"
 
 	"github.com/cometbft/cometbft/libs/log"
@@ -54,14 +54,14 @@ type Reactor struct {
 
 	blockExec     *sm.BlockExecutor
 	store         sm.BlockStore
-	pool          *BlockPool
+	//pool          *BlockPool
 	blockSync     bool
-	poolRoutineWg sync.WaitGroup
+	//poolRoutineWg sync.WaitGroup
 
-	requestsCh <-chan BlockRequest
-	errorsCh   <-chan peerError
+	//requestsCh <-chan BlockRequest
+	//errorsCh   <-chan peerError
 
-	switchToConsensusMs int
+	//switchToConsensusMs int
 
 	metrics *Metrics
 }
@@ -88,25 +88,26 @@ func NewReactor(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockS
 
 	// It's okay to block since sendRequest is called from a separate goroutine
 	// (bpRequester#requestRoutine; 1 per each peer).
-	requestsCh := make(chan BlockRequest)
+	//requestsCh := make(chan BlockRequest)
 
-	const capacity = 1000                      // must be bigger than peers count
-	errorsCh := make(chan peerError, capacity) // so we don't block in #Receive#pool.AddBlock
+	//const capacity = 1000                      // must be bigger than peers count
+	//errorsCh := make(chan peerError, capacity) // so we don't block in #Receive#pool.AddBlock
 
 	startHeight := storeHeight + 1
 	if startHeight == 1 {
 		startHeight = state.InitialHeight
 	}
-	pool := NewBlockPool(startHeight, requestsCh, errorsCh)
+	//pool := NewBlockPool(startHeight)
+	//pool := NewBlockPool(startHeight, requestsCh, errorsCh)
 
 	bcR := &Reactor{
 		initialState: state,
 		blockExec:    blockExec,
 		store:        store,
-		pool:         pool,
+		//pool:         pool,
 		blockSync:    blockSync,
-		requestsCh:   requestsCh,
-		errorsCh:     errorsCh,
+		//requestsCh:   requestsCh,
+		//errorsCh:     errorsCh,
 		metrics:      metrics,
 	}
 	bcR.BaseReactor = *p2p.NewBaseReactor("Reactor", bcR)
@@ -116,21 +117,22 @@ func NewReactor(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockS
 // SetLogger implements service.Service by setting the logger on reactor and pool.
 func (bcR *Reactor) SetLogger(l log.Logger) {
 	bcR.BaseService.Logger = l
-	bcR.pool.Logger = l
+	//bcR.pool.Logger = l
 }
 
 // OnStart implements service.Service.
 func (bcR *Reactor) OnStart() error {
+	// TODO: start get blocks from celestia
 	if bcR.blockSync {
-		err := bcR.pool.Start()
-		if err != nil {
-			return err
-		}
-		bcR.poolRoutineWg.Add(1)
-		go func() {
-			defer bcR.poolRoutineWg.Done()
-			bcR.poolRoutine(false)
-		}()
+		// err := bcR.pool.Start()
+		// if err != nil {
+		// 	return err
+		// }
+		// bcR.poolRoutineWg.Add(1)
+		// go func() {
+		// 	defer bcR.poolRoutineWg.Done()
+		// 	bcR.poolRoutine(false)
+		// }()
 	}
 	return nil
 }
@@ -140,26 +142,30 @@ func (bcR *Reactor) SwitchToBlockSync(state sm.State) error {
 	bcR.blockSync = true
 	bcR.initialState = state
 
-	bcR.pool.height = state.LastBlockHeight + 1
-	err := bcR.pool.Start()
-	if err != nil {
-		return err
-	}
-	bcR.poolRoutineWg.Add(1)
-	go func() {
-		defer bcR.poolRoutineWg.Done()
-		bcR.poolRoutine(true)
-	}()
+	// TODO: start getting blocks from celestia
+
+	// bcR.pool.height = state.LastBlockHeight + 1
+	// err := bcR.pool.Start()
+	// if err != nil {
+	// 	return err
+	// }
+	// bcR.poolRoutineWg.Add(1)
+	// go func() {
+	// 	defer bcR.poolRoutineWg.Done()
+	// 	bcR.poolRoutine(true)
+	// }()
 	return nil
 }
 
 // OnStop implements service.Service.
 func (bcR *Reactor) OnStop() {
 	if bcR.blockSync {
-		if err := bcR.pool.Stop(); err != nil {
-			bcR.Logger.Error("Error stopping pool", "err", err)
-		}
-		bcR.poolRoutineWg.Wait()
+		// TODO: stop getting blocks from celestia
+
+		// if err := bcR.pool.Stop(); err != nil {
+		// 	bcR.Logger.Error("Error stopping pool", "err", err)
+		// }
+		// bcR.poolRoutineWg.Wait()
 	}
 }
 
@@ -194,7 +200,7 @@ func (bcR *Reactor) AddPeer(peer p2p.Peer) {
 
 // RemovePeer implements Reactor by removing peer from the pool.
 func (bcR *Reactor) RemovePeer(peer p2p.Peer, _ interface{}) {
-	bcR.pool.RemovePeer(peer.ID())
+	//bcR.pool.RemovePeer(peer.ID())
 }
 
 // respondToPeer loads a block and sends it to the requesting peer,
@@ -283,9 +289,9 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 				Base:   bcR.store.Base(),
 			},
 		})
-	case *bcproto.StatusResponse:
+//	case *bcproto.StatusResponse:
 		// Got a peer status. Unverified.
-		bcR.pool.SetPeerRange(e.Src.ID(), msg.Base, msg.Height)
+//		bcR.pool.SetPeerRange(e.Src.ID(), msg.Base, msg.Height)
 	//case *bcproto.NoBlockResponse:
 	//	bcR.Logger.Debug("Peer does not have requested block", "peer", e.Src, "height", msg.Height)
 	//	bcR.pool.RedoRequestFrom(msg.Height, e.Src.ID())
@@ -306,11 +312,11 @@ func (bcR *Reactor) poolRoutine(stateSynced bool) {
 	statusUpdateTicker := time.NewTicker(statusUpdateIntervalSeconds * time.Second)
 	defer statusUpdateTicker.Stop()
 
-	if bcR.switchToConsensusMs == 0 {
-		bcR.switchToConsensusMs = switchToConsensusIntervalSeconds * 1000
-	}
-	switchToConsensusTicker := time.NewTicker(time.Duration(bcR.switchToConsensusMs) * time.Millisecond)
-	defer switchToConsensusTicker.Stop()
+	//if bcR.switchToConsensusMs == 0 {
+	//	bcR.switchToConsensusMs = switchToConsensusIntervalSeconds * 1000
+	//}
+	//switchToConsensusTicker := time.NewTicker(time.Duration(bcR.switchToConsensusMs) * time.Millisecond)
+	//defer switchToConsensusTicker.Stop()
 
 	blocksSynced := uint64(0)
 
@@ -324,47 +330,47 @@ func (bcR *Reactor) poolRoutine(stateSynced bool) {
 
 	initialCommitHasExtensions := (bcR.initialState.LastBlockHeight > 0 && bcR.store.LoadBlockExtendedCommit(bcR.initialState.LastBlockHeight) != nil)
 
-	go func() {
-		for {
-			select {
-			case <-bcR.Quit():
-				return
-			case <-bcR.pool.Quit():
-				return
-			case request := <-bcR.requestsCh:
-				peer := bcR.Switch.Peers().Get(request.PeerID)
-				if peer == nil {
-					continue
-				}
-				queued := peer.TrySend(p2p.Envelope{
-					ChannelID: BlocksyncChannel,
-					Message:   &bcproto.BlockRequest{Height: request.Height},
-				})
-				if !queued {
-					bcR.Logger.Debug("Send queue is full, drop block request", "peer", peer.ID(), "height", request.Height)
-				}
-			case err := <-bcR.errorsCh:
-				peer := bcR.Switch.Peers().Get(err.peerID)
-				if peer != nil {
-					bcR.Switch.StopPeerForError(peer, err)
-				}
+	// go func() {
+	// 	for {
+	// 		select {
+	// 		case <-bcR.Quit():
+	// 			return
+	// 		case <-bcR.pool.Quit():
+	// 			return
+			// case request := <-bcR.requestsCh:
+			// 	peer := bcR.Switch.Peers().Get(request.PeerID)
+			// 	if peer == nil {
+			// 		continue
+			// 	}
+			// 	queued := peer.TrySend(p2p.Envelope{
+			// 		ChannelID: BlocksyncChannel,
+			// 		Message:   &bcproto.BlockRequest{Height: request.Height},
+			// 	})
+			// 	if !queued {
+			// 		bcR.Logger.Debug("Send queue is full, drop block request", "peer", peer.ID(), "height", request.Height)
+			// 	}
+			// case err := <-bcR.errorsCh:
+			// 	peer := bcR.Switch.Peers().Get(err.peerID)
+			// 	if peer != nil {
+			// 		bcR.Switch.StopPeerForError(peer, err)
+			// 	}
 
-			case <-statusUpdateTicker.C:
-				// ask for status updates
-				go bcR.BroadcastStatusRequest()
+	// 		case <-statusUpdateTicker.C:
+	// 			// ask for status updates
+	// 			go bcR.BroadcastStatusRequest()
 
-			}
-		}
-	}()
+	// 		}
+	// 	}
+	// }()
 
 FOR_LOOP:
 	for {
 		select {
-		case <-switchToConsensusTicker.C:
-			height, numPending, lenRequesters := bcR.pool.GetStatus()
-			outbound, inbound, _ := bcR.Switch.NumPeers()
-			bcR.Logger.Debug("Consensus ticker", "numPending", numPending, "total", lenRequesters,
-				"outbound", outbound, "inbound", inbound, "lastHeight", state.LastBlockHeight)
+		// case <-switchToConsensusTicker.C:
+		// 	height, numPending, lenRequesters := bcR.pool.GetStatus()
+		// 	outbound, inbound, _ := bcR.Switch.NumPeers()
+		// 	bcR.Logger.Debug("Consensus ticker", "numPending", numPending, "total", lenRequesters,
+		// 		"outbound", outbound, "inbound", inbound, "lastHeight", state.LastBlockHeight)
 
 			// The "if" statement below is a bit confusing, so here is a breakdown
 			// of its logic and purpose:
@@ -383,40 +389,40 @@ FOR_LOOP:
 			// then we are guaranteed to have extensions for the last block (if required) even
 			// if we did not blocksync any block.
 			//
-			missingExtension := true
-			if state.LastBlockHeight == 0 ||
-				!state.ConsensusParams.ABCI.VoteExtensionsEnabled(state.LastBlockHeight) ||
-				blocksSynced > 0 ||
-				initialCommitHasExtensions {
-				missingExtension = false
-			}
+			// missingExtension := true
+			// if state.LastBlockHeight == 0 ||
+			// 	!state.ConsensusParams.ABCI.VoteExtensionsEnabled(state.LastBlockHeight) ||
+			// 	blocksSynced > 0 ||
+			// 	initialCommitHasExtensions {
+			// 	missingExtension = false
+			// }
 
-			// If require extensions, but since we don't have them yet, then we cannot switch to consensus yet.
-			if missingExtension {
-				bcR.Logger.Info(
-					"no extended commit yet",
-					"height", height,
-					"last_block_height", state.LastBlockHeight,
-					"initial_height", state.InitialHeight,
-					"max_peer_height", bcR.pool.MaxPeerHeight(),
-				)
-				continue FOR_LOOP
-			}
-			if bcR.pool.IsCaughtUp() {
-				bcR.Logger.Info("Time to switch to consensus reactor!", "height", height)
-				if err := bcR.pool.Stop(); err != nil {
-					bcR.Logger.Error("Error stopping pool", "err", err)
-				}
-				conR, ok := bcR.Switch.Reactor("CONSENSUS").(consensusReactor)
-				if ok {
-					conR.SwitchToConsensus(state, blocksSynced > 0 || stateSynced)
-				}
-				// else {
-				// should only happen during testing
-				// }
+			// // If require extensions, but since we don't have them yet, then we cannot switch to consensus yet.
+			// if missingExtension {
+			// 	bcR.Logger.Info(
+			// 		"no extended commit yet",
+			// 		"height", height,
+			// 		"last_block_height", state.LastBlockHeight,
+			// 		"initial_height", state.InitialHeight,
+			// 		"max_peer_height", bcR.pool.MaxPeerHeight(),
+			// 	)
+			// 	continue FOR_LOOP
+			// }
+			// if bcR.pool.IsCaughtUp() {
+			// 	bcR.Logger.Info("Time to switch to consensus reactor!", "height", height)
+			// 	if err := bcR.pool.Stop(); err != nil {
+			// 		bcR.Logger.Error("Error stopping pool", "err", err)
+			// 	}
+			// 	conR, ok := bcR.Switch.Reactor("CONSENSUS").(consensusReactor)
+			// 	if ok {
+			// 		conR.SwitchToConsensus(state, blocksSynced > 0 || stateSynced)
+			// 	}
+			// 	// else {
+			// 	// should only happen during testing
+			// 	// }
 
-				break FOR_LOOP
-			}
+			// 	break FOR_LOOP
+			// }
 
 		case <-trySyncTicker.C: // chan time
 			select {
@@ -458,7 +464,7 @@ FOR_LOOP:
 			// iteration, break the loop if the BlockPool or the Reactor itself
 			// has quit. This avoids case ambiguity of the outer select when two
 			// channels are ready.
-			if !bcR.IsRunning() || !bcR.pool.IsRunning() {
+			if !bcR.IsRunning() { //|| !bcR.pool.IsRunning() {
 				break FOR_LOOP
 			}
 			// Try again quickly next loop.
@@ -495,26 +501,26 @@ FOR_LOOP:
 					}
 				}
 			}
-			if err != nil {
-				bcR.Logger.Error("Error in validation", "err", err)
-				peerID := bcR.pool.RemovePeerAndRedoAllPeerRequests(first.Height)
-				peer := bcR.Switch.Peers().Get(peerID)
-				if peer != nil {
-					// NOTE: we've already removed the peer's request, but we
-					// still need to clean up the rest.
-					bcR.Switch.StopPeerForError(peer, ErrReactorValidation{Err: err})
-				}
-				peerID2 := bcR.pool.RemovePeerAndRedoAllPeerRequests(second.Height)
-				peer2 := bcR.Switch.Peers().Get(peerID2)
-				if peer2 != nil && peer2 != peer {
-					// NOTE: we've already removed the peer's request, but we
-					// still need to clean up the rest.
-					bcR.Switch.StopPeerForError(peer2, ErrReactorValidation{Err: err})
-				}
-				continue FOR_LOOP
-			}
+			// if err != nil {
+			// 	bcR.Logger.Error("Error in validation", "err", err)
+			// 	peerID := bcR.pool.RemovePeerAndRedoAllPeerRequests(first.Height)
+			// 	peer := bcR.Switch.Peers().Get(peerID)
+			// 	if peer != nil {
+			// 		// NOTE: we've already removed the peer's request, but we
+			// 		// still need to clean up the rest.
+			// 		bcR.Switch.StopPeerForError(peer, ErrReactorValidation{Err: err})
+			// 	}
+			// 	peerID2 := bcR.pool.RemovePeerAndRedoAllPeerRequests(second.Height)
+			// 	peer2 := bcR.Switch.Peers().Get(peerID2)
+			// 	if peer2 != nil && peer2 != peer {
+			// 		// NOTE: we've already removed the peer's request, but we
+			// 		// still need to clean up the rest.
+			// 		bcR.Switch.StopPeerForError(peer2, ErrReactorValidation{Err: err})
+			// 	}
+			// 	continue FOR_LOOP
+			// }
 
-			bcR.pool.PopRequest()
+			//bcR.pool.PopRequest()
 
 			// TODO: batch saves so we dont persist to disk every block
 			if state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height) {
@@ -548,16 +554,16 @@ FOR_LOOP:
 
 		case <-bcR.Quit():
 			break FOR_LOOP
-		case <-bcR.pool.Quit():
-			break FOR_LOOP
+		//case <-bcR.pool.Quit():
+		//	break FOR_LOOP
 		}
 	}
 }
 
 // BroadcastStatusRequest broadcasts `BlockStore` base and height.
-func (bcR *Reactor) BroadcastStatusRequest() {
-	bcR.Switch.Broadcast(p2p.Envelope{
-		ChannelID: BlocksyncChannel,
-		Message:   &bcproto.StatusRequest{},
-	})
-}
+// func (bcR *Reactor) BroadcastStatusRequest() {
+// 	bcR.Switch.Broadcast(p2p.Envelope{
+// 		ChannelID: BlocksyncChannel,
+// 		Message:   &bcproto.StatusRequest{},
+// 	})
+// }
