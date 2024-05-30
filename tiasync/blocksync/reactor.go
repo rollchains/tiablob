@@ -240,6 +240,9 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 				Base:   bcR.store.Base(),
 			},
 		})
+	case *bcproto.StatusResponse:
+		// TODO: prune block store
+		//_, _, _ := bcR.store.PruneBlocks(msg.Height, bcR.state??)
 	default:
 		bcR.Logger.Error(fmt.Sprintf("Unknown message type %v", reflect.TypeOf(msg)))
 	}
@@ -252,6 +255,9 @@ func (bcR *Reactor) poolRoutine(stateSynced bool) {
 	defer bcR.metrics.Syncing.Set(0)
 
 	trySyncTicker := time.NewTicker(trySyncIntervalMS * time.Millisecond)
+	defer trySyncTicker.Stop()
+
+	pruneTicker := time.NewTicker(10 * time.Second)
 	defer trySyncTicker.Stop()
 
 	blocksSynced := uint64(0)
@@ -267,6 +273,8 @@ func (bcR *Reactor) poolRoutine(stateSynced bool) {
 FOR_LOOP:
 	for {
 		select {
+		case <-pruneTicker.C:
+			go bcR.BroadcastStatusRequest()
 
 		case <-trySyncTicker.C: // chan time
 			select {
@@ -362,4 +370,12 @@ FOR_LOOP:
 			break FOR_LOOP
 		}
 	}
+}
+
+// BroadcastStatusRequest broadcasts `BlockStore` base and height.
+func (bcR *Reactor) BroadcastStatusRequest() {
+	bcR.Switch.Broadcast(p2p.Envelope{
+		ChannelID: BlocksyncChannel,
+		Message:   &bcproto.StatusRequest{},
+	})
 }
