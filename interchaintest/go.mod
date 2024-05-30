@@ -9,11 +9,12 @@ replace (
 	github.com/ChainSafe/go-schnorrkel/1 => github.com/ChainSafe/go-schnorrkel v1.0.0
 	github.com/btcsuite/btcd => github.com/btcsuite/btcd v0.22.2 //indirect
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
-
 	// If using custom internal modules, replace your app here with the parent application
 	github.com/rollchains/rollchains => ../.
 	// breaks SDK app.toml parsing for client configs.
 	github.com/spf13/viper => github.com/spf13/viper v1.17.0
+
+	//github.com/strangelove-ventures/interchaintest/v8 => ../../../strangelove-ventures/interchaintest/.
 	github.com/tendermint/tendermint => github.com/celestiaorg/celestia-core v1.35.0-tm-v0.34.29
 
 	github.com/vedhavyas/go-subkey => github.com/strangelove-ventures/go-subkey v1.0.7
@@ -260,6 +261,7 @@ require (
 	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gotest.tools/v3 v3.5.1 // indirect
 	lukechampine.com/blake3 v1.2.1 // indirect
