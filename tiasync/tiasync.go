@@ -14,10 +14,10 @@ import (
 	"github.com/cometbft/cometbft/p2p/pex"
 	"github.com/cometbft/cometbft/proxy"
 	sm "github.com/cometbft/cometbft/state"
-	mempl "github.com/cometbft/cometbft/mempool"
+	//mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/types"
 	//"github.com/cometbft/cometbft/store"
-	"github.com/cometbft/cometbft/evidence"
+	//"github.com/cometbft/cometbft/evidence"
 	//rpccore "github.com/cometbft/cometbft/rpc/core"
 	"github.com/cosmos/cosmos-sdk/server"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
@@ -87,7 +87,7 @@ func TiasyncRoutine(svrCtx *server.Context) {
 	if !tiasyncCfg.SyncFromCelestia {
 		return
 	}
-	ts, err := NewTiasync(cometCfg, logger)
+	ts, err := NewTiasync(cometCfg, &tiasyncCfg, logger)
 	if err != nil {
 		panic(err)
 	}
@@ -97,6 +97,7 @@ func TiasyncRoutine(svrCtx *server.Context) {
 
 func NewTiasync(
 	config *cfg.Config,
+	tiasyncCfg *relayer.CelestiaConfig,
 	logger log.Logger,
 ) (*Tiasync, error) {
 	dbProvider := cfg.DefaultDBProvider
@@ -194,7 +195,7 @@ func NewTiasync(
 	}*/
 
 	// TODO: replace true below, checking if state sync is running
-	bcReactor := blocksync.NewReactor(state.Copy(), blockStore, true, bsMetrics)
+	bcReactor := blocksync.NewReactor(state.Copy(), blockStore, true, bsMetrics, tiasyncCfg)
 	//bcReactor := blocksync.NewReactor(state.Copy(), blockExec, blockStore, true, bsMetrics, offlineStateSyncHeight)
 	bcReactor.SetLogger(logger.With("tsmodule", "tsblocksync"))
 
@@ -246,7 +247,7 @@ func NewTiasync(
 		stateSyncGenesis: state, // Shouldn't be necessary, but need a way to pass the genesis state
 		//pexReactor:       pexReactor,
 		//evidencePool:     evidencePool,
-		proxyApp:         proxyApp,
+		//proxyApp:         proxyApp,
 		//txIndexer:        txIndexer,
 		//indexerService:   indexerService,
 		//blockIndexer:     blockIndexer,

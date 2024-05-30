@@ -9,8 +9,12 @@ import (
 	"github.com/cometbft/cometbft/p2p"
 	bcproto "github.com/cometbft/cometbft/proto/tendermint/blocksync"
 	sm "github.com/cometbft/cometbft/state"
-	"github.com/cometbft/cometbft/store"
+	//"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
+
+	"github.com/rollchains/tiablob/tiasync/store"
+	"github.com/rollchains/tiablob/relayer"
+	"github.com/rollchains/tiablob/tiasync/celestia"
 )
 
 const (
@@ -55,12 +59,14 @@ type Reactor struct {
 	store         sm.BlockStore
 	blockSync     bool
 
+	blockPool *celestia.BlockPool
+
 	metrics *Metrics
 }
 
 // NewReactor returns new reactor instance.
 func NewReactor(state sm.State, store *store.BlockStore,
-	blockSync bool, metrics *Metrics,
+	blockSync bool, metrics *Metrics, tiasyncCfg *relayer.CelestiaConfig,
 ) *Reactor {
 
 	storeHeight := store.Height()
@@ -96,6 +102,7 @@ func NewReactor(state sm.State, store *store.BlockStore,
 		store:        store,
 		blockSync:    blockSync,
 		metrics:      metrics,
+		blockPool:    celestia.NewBlockPool(0),
 	}
 	bcR.BaseReactor = *p2p.NewBaseReactor("Reactor", bcR)
 	return bcR
