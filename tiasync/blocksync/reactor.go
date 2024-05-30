@@ -51,7 +51,7 @@ type Reactor struct {
 	// immutable
 	initialState sm.State
 
-	blockExec     *sm.BlockExecutor
+	//blockExec     *sm.BlockExecutor
 	store         sm.BlockStore
 	blockSync     bool
 
@@ -59,8 +59,8 @@ type Reactor struct {
 }
 
 // NewReactor returns new reactor instance.
-func NewReactor(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockStore,
-	blockSync bool, metrics *Metrics, offlineStateSyncHeight int64,
+func NewReactor(state sm.State, store *store.BlockStore,
+	blockSync bool, metrics *Metrics,
 ) *Reactor {
 
 	storeHeight := store.Height()
@@ -92,7 +92,7 @@ func NewReactor(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockS
 
 	bcR := &Reactor{
 		initialState: state,
-		blockExec:    blockExec,
+		//blockExec:    blockExec,
 		store:        store,
 		blockSync:    blockSync,
 		metrics:      metrics,
@@ -335,10 +335,10 @@ FOR_LOOP:
 			err = state.Validators.VerifyCommitLight(
 				chainID, firstID, first.Height, second.LastCommit)
 
-			if err == nil {
-				// validate the block before we persist it
-				err = bcR.blockExec.ValidateBlock(state, first)
-			}
+			// if err == nil {
+			// 	// validate the block before we persist it
+			// 	err = bcR.blockExec.ValidateBlock(state, first)
+			// }
 			
 			// We use LastCommit here instead of extCommit. extCommit is not
 			// guaranteed to be populated by the peer if extensions are not enabled.
@@ -348,11 +348,11 @@ FOR_LOOP:
 
 			// TODO: same thing for app - but we would need a way to
 			// get the hash without persisting the state
-			state, err = bcR.blockExec.ApplyBlock(state, firstID, first)
-			if err != nil {
-				// TODO This is bad, are we zombie?
-				panic(fmt.Sprintf("Failed to process committed block (%d:%X): %v", first.Height, first.Hash(), err))
-			}
+			// state, err = bcR.blockExec.ApplyBlock(state, firstID, first)
+			// if err != nil {
+			// 	// TODO This is bad, are we zombie?
+			// 	panic(fmt.Sprintf("Failed to process committed block (%d:%X): %v", first.Height, first.Hash(), err))
+			// }
 			bcR.metrics.recordBlockMetrics(first)
 			blocksSynced++
 

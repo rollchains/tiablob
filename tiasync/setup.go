@@ -8,7 +8,7 @@ import (
 
 	cfg "github.com/cometbft/cometbft/config"
 	sm "github.com/cometbft/cometbft/state"
-	"github.com/cometbft/cometbft/store"
+	//"github.com/cometbft/cometbft/store"
 	dbm "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/types"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
@@ -22,6 +22,7 @@ import (
 	//cs "github.com/cometbft/cometbft/consensus"
 
 	//"github.com/rollchains/tiablob/tiasync/blocksync"
+	"github.com/rollchains/tiablob/tiasync/store"
 )
 
 func createSwitch(config *cfg.Config,
@@ -91,7 +92,7 @@ func createTransport(
 	config *cfg.Config,
 	nodeInfo p2p.NodeInfo,
 	nodeKey *p2p.NodeKey,
-	proxyApp proxy.AppConns,
+	//proxyApp proxy.AppConns,
 ) (
 	*p2p.MultiplexTransport,
 	[]p2p.PeerFilterFunc,

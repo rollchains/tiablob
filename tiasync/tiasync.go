@@ -16,13 +16,14 @@ import (
 	sm "github.com/cometbft/cometbft/state"
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/types"
-	"github.com/cometbft/cometbft/store"
+	//"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/evidence"
 	//rpccore "github.com/cometbft/cometbft/rpc/core"
 	"github.com/cosmos/cosmos-sdk/server"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 
 	"github.com/rollchains/tiablob/tiasync/blocksync"
+	"github.com/rollchains/tiablob/tiasync/store"
 	"github.com/rollchains/tiablob/relayer"
 )
 
@@ -48,7 +49,7 @@ type Tiasync struct {
 	blockStore        *store.BlockStore // store the blockchain to disk
 	bcReactor         p2p.Reactor       // for block-syncing
 	//mempoolReactor    p2p.Reactor       // for gossipping transactions
-	mempool           mempl.Mempool
+	//mempool           mempl.Mempool
 	//stateSync         bool                    // whether the node should state sync on startup
 	//stateSyncReactor  *statesync.Reactor      // for hosting and restoring state sync snapshots
 	//stateSyncProvider statesync.StateProvider // provides state data for bootstrapping a node
@@ -56,7 +57,7 @@ type Tiasync struct {
 	//consensusState    *cs.State               // latest consensus state
 	//consensusReactor  *cs.Reactor             // for participating in the consensus
 	//pexReactor        *pex.Reactor            // for exchanging peer addresses
-	evidencePool      *evidence.Pool          // tracking evidence
+	//evidencePool      *evidence.Pool          // tracking evidence
 	proxyApp          proxy.AppConns          // connection to the application
 	rpcListeners      []net.Listener          // rpc servers
 	//txIndexer         txindex.TxIndexer
@@ -123,7 +124,7 @@ func NewTiasync(
 		}
 		return p2p.NopMetrics(), sm.NopMetrics(), proxy.NopMetrics(), blocksync.NopMetrics()
 	}
-	clientCreator := proxy.DefaultClientCreator(config.ProxyApp, config.ABCI, config.DBDir())
+	//clientCreator := proxy.DefaultClientCreator(config.ProxyApp, config.ABCI, config.DBDir())
 	//nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
 	//if err != nil {
 	//	return nil, fmt.Errorf("failed to load or gen node key %s: %w", config.NodeKeyFile(), err)
@@ -158,41 +159,43 @@ func NewTiasync(
 		return nil, err
 	}
 
-	p2pMetrics, smMetrics, abciMetrics, bsMetrics := metricsProvider(genDoc.ChainID)
+	p2pMetrics, _, _, bsMetrics := metricsProvider(genDoc.ChainID)
 	
 	// Create the proxyApp and establish connections to the ABCI app (consensus, mempool, query).
-	proxyApp, err := createAndStartProxyAppConns(clientCreator, logger, abciMetrics)
-	if err != nil {
-		return nil, err
-	}
-	mempool := &mempl.NopMempool{} //, _ := createMempoolAndMempoolReactor(config, proxyApp, state, memplMetrics, logger)
+	// proxyApp, err := createAndStartProxyAppConns(clientCreator, logger, abciMetrics)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	//mempool := &mempl.NopMempool{} //, _ := createMempoolAndMempoolReactor(config, proxyApp, state, memplMetrics, logger)
 	
-	_, evidencePool, err := createEvidenceReactor(config, dbProvider, stateStore, blockStore, logger)
-	if err != nil {
-		return nil, err
-	}
+	// _, evidencePool, err := createEvidenceReactor(config, dbProvider, stateStore, blockStore, logger)
+	// if err != nil {
+	// 	return nil, err
+	// }
 	
 	// make block executor for consensus and blocksync reactors to execute blocks
-	blockExec := sm.NewBlockExecutor(
-		stateStore,
-		logger.With("tsmodule", "tsstate"),
-		proxyApp.Consensus(),
-		mempool,
-		evidencePool,
-		blockStore,
-		sm.BlockExecutorWithMetrics(smMetrics),
-	)
+	// blockExec := sm.NewBlockExecutor(
+	// 	stateStore,
+	// 	logger.With("tsmodule", "tsstate"),
+	// 	proxyApp.Consensus(),
+	// 	mempool,
+	// 	evidencePool,
+	// 	blockStore,
+	// 	sm.BlockExecutorWithMetrics(smMetrics),
+	// )
 	
-	offlineStateSyncHeight := int64(0)
+	// TODO: may need another way to get state sync height...
+	/*offlineStateSyncHeight := int64(0)
 	if blockStore.Height() == 0 {
 		offlineStateSyncHeight, err = blockExec.Store().GetOfflineStateSyncHeight()
 		if err != nil && err.Error() != "value empty" {
 			panic(fmt.Sprintf("failed to retrieve statesynced height from store %s; expected state store height to be %v", err, state.LastBlockHeight))
 		}
-	}
+	}*/
 
 	// TODO: replace true below, checking if state sync is running
-	bcReactor := blocksync.NewReactor(state.Copy(), blockExec, blockStore, true, bsMetrics, offlineStateSyncHeight)
+	bcReactor := blocksync.NewReactor(state.Copy(), blockStore, true, bsMetrics)
+	//bcReactor := blocksync.NewReactor(state.Copy(), blockExec, blockStore, true, bsMetrics, offlineStateSyncHeight)
 	bcReactor.SetLogger(logger.With("tsmodule", "tsblocksync"))
 
 	nodeInfo, err := makeNodeInfo(nodeKey, genDoc, state)
@@ -200,7 +203,7 @@ func NewTiasync(
 		return nil, err
 	}
 
-	transport, peerFilters := createTransport(config, nodeInfo, nodeKey, proxyApp)
+	transport, peerFilters := createTransport(config, nodeInfo, nodeKey)
 
 	p2pLogger := logger.With("tsmodule", "tsp2p")
 	//sw := createSwitch(
@@ -235,14 +238,14 @@ func NewTiasync(
 		blockStore:       blockStore,
 		bcReactor:        bcReactor,
 		//mempoolReactor:   mempoolReactor,
-		mempool:          mempool,
+		//mempool:          mempool,
 		//consensusState:   consensusState,
 		//consensusReactor: consensusReactor,
 		//stateSyncReactor: stateSyncReactor,
 		//stateSync:        stateSync,
 		stateSyncGenesis: state, // Shouldn't be necessary, but need a way to pass the genesis state
 		//pexReactor:       pexReactor,
-		evidencePool:     evidencePool,
+		//evidencePool:     evidencePool,
 		proxyApp:         proxyApp,
 		//txIndexer:        txIndexer,
 		//indexerService:   indexerService,
