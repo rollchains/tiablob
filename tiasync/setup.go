@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	//"net"
+	"strings"
+	"time"
 
 	cfg "github.com/cometbft/cometbft/config"
 	sm "github.com/cometbft/cometbft/state"
@@ -24,6 +26,27 @@ import (
 	//"github.com/rollchains/tiablob/tiasync/blocksync"
 	"github.com/rollchains/tiablob/tiasync/store"
 )
+
+func createPEXReactorAndAddToSwitch(addrBook pex.AddrBook, config *cfg.Config,
+	sw *p2p.Switch, logger log.Logger,
+) *pex.Reactor {
+	// TODO persistent peers ? so we can have their DNS addrs saved
+	pexReactor := pex.NewReactor(addrBook,
+		&pex.ReactorConfig{
+			//Seeds:    splitAndTrimEmpty(config.P2P.Seeds, ",", " "),
+			SeedMode: config.P2P.SeedMode,
+			// See consensus/reactor.go: blocksToContributeToBecomeGoodPeer 10000
+			// blocks assuming 10s blocks ~ 28 hours.
+			// TODO (melekes): make it dynamic based on the actual block latencies
+			// from the live network.
+			// https://github.com/tendermint/tendermint/issues/3523
+			SeedDisconnectWaitPeriod:     28 * time.Hour,
+			PersistentPeersMaxDialPeriod: config.P2P.PersistentPeersMaxDialPeriod,
+		})
+	pexReactor.SetLogger(logger.With("module", "pex"))
+	sw.AddReactor("PEX", pexReactor)
+	return pexReactor
+}
 
 func createSwitch(config *cfg.Config,
 	transport p2p.Transport,
@@ -63,8 +86,9 @@ func createSwitch(config *cfg.Config,
 func createAddrBookAndSetOnSwitch(config *cfg.Config, sw *p2p.Switch,
 	p2pLogger log.Logger, nodeKey *p2p.NodeKey,
 ) (pex.AddrBook, error) {
-	addrBook := pex.NewAddrBook("ts"+config.P2P.AddrBookFile(), config.P2P.AddrBookStrict)
-	addrBook.SetLogger(p2pLogger.With("tsbook", "ts"+config.P2P.AddrBookFile()))
+	addrBookFile := strings.ReplaceAll(config.P2P.AddrBookFile(), "addrbook", "tsaddrbook")
+	addrBook := pex.NewAddrBook(addrBookFile, config.P2P.AddrBookStrict)
+	addrBook.SetLogger(p2pLogger.With("tsbook", addrBookFile))
 
 	// Add ourselves to addrbook to prevent dialing ourselves
 	if config.P2P.ExternalAddress != "" {
@@ -183,6 +207,7 @@ func makeNodeInfo(
 		Version:       version.TMCoreSemVer,
 		Channels: []byte{
 			bc.BlocksyncChannel,
+			pex.PexChannel,
 			//cs.StateChannel, cs.DataChannel, cs.VoteChannel, cs.VoteSetBitsChannel,
 			//mempl.MempoolChannel,
 			//evidence.EvidenceChannel,

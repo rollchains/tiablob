@@ -3,7 +3,7 @@ package blocksync
 import (
 	"fmt"
 	"reflect"
-	"time"
+	//"time"
 
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
@@ -66,35 +66,35 @@ type Reactor struct {
 
 // NewReactor returns new reactor instance.
 func NewReactor(state sm.State, store *store.BlockStore,
-	blockSync bool, metrics *Metrics, tiasyncCfg *relayer.CelestiaConfig,
+	blockSync bool, metrics *Metrics, tiasyncCfg *relayer.CelestiaConfig, logger log.Logger,
 ) *Reactor {
 
-	storeHeight := store.Height()
-	if storeHeight == 0 {
-		// If state sync was performed offline and the stores were bootstrapped to height H
-		// the state store's lastHeight will be H while blockstore's Height and Base are still 0
-		// 1. This scenario should not lead to a panic in this case, which is indicated by
-		// having a OfflineStateSyncHeight > 0
-		// 2. We need to instruct the blocksync reactor to start fetching blocks from H+1
-		// instead of 0.
-		storeHeight = offlineStateSyncHeight
-	}
-	if state.LastBlockHeight != storeHeight {
-		panic(fmt.Sprintf("state (%v) and store (%v) height mismatch, stores were left in an inconsistent state", state.LastBlockHeight,
-			storeHeight))
-	}
+	// storeHeight := store.Height()
+	// if storeHeight == 0 {
+	// 	// If state sync was performed offline and the stores were bootstrapped to height H
+	// 	// the state store's lastHeight will be H while blockstore's Height and Base are still 0
+	// 	// 1. This scenario should not lead to a panic in this case, which is indicated by
+	// 	// having a OfflineStateSyncHeight > 0
+	// 	// 2. We need to instruct the blocksync reactor to start fetching blocks from H+1
+	// 	// instead of 0.
+	// 	storeHeight = offlineStateSyncHeight
+	// }
+	// if state.LastBlockHeight != storeHeight {
+	// 	panic(fmt.Sprintf("state (%v) and store (%v) height mismatch, stores were left in an inconsistent state", state.LastBlockHeight,
+	// 		storeHeight))
+	// }
 
-	// It's okay to block since sendRequest is called from a separate goroutine
-	// (bpRequester#requestRoutine; 1 per each peer).
-	//requestsCh := make(chan BlockRequest)
+	// // It's okay to block since sendRequest is called from a separate goroutine
+	// // (bpRequester#requestRoutine; 1 per each peer).
+	// //requestsCh := make(chan BlockRequest)
 
-	//const capacity = 1000                      // must be bigger than peers count
-	//errorsCh := make(chan peerError, capacity) // so we don't block in #Receive#pool.AddBlock
+	// //const capacity = 1000                      // must be bigger than peers count
+	// //errorsCh := make(chan peerError, capacity) // so we don't block in #Receive#pool.AddBlock
 
-	startHeight := storeHeight + 1
-	if startHeight == 1 {
-		startHeight = state.InitialHeight
-	}
+	// startHeight := storeHeight + 1
+	// if startHeight == 1 {
+	// 	startHeight = state.InitialHeight
+	// }
 
 	bcR := &Reactor{
 		initialState: state,
@@ -102,8 +102,10 @@ func NewReactor(state sm.State, store *store.BlockStore,
 		store:        store,
 		blockSync:    blockSync,
 		metrics:      metrics,
-		blockPool:    celestia.NewBlockPool(0),
+		blockPool:    celestia.NewBlockPool(0, tiasyncCfg, logger.With("tsmodule", "tsblockpool")),
 	}
+	bcR.SetLogger(logger.With("tsmodule", "tsblocksync"))
+	go bcR.blockPool.Start()
 	bcR.BaseReactor = *p2p.NewBaseReactor("Reactor", bcR)
 	return bcR
 }
@@ -116,6 +118,7 @@ func (bcR *Reactor) SetLogger(l log.Logger) {
 
 // OnStart implements service.Service.
 func (bcR *Reactor) OnStart() error {
+	bcR.Logger.Debug("block sync OnStart()")
 	// TODO: start get blocks from celestia
 	if bcR.blockSync {
 		// err := bcR.pool.Start()
@@ -133,9 +136,11 @@ func (bcR *Reactor) OnStart() error {
 
 // SwitchToBlockSync is called by the state sync reactor when switching to block sync.
 func (bcR *Reactor) SwitchToBlockSync(state sm.State) error {
+	bcR.Logger.Debug("block sync SwitchToBlockSync()")
 	bcR.blockSync = true
 	bcR.initialState = state
 
+	//go bcR.blockPool.Start()
 	// TODO: start getting blocks from celestia
 
 	// bcR.pool.height = state.LastBlockHeight + 1
@@ -153,6 +158,7 @@ func (bcR *Reactor) SwitchToBlockSync(state sm.State) error {
 
 // OnStop implements service.Service.
 func (bcR *Reactor) OnStop() {
+	bcR.Logger.Debug("block sync OnStop()")
 	if bcR.blockSync {
 		// TODO: stop getting blocks from celestia
 
@@ -182,8 +188,10 @@ func (bcR *Reactor) AddPeer(peer p2p.Peer) {
 	peer.Send(p2p.Envelope{
 		ChannelID: BlocksyncChannel,
 		Message: &bcproto.StatusResponse{
-			Base:   bcR.store.Base(),
-			Height: bcR.store.Height(),
+			Base:  int64(0), 
+			//Base:   bcR.store.Base(),
+			Height: bcR.blockPool.GetHeight()+5,
+			//Height: bcR.store.Height(),
 		},
 	})
 	// it's OK if send fails. will try later in poolRoutine
@@ -200,7 +208,8 @@ func (bcR *Reactor) RemovePeer(peer p2p.Peer, _ interface{}) {
 // respondToPeer loads a block and sends it to the requesting peer,
 // if we have it. Otherwise, we'll respond saying we don't have it.
 func (bcR *Reactor) respondToPeer(msg *bcproto.BlockRequest, src p2p.Peer) (queued bool) {
-	block := bcR.store.LoadBlock(msg.Height)
+	//block := bcR.store.LoadBlock(msg.Height)
+	block := bcR.blockPool.GetBlock(msg.Height)
 	if block == nil {
 		bcR.Logger.Info("Peer asking for a block we don't have", "src", src, "height", msg.Height)
 		return src.TrySend(p2p.Envelope{
@@ -209,17 +218,17 @@ func (bcR *Reactor) respondToPeer(msg *bcproto.BlockRequest, src p2p.Peer) (queu
 		})
 	}
 
-	bl, err := block.ToProto()
-	if err != nil {
-		bcR.Logger.Error("could not convert msg to protobuf", "err", err)
-		return false
-	}
+	//bl, err := block.ToProto()
+	//if err != nil {
+	//	bcR.Logger.Error("could not convert msg to protobuf", "err", err)
+	//	return false
+	//}
 
 	var extCommit *types.ExtendedCommit
 	return src.TrySend(p2p.Envelope{
 		ChannelID: BlocksyncChannel,
 		Message: &bcproto.BlockResponse{
-			Block:     bl,
+			Block:     block,
 			ExtCommit: extCommit.ToProto(),
 		},
 	})
@@ -237,17 +246,22 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 
 	switch msg := e.Message.(type) {
 	case *bcproto.BlockRequest:
+		bcR.Logger.Debug("block sync Receive BlockRequest", "height", msg.Height)
 		bcR.respondToPeer(msg, e.Src)
 	case *bcproto.StatusRequest:
+		bcR.Logger.Debug("block sync Receive StatusRequest")
 		// Send peer our state.
 		e.Src.TrySend(p2p.Envelope{
 			ChannelID: BlocksyncChannel,
 			Message: &bcproto.StatusResponse{
-				Height: bcR.store.Height(),
-				Base:   bcR.store.Base(),
+				Height: bcR.blockPool.GetHeight()+5,
+				//Height: bcR.store.Height(),
+				Base:   int64(0),
+				//Base:   bcR.store.Base(),
 			},
 		})
 	case *bcproto.StatusResponse:
+		bcR.Logger.Debug("block sync Receive StatusResponse", "height", msg.Height)
 		// TODO: prune block store
 		//_, _, _ := bcR.store.PruneBlocks(msg.Height, bcR.state??)
 	default:
@@ -257,7 +271,7 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 
 // Handle messages from the poolReactor telling the reactor what to do.
 // NOTE: Don't sleep in the FOR_LOOP or otherwise slow it down!
-func (bcR *Reactor) poolRoutine(stateSynced bool) {
+/*func (bcR *Reactor) poolRoutine(stateSynced bool) {
 	bcR.metrics.Syncing.Set(1)
 	defer bcR.metrics.Syncing.Set(0)
 
@@ -377,7 +391,7 @@ FOR_LOOP:
 			break FOR_LOOP
 		}
 	}
-}
+}*/
 
 // BroadcastStatusRequest broadcasts `BlockStore` base and height.
 func (bcR *Reactor) BroadcastStatusRequest() {

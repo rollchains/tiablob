@@ -38,9 +38,12 @@ func TestTiasync(t *testing.T) {
 			},
 		},
 		"config/config.toml": testutil.Toml{
+			"log_level": "debug",
 			"p2p": testutil.Toml{
-				"persistent_peers": "2b778354788120d5a0e76824ef9aa90247487480@rollchain-0-fn-0-TestTiasync:26777",
-				"seeds": "2b778354788120d5a0e76824ef9aa90247487480@rollchain-0-fn-0-TestTiasync:26777",
+				"persistent_peers": "2b778354788120d5a0e76824ef9aa90247487480@127.0.0.1:26777",
+				"seeds": "2b778354788120d5a0e76824ef9aa90247487480@127.0.0.1:26777",
+				//"persistent_peers": "2b778354788120d5a0e76824ef9aa90247487480@rollchain-0-fn-0-TestTiasync:26777",
+				//"seeds": "2b778354788120d5a0e76824ef9aa90247487480@rollchain-0-fn-0-TestTiasync:26777",
 				"addr_book_strict": false,
 				"allow_duplicate_ip": true,
 				"unconditional_peer_ids": "2b778354788120d5a0e76824ef9aa90247487480",

@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cometbft/cometbft/libs/log"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	protoblocktypes "github.com/cometbft/cometbft/proto/tendermint/types"
 	
@@ -18,6 +19,7 @@ import (
 
 type BlockPool struct {
 	celestiaHeight int64
+	logger log.Logger
 
 	//rollchainHeight int64
 
@@ -28,12 +30,12 @@ type BlockPool struct {
 
 	celestiaProvider *CosmosProvider
 
-	blockCache map[int64]protoblocktypes.Block
+	blockCache map[int64]*protoblocktypes.Block
 
 	mtx cmtsync.Mutex
 }
 
-func NewBlockPool(celestiaHeight int64, tiasyncCfg *relayer.CelestiaConfig) *BlockPool {
+func NewBlockPool(celestiaHeight int64, tiasyncCfg *relayer.CelestiaConfig, logger log.Logger) *BlockPool {
 	celestiaProvider, err := NewProvider(tiasyncCfg.AppRpcURL, tiasyncCfg.AppRpcTimeout)
 	if err != nil {
 		panic(err)
@@ -45,6 +47,7 @@ func NewBlockPool(celestiaHeight int64, tiasyncCfg *relayer.CelestiaConfig) *Blo
 
 	return &BlockPool{
 		celestiaHeight: celestiaHeight,
+		logger: logger,
 		//rollchainHeight: rollchainHeight,
 		celestiaProvider: celestiaProvider,
 
@@ -53,11 +56,12 @@ func NewBlockPool(celestiaHeight int64, tiasyncCfg *relayer.CelestiaConfig) *Blo
 		celestiaNamespace: celestiaNamespace,
 		celestiaChainID:   tiasyncCfg.ChainID,
 		
-		blockCache: make(map[int64]protoblocktypes.Block),
+		blockCache: make(map[int64]*protoblocktypes.Block),
 	}
 }
 
 func (bp *BlockPool) Start() {
+	bp.logger.Debug("Block Pool Start()")
 	ctx := context.Background()
 
 	timer := time.NewTimer(10 * time.Second)
@@ -74,7 +78,18 @@ func (bp *BlockPool) Start() {
 
 }
 
+func (bp *BlockPool) GetBlock(height int64) *protoblocktypes.Block {
+	bp.logger.Debug("bp GetBlock()", "height", height)
+	return bp.blockCache[height]
+}
+
+func (bp *BlockPool) GetHeight() int64 {
+	bp.logger.Debug("bp GetHeight()", "height", len(bp.blockCache))
+	return int64(len(bp.blockCache))
+}
+
 func (bp *BlockPool) queryCelestia(ctx context.Context) {
+	bp.logger.Debug("bp queryCelestia()")
 	celestiaNodeClient, err := cn.NewClient(ctx, bp.nodeRpcUrl, bp.nodeAuthToken)
 	if err != nil {
 		fmt.Println("creating celestia node client", "error", err)
@@ -90,6 +105,7 @@ func (bp *BlockPool) queryCelestia(ctx context.Context) {
 		return
 	}
 
+	bp.logger.Debug("bp celestia latest height", "height", celestiaLatestHeight)
 	for queryHeight := bp.celestiaHeight + 1; queryHeight < celestiaLatestHeight; queryHeight++ {
 		// get the namespace blobs from that height
 		blobs, err := celestiaNodeClient.Blob.GetAll(ctx, uint64(queryHeight), []share.Namespace{bp.celestiaNamespace.Bytes()})
@@ -112,7 +128,8 @@ func (bp *BlockPool) queryCelestia(ctx context.Context) {
 				//r.logger.Info("blob unmarshal", "note", "may be a namespace collision", "height", queryHeight, "error", err)
 			} else {
 				rollchainBlockHeight := blobBlockProto.Header.Height
-				bp.blockCache[rollchainBlockHeight] = blobBlockProto
+				bp.logger.Debug("bp adding block", "height", rollchainBlockHeight)
+				bp.blockCache[rollchainBlockHeight] = &blobBlockProto
 			}
 		}
 		

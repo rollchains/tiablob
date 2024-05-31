@@ -14,7 +14,7 @@ replace (
 	// breaks SDK app.toml parsing for client configs.
 	github.com/spf13/viper => github.com/spf13/viper v1.17.0
 
-	//github.com/strangelove-ventures/interchaintest/v8 => ../../../strangelove-ventures/interchaintest/.
+	github.com/strangelove-ventures/interchaintest/v8 => ../../../strangelove-ventures/interchaintest/.
 	github.com/tendermint/tendermint => github.com/celestiaorg/celestia-core v1.35.0-tm-v0.34.29
 
 	github.com/vedhavyas/go-subkey => github.com/strangelove-ventures/go-subkey v1.0.7

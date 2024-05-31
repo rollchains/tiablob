@@ -56,7 +56,7 @@ type Tiasync struct {
 	stateSyncGenesis  sm.State                // provides the genesis state for state sync
 	//consensusState    *cs.State               // latest consensus state
 	//consensusReactor  *cs.Reactor             // for participating in the consensus
-	//pexReactor        *pex.Reactor            // for exchanging peer addresses
+	pexReactor        *pex.Reactor            // for exchanging peer addresses
 	//evidencePool      *evidence.Pool          // tracking evidence
 	proxyApp          proxy.AppConns          // connection to the application
 	rpcListeners      []net.Listener          // rpc servers
@@ -195,9 +195,8 @@ func NewTiasync(
 	}*/
 
 	// TODO: replace true below, checking if state sync is running
-	bcReactor := blocksync.NewReactor(state.Copy(), blockStore, true, bsMetrics, tiasyncCfg)
+	bcReactor := blocksync.NewReactor(state.Copy(), blockStore, true, bsMetrics, tiasyncCfg, logger)
 	//bcReactor := blocksync.NewReactor(state.Copy(), blockExec, blockStore, true, bsMetrics, offlineStateSyncHeight)
-	bcReactor.SetLogger(logger.With("tsmodule", "tsblocksync"))
 
 	nodeInfo, err := makeNodeInfo(nodeKey, genDoc, state)
 	if err != nil {
@@ -224,6 +223,8 @@ func NewTiasync(
 		return nil, fmt.Errorf("could not create addrbook: %w", err)
 	}
 
+	pexReactor := createPEXReactorAndAddToSwitch(addrBook, config, sw, logger)
+
 	tiasync := &Tiasync{
 		config:        config,
 		genesisDoc:    genDoc,
@@ -245,7 +246,7 @@ func NewTiasync(
 		//stateSyncReactor: stateSyncReactor,
 		//stateSync:        stateSync,
 		stateSyncGenesis: state, // Shouldn't be necessary, but need a way to pass the genesis state
-		//pexReactor:       pexReactor,
+		pexReactor:       pexReactor,
 		//evidencePool:     evidencePool,
 		//proxyApp:         proxyApp,
 		//txIndexer:        txIndexer,

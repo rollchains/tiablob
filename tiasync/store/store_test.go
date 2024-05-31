@@ -1,5 +1,5 @@
 package store
-
+/*
 import (
 	"encoding/json"
 	"fmt"
@@ -758,3 +758,4 @@ func newBlock(hdr types.Header, lastCommit *types.Commit) *types.Block {
 		LastCommit: lastCommit,
 	}
 }
+*/
