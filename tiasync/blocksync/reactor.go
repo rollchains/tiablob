@@ -104,9 +104,23 @@ func NewReactor(state sm.State, store *store.BlockStore,
 		metrics:      metrics,
 		blockPool:    celestia.NewBlockPool(0, tiasyncCfg, logger.With("tsmodule", "tsblockpool")),
 	}
+	bcR.BaseReactor = *p2p.NewBaseReactor("Reactor", bcR)
 	bcR.SetLogger(logger.With("tsmodule", "tsblocksync"))
 	go bcR.blockPool.Start()
-	bcR.BaseReactor = *p2p.NewBaseReactor("Reactor", bcR)
+	/*go func() {
+		broadcastTicker := time.NewTimer(time.Second * 15)
+		defer broadcastTicker.Stop()
+		for {
+			select {
+			case <-broadcastTicker.C:
+				bcR.Logger.Error("Broadcasting status request")
+				bcR.BroadcastStatusRequest()
+				broadcastTicker.Reset(time.Second * 15)
+			}
+		}
+
+	}()*/
+
 	return bcR
 }
 
@@ -190,7 +204,7 @@ func (bcR *Reactor) AddPeer(peer p2p.Peer) {
 		Message: &bcproto.StatusResponse{
 			Base:  int64(0), 
 			//Base:   bcR.store.Base(),
-			Height: bcR.blockPool.GetHeight()+5,
+			Height: bcR.blockPool.GetHeight()+15,
 			//Height: bcR.store.Height(),
 		},
 	})
@@ -254,7 +268,7 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 		e.Src.TrySend(p2p.Envelope{
 			ChannelID: BlocksyncChannel,
 			Message: &bcproto.StatusResponse{
-				Height: bcR.blockPool.GetHeight()+5,
+				Height: bcR.blockPool.GetHeight()+15,
 				//Height: bcR.store.Height(),
 				Base:   int64(0),
 				//Base:   bcR.store.Base(),

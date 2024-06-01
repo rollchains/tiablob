@@ -289,7 +289,7 @@ func (t *Tiasync) Start() {
 	//}
 
 	// Start the transport.
-	addr, err := p2p.NewNetAddressString(p2p.IDAddressString(t.nodeKey.ID(), "tcp://0.0.0.0:26777"))
+	addr, err := p2p.NewNetAddressString(p2p.IDAddressString(t.nodeKey.ID(), "tcp://127.0.0.1:26777"))
 	if err != nil {
 		panic(err)
 	}

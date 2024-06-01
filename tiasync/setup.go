@@ -194,7 +194,7 @@ func makeNodeInfo(
 	//	txIndexerStatus = "off"
 	//}
 	txIndexerStatus := "off"
-	listenAddr := "tcp://0.0.0.0:26777"
+	listenAddr := "tcp://127.0.0.1:26777"
 
 	nodeInfo := p2p.DefaultNodeInfo{
 		ProtocolVersion: p2p.NewProtocolVersion(
