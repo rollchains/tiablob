@@ -8,17 +8,18 @@ import (
 )
 
 const (
-	FlagAppRpcURL         = "celestia.app-rpc-url"
-	FlagAppRpcTimeout     = "celestia.app-rpc-timeout"
-	FlagChainID           = "celestia.chain-id"
-	FlagGasPrices         = "celestia.gas-prices"
-	FlagGasAdjustment     = "celestia.gas-adjustment"
-	FlagNodeRpcURL        = "celestia.node-rpc-url"
-	FlagNodeAuthToken     = "celestia.node-auth-token"
-	FlagOverrideNamespace = "celestia.override-namespace"
-	FlagQueryInterval     = "celestia.proof-query-interval"
-	FlagMaxFlushSize      = "celestia.max-flush-size"
-	FlagSyncFromCelestia  = "celestia.sync-from-celestia"
+	FlagAppRpcURL           = "celestia.app-rpc-url"
+	FlagAppRpcTimeout       = "celestia.app-rpc-timeout"
+	FlagChainID             = "celestia.chain-id"
+	FlagGasPrices           = "celestia.gas-prices"
+	FlagGasAdjustment       = "celestia.gas-adjustment"
+	FlagNodeRpcURL          = "celestia.node-rpc-url"
+	FlagNodeAuthToken       = "celestia.node-auth-token"
+	FlagOverrideNamespace   = "celestia.override-namespace"
+	FlagOverridePubInterval = "celestia.override-pub-interval"
+	FlagQueryInterval       = "celestia.proof-query-interval"
+	FlagMaxFlushSize        = "celestia.max-flush-size"
+	FlagSyncFromCelestia    = "celestia.sync-from-celestia"
 
 	DefaultConfigTemplate = `
 
@@ -44,8 +45,11 @@ const (
 	# Auth token for celestia-node RPC, n/a if --rpc.skip-auth is used on start
 	node-auth-token = "auth-token"
 
-	# Overrides the expected chain's namespace, expected for test-only
+	# Overrides the expected chain's namespace, test-only
 	override-namespace = ""
+
+	# Overrides the expected chain's publish-to-celestia block interval, test-only
+	override-pub-interval = 0
 	
 	# Query celestia for new block proofs this often
 	proof-query-interval = "12s"
@@ -98,6 +102,9 @@ type CelestiaConfig struct {
 	// Overrides built-in namespace used
 	OverrideNamespace string `mapstructure:"override-namespace"`
 
+	// Overrides built-in publish-to-celestia block interval
+	OverridePubInterval int `mapstructure:"override-pub-interval"`
+
 	// Query Celestia for new block proofs this often
 	ProofQueryInterval time.Duration `mapstructure:"proof-query-interval"`
 
@@ -109,16 +116,17 @@ type CelestiaConfig struct {
 
 func CelestiaConfigFromAppOpts(appOpts servertypes.AppOptions) CelestiaConfig {
 	return CelestiaConfig{
-		AppRpcURL:          cast.ToString(appOpts.Get(FlagAppRpcURL)),
-		AppRpcTimeout:      cast.ToDuration(appOpts.Get(FlagAppRpcTimeout)),
-		ChainID:            cast.ToString(appOpts.Get(FlagChainID)),
-		GasPrice:           cast.ToString(appOpts.Get(FlagGasPrices)),
-		GasAdjustment:      cast.ToFloat64(appOpts.Get(FlagGasAdjustment)),
-		NodeRpcURL:         cast.ToString(appOpts.Get(FlagNodeRpcURL)),
-		NodeAuthToken:      cast.ToString(appOpts.Get(FlagNodeAuthToken)),
-		OverrideNamespace:  cast.ToString(appOpts.Get(FlagOverrideNamespace)),
-		ProofQueryInterval: cast.ToDuration(appOpts.Get(FlagQueryInterval)),
-		MaxFlushSize:       cast.ToInt(appOpts.Get(FlagMaxFlushSize)),
-		SyncFromCelestia:   cast.ToBool(appOpts.Get(FlagSyncFromCelestia)),
+		AppRpcURL:           cast.ToString(appOpts.Get(FlagAppRpcURL)),
+		AppRpcTimeout:       cast.ToDuration(appOpts.Get(FlagAppRpcTimeout)),
+		ChainID:             cast.ToString(appOpts.Get(FlagChainID)),
+		GasPrice:            cast.ToString(appOpts.Get(FlagGasPrices)),
+		GasAdjustment:       cast.ToFloat64(appOpts.Get(FlagGasAdjustment)),
+		NodeRpcURL:          cast.ToString(appOpts.Get(FlagNodeRpcURL)),
+		NodeAuthToken:       cast.ToString(appOpts.Get(FlagNodeAuthToken)),
+		OverrideNamespace:   cast.ToString(appOpts.Get(FlagOverrideNamespace)),
+		OverridePubInterval: cast.ToInt(appOpts.Get(FlagOverridePubInterval)),
+		ProofQueryInterval:  cast.ToDuration(appOpts.Get(FlagQueryInterval)),
+		MaxFlushSize:        cast.ToInt(appOpts.Get(FlagMaxFlushSize)),
+		SyncFromCelestia:    cast.ToBool(appOpts.Get(FlagSyncFromCelestia)),
 	}
 }

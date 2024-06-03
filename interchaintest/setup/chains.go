@@ -1,6 +1,8 @@
 package setup
 
 import (
+	"github.com/docker/docker/client"
+
 	"github.com/strangelove-ventures/interchaintest/v8/chain/cosmos"
 	"github.com/strangelove-ventures/interchaintest/v8/ibc"
 )
@@ -10,6 +12,7 @@ type Chains struct {
 	CelestiaNode   *cosmos.SidecarProcess
 	RollchainChain *cosmos.CosmosChain   // primary rollchain under test
 	OtherRcChains  []*cosmos.CosmosChain // other rollchains running (could also be under test)
+	Client         *client.Client
 }
 
 func NewChains(chains []ibc.Chain) *Chains {

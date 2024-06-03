@@ -16,7 +16,7 @@ import (
 // TestBasicChain starts a rollchain chain and restores a celestia account in tiablob
 func TestBasicChain(t *testing.T) {
 	cf := interchaintest.NewBuiltinChainFactory(zaptest.NewLogger(t), []*interchaintest.ChainSpec{
-		setup.RollchainChainSpec(t.Name(), 1, 0, "rc_demo"),
+		setup.RollchainChainSpec(t.Name(), 1, 0, "rc_demo", 0),
 	})
 
 	chains, err := cf.Chains(t.Name())

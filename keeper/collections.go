@@ -120,7 +120,7 @@ func (k *Keeper) AddPendingBlockToTimeoutsMap(ctx context.Context, height int64,
 	if err != nil {
 		return err
 	}
-	var pendingBlocks PendingBlocks
+	var pendingBlocks tiablob.PendingBlocks
 	if found {
 		pendingBlocks, err = k.TimeoutsToPendingBlocks.Get(ctx, expiration)
 		if err != nil {

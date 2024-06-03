@@ -22,6 +22,8 @@ type Metrics struct {
 	MinTimeToProveHeight       time.Duration
 	MaxPendingBlocks           int
 	MaxExpiredBlocks           int
+	TotalBlocksQueried         int
+	TotalPendingBlocks         int
 }
 
 func NewMetrics() *Metrics {
@@ -94,6 +96,9 @@ func (m *Metrics) injestState(provedHeight int64, pendingBlocks *tiablob.QueryPe
 		m.MaxPendingBlocks = numPendingBlocks
 	}
 
+	m.TotalBlocksQueried++
+	m.TotalPendingBlocks += numPendingBlocks
+
 	numExpiredBlocks := len(expiredBlocks.ExpiredBlocks)
 	if m.MaxExpiredBlocks < numExpiredBlocks {
 		m.MaxExpiredBlocks = numExpiredBlocks
@@ -121,5 +126,6 @@ func (m *Metrics) PrintMetrics(t *testing.T) {
 		"MaxExpiredBlocks=", m.MaxExpiredBlocks,
 		"MaxTimeToProveHeight", m.MaxTimeToProveHeight,
 		"MinTimeToProveHeight", m.MinTimeToProveHeight,
+		"AvgPendingBlocks", m.TotalPendingBlocks/m.TotalBlocksQueried,
 	)
 }

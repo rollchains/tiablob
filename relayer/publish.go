@@ -24,7 +24,7 @@ const (
 // PostNextBlocks is called by the current proposing validator during PrepareProposal.
 // If on the publish boundary, it will return the block heights that will be published
 // It will not publish the block being proposed.
-func (r *Relayer) ProposePostNextBlocks(ctx sdk.Context) []int64 {
+func (r *Relayer) ProposePostNextBlocks(ctx sdk.Context, provenHeight int64) []int64 {
 	height := ctx.BlockHeight()
 
 	if height <= 1 {
@@ -38,7 +38,10 @@ func (r *Relayer) ProposePostNextBlocks(ctx sdk.Context) []int64 {
 
 	var blocks []int64
 	for block := height - int64(r.celestiaPublishBlockInterval); block < height; block++ {
-		blocks = append(blocks, block)
+		// this could be false after a genesis restart
+		if block > provenHeight {
+			blocks = append(blocks, block)
+		}
 	}
 
 	return blocks

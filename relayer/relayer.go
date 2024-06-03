@@ -83,6 +83,10 @@ func NewRelayer(
 		celestiaNamespace = appns.MustNewV0([]byte(cfg.OverrideNamespace))
 	}
 
+	if cfg.OverridePubInterval > 0 {
+		celestiaPublishBlockInterval = cfg.OverridePubInterval
+	}
+
 	return &Relayer{
 		logger: logger,
 

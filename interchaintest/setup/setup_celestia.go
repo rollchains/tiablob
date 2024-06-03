@@ -21,9 +21,10 @@ var (
 	celestiaCoinDecimals = int64(6)
 	celestiaChainID      = "celestia-1"
 	celestiaAppImage     = ibc.DockerImage{
-		Repository: "ghcr.io/strangelove-ventures/heighliner/celestia",
-		Version:    "v1.8.0",
-		UidGid:     "1025:1025",
+		Repository: "celestia",
+		//Repository: "ghcr.io/strangelove-ventures/heighliner/celestia",
+		Version: "v1.10.1",
+		UidGid:  "1025:1025",
 	}
 	celestiaNodeHome  = "/var/cosmos-chain/celestia-node"
 	celestiaNodeType  = "bridge"

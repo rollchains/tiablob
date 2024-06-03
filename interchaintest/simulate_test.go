@@ -20,7 +20,7 @@ import (
 // go test -timeout 25h -v -run TestSimulateRealNetwork . -count 1
 func TestSimulateRealNetwork(t *testing.T) {
 	ctx := context.Background()
-	chains := setup.StartWithSpecs(t, ctx, celestiaChainSpec(), rollchainChainSpecs(t))
+	chains := setup.StartWithSpecs(t, ctx, celestiaChainSpec(5), rollchainChainSpecs(t))
 
 	m := NewMetrics()
 	defer m.PrintMetrics(t)
@@ -28,14 +28,32 @@ func TestSimulateRealNetwork(t *testing.T) {
 	m.proveXBlocks(t, ctx, chains.RollchainChain, 43000)
 }
 
+// TestSimulateRealBlockTime uses 12 second blocks for celestia and 5 second blocks for rollchains
+// Each rollchain will have its own namespace (no namespace collisions), 5 block publishing interval
+// No Celestia downtime for this test
+// go test -timeout 15m -v -run TestSimulateRealBlockTimes . -count 1
+func TestSimulateRealBlockTimes(t *testing.T) {
+	ctx := context.Background()
+
+	rollchainChainSpecs := make([]*interchaintest.ChainSpec, 2)
+	rollchainChainSpecs[0] = setup.RollchainChainSpec(t.Name(), 2, 0, "rc_demo", 0)
+	rollchainChainSpecs[0].ConfigFileOverrides["config/config.toml"] = setRollchainBlockTime(5)
+	chains := setup.StartWithSpecs(t, ctx, celestiaChainSpec(12), rollchainChainSpecs)
+
+	m := NewMetrics()
+	defer m.PrintMetrics(t)
+
+	m.proveXBlocks(t, ctx, chains.RollchainChain, 100)
+}
+
 func rollchainChainSpecs(t *testing.T) []*interchaintest.ChainSpec {
 	numRc := 10
 	rollchainChainSpecs := make([]*interchaintest.ChainSpec, numRc)
 	for i := 0; i < numRc; i++ {
 		if i == 0 {
-			rollchainChainSpecs[i] = setup.RollchainChainSpec(t.Name(), 8, i, fmt.Sprintf("rc_demo%d", i))
+			rollchainChainSpecs[i] = setup.RollchainChainSpec(t.Name(), 8, i, fmt.Sprintf("rc_demo%d", i), 0)
 		} else {
-			rollchainChainSpecs[i] = setup.RollchainChainSpec(t.Name(), 1, i, fmt.Sprintf("rc_demo%d", i))
+			rollchainChainSpecs[i] = setup.RollchainChainSpec(t.Name(), 1, i, fmt.Sprintf("rc_demo%d", i), 0)
 			if i%2 == 0 {
 				rollchainChainSpecs[i].ConfigFileOverrides["config/config.toml"] = setRollchainBlockTime(3)
 			}
@@ -44,9 +62,9 @@ func rollchainChainSpecs(t *testing.T) []*interchaintest.ChainSpec {
 	return rollchainChainSpecs
 }
 
-func celestiaChainSpec() *interchaintest.ChainSpec {
+func celestiaChainSpec(blockTime int) *interchaintest.ChainSpec {
 	celestiaChainSpec := setup.CelestiaChainSpec()
-	celestiaChainSpec.ConfigFileOverrides = setCelestiaBlockTime(5)
+	celestiaChainSpec.ConfigFileOverrides = setCelestiaBlockTime(blockTime)
 	return celestiaChainSpec
 }
 

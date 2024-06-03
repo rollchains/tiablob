@@ -22,7 +22,7 @@ var FundsAmount = sdkmath.NewInt(1000_000000) // 1k tokens
 // TestFeegrant verifies that validators can set up fee grant
 func TestFeegrant(t *testing.T) {
 	nv := 4
-	rollchainCs := setup.RollchainChainSpec(t.Name(), nv, 0, "rc_demo")
+	rollchainCs := setup.RollchainChainSpec(t.Name(), nv, 0, "rc_demo", 0)
 	celestiaCs := setup.CelestiaChainSpec()
 	cf := interchaintest.NewBuiltinChainFactory(zaptest.NewLogger(t), []*interchaintest.ChainSpec{
 		rollchainCs,
