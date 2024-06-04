@@ -35,14 +35,14 @@ type BlockPool struct {
 	mtx cmtsync.Mutex
 }
 
-func NewBlockPool(celestiaHeight int64, tiasyncCfg *relayer.CelestiaConfig, logger log.Logger) *BlockPool {
-	celestiaProvider, err := NewProvider(tiasyncCfg.AppRpcURL, tiasyncCfg.AppRpcTimeout)
+func NewBlockPool(celestiaHeight int64, celestiaCfg *relayer.CelestiaConfig, logger log.Logger) *BlockPool {
+	celestiaProvider, err := NewProvider(celestiaCfg.AppRpcURL, celestiaCfg.AppRpcTimeout)
 	if err != nil {
 		panic(err)
 	}
 
 	//if cfg.OverrideNamespace != "" {
-		celestiaNamespace := appns.MustNewV0([]byte(tiasyncCfg.OverrideNamespace))
+		celestiaNamespace := appns.MustNewV0([]byte(celestiaCfg.OverrideNamespace))
 	//}
 
 	return &BlockPool{
@@ -51,10 +51,10 @@ func NewBlockPool(celestiaHeight int64, tiasyncCfg *relayer.CelestiaConfig, logg
 		//rollchainHeight: rollchainHeight,
 		celestiaProvider: celestiaProvider,
 
-		nodeRpcUrl:        tiasyncCfg.NodeRpcURL,
-		nodeAuthToken:     tiasyncCfg.NodeAuthToken,
+		nodeRpcUrl:        celestiaCfg.NodeRpcURL,
+		nodeAuthToken:     celestiaCfg.NodeAuthToken,
 		celestiaNamespace: celestiaNamespace,
-		celestiaChainID:   tiasyncCfg.ChainID,
+		celestiaChainID:   celestiaCfg.ChainID,
 		
 		blockCache: make(map[int64]*protoblocktypes.Block),
 	}

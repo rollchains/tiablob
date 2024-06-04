@@ -20,7 +20,7 @@ import (
 	//"github.com/cometbft/cometbft/evidence"
 	//rpccore "github.com/cometbft/cometbft/rpc/core"
 	"github.com/cosmos/cosmos-sdk/server"
-	cmtjson "github.com/cometbft/cometbft/libs/json"
+	//cmtjson "github.com/cometbft/cometbft/libs/json"
 
 	"github.com/rollchains/tiablob/tiasync/blocksync"
 	"github.com/rollchains/tiablob/tiasync/store"
@@ -33,7 +33,8 @@ type Tiasync struct {
 
 	// config
 	config        *cfg.Config
-	tiasyncCfg    *relayer.CelestiaConfig
+	celestiaCfg   *relayer.CelestiaConfig
+	tiasyncCfg    *TiasyncConfig
 	genesisDoc    *types.GenesisDoc   // initial validator set
 	privValidator types.PrivValidator // local node's validator key
 
@@ -44,6 +45,8 @@ type Tiasync struct {
 	nodeInfo    p2p.NodeInfo
 	nodeKey     *p2p.NodeKey // our node privkey
 	isListening bool
+
+	cometNodeKey     *p2p.NodeKey // our node privkey
 
 	// services
 	//eventBus          *types.EventBus // pub/sub for services
@@ -82,14 +85,15 @@ func TiasyncRoutine(svrCtx *server.Context) {
 	logger.Info("P2P:", "AddrBookStrict", cometCfg.P2P.AddrBookStrict, "ExternalAddress", cometCfg.P2P.ExternalAddress, "PersistentPeers", cometCfg.P2P.PersistentPeers, "ListenAddress", cometCfg.P2P.ListenAddress, "Seeds", cometCfg.P2P.Seeds)
 	fmt.Println("P2P:", "AddrBookStrict", cometCfg.P2P.AddrBookStrict, "ExternalAddress", cometCfg.P2P.ExternalAddress, "PersistentPeers", cometCfg.P2P.PersistentPeers, "ListenAddress", cometCfg.P2P.ListenAddress, "Seeds", cometCfg.P2P.Seeds)
 
-	tiasyncCfg := relayer.CelestiaConfigFromAppOpts(svrCtx.Viper)
-	logger.Info("App opts: ", "Sync-from-celestia", tiasyncCfg.SyncFromCelestia, "chain id", tiasyncCfg.ChainID, "app rpc", tiasyncCfg.AppRpcURL)
-	fmt.Println("App opts: ", "Sync-from-celestia", tiasyncCfg.SyncFromCelestia, "chain id", tiasyncCfg.ChainID, "app rpc", tiasyncCfg.AppRpcURL)
+	tiasyncCfg := TiasyncConfigFromAppOpts(svrCtx.Viper)
+	celestiaCfg := relayer.CelestiaConfigFromAppOpts(svrCtx.Viper)
+	logger.Info("App opts: ", "Sync-from-celestia/enable", tiasyncCfg.Enable, "chain id", celestiaCfg.ChainID, "app rpc", celestiaCfg.AppRpcURL)
+	fmt.Println("App opts: ", "Sync-from-celestia/enable", tiasyncCfg.Enable, "chain id", celestiaCfg.ChainID, "app rpc", celestiaCfg.AppRpcURL)
 
-	if !tiasyncCfg.SyncFromCelestia {
+	if !tiasyncCfg.Enable {
 		return
 	}
-	ts, err := NewTiasync(cometCfg, &tiasyncCfg, logger)
+	ts, err := NewTiasync(cometCfg, &tiasyncCfg, &celestiaCfg, logger)
 	if err != nil {
 		panic(err)
 	}
@@ -99,7 +103,8 @@ func TiasyncRoutine(svrCtx *server.Context) {
 
 func NewTiasync(
 	config *cfg.Config,
-	tiasyncCfg *relayer.CelestiaConfig,
+	tiasyncCfg *TiasyncConfig,
+	celestiaCfg *relayer.CelestiaConfig,
 	logger log.Logger,
 ) (*Tiasync, error) {
 	dbProvider := cfg.DefaultDBProvider
@@ -133,15 +138,27 @@ func NewTiasync(
 	//if err != nil {
 	//	return nil, fmt.Errorf("failed to load or gen node key %s: %w", config.NodeKeyFile(), err)
 	//}
-	nodeKeyJson := "{\"priv_key\":{\"type\":\"tendermint/PrivKeyEd25519\",\"value\":\"O+iKUF7hOstRRkyKUUVsj28o96iIR2nD/xg8vG0KLJDVaQz24rVhdD+kWWUlm+Q/+1feJnR5mUIPcojpIyKLzg==\"}}"
-	nodeKey := new(p2p.NodeKey)
-	if err := cmtjson.Unmarshal([]byte(nodeKeyJson), nodeKey); err != nil {
+	//nodeKeyJson := "{\"priv_key\":{\"type\":\"tendermint/PrivKeyEd25519\",\"value\":\"O+iKUF7hOstRRkyKUUVsj28o96iIR2nD/xg8vG0KLJDVaQz24rVhdD+kWWUlm+Q/+1feJnR5mUIPcojpIyKLzg==\"}}"
+	//nodeKey := new(p2p.NodeKey)
+	//if err := cmtjson.Unmarshal([]byte(nodeKeyJson), nodeKey); err != nil {
+	//	panic(err)
+	//}
+	
+	nodeKey, err := p2p.LoadOrGenNodeKey(tiasyncCfg.NodeKeyFile(config.BaseConfig))
+	if err != nil {
 		panic(err)
 	}
-	
 	fmt.Println("NodeKey priv key:", hex.EncodeToString(nodeKey.PrivKey.Bytes()))
 	fmt.Println("Nodekey pub key:", hex.EncodeToString(nodeKey.PubKey().Bytes()))
 	fmt.Println("Nodekey id:", nodeKey.ID())
+	
+	cometNodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("NodeKey priv key:", hex.EncodeToString(cometNodeKey.PrivKey.Bytes()))
+	fmt.Println("Nodekey pub key:", hex.EncodeToString(cometNodeKey.PubKey().Bytes()))
+	fmt.Println("Nodekey id:", cometNodeKey.ID())
 /*	jsonBlob, err := os.ReadFile(config.GenesisFile())
 	if err != nil {
 		return nil, fmt.Errorf("couldn't read GenesisDoc file: %w", err)
@@ -202,7 +219,7 @@ func NewTiasync(
 	// KEEP if stateSync && LastBlockHeight > 0 {
 	//	stateSync = false
 	//}
-	bcReactor := blocksync.NewReactor(state.Copy(), blockStore, true, bsMetrics, tiasyncCfg, logger)
+	bcReactor := blocksync.NewReactor(state.Copy(), blockStore, true, bsMetrics, celestiaCfg, logger)
 	//bcReactor := blocksync.NewReactor(state.Copy(), blockExec, blockStore, true, bsMetrics, offlineStateSyncHeight)
 
 	stateSyncReactor := statesync.NewReactor(
@@ -213,7 +230,7 @@ func NewTiasync(
 	)
 	stateSyncReactor.SetLogger(logger.With("tsmodule", "tsstatesync"))
 
-	nodeInfo, err := makeNodeInfo(nodeKey, genDoc, state)
+	nodeInfo, err := makeNodeInfo(tiasyncCfg, nodeKey, genDoc, state)
 	if err != nil {
 		return nil, err
 	}
@@ -229,11 +246,11 @@ func NewTiasync(
 		config, transport, p2pMetrics, peerFilters, bcReactor, stateSyncReactor, nodeInfo, nodeKey, p2pLogger,
 	)
 
-	err = sw.AddPersistentPeers(splitAndTrimEmpty(tiasyncCfg.UpstreamPeers, ",", " ")[0:1])
+	err = sw.AddPersistentPeers(getPersistentPeers(tiasyncCfg.UpstreamPeers, cometNodeKey, config.P2P.ListenAddress))
 	if err != nil {
 		return nil, fmt.Errorf("could not add peers from persistent_peers field: %w", err)
 	}
-	addrBook, err := createAddrBookAndSetOnSwitch(config, sw, p2pLogger, nodeKey)
+	addrBook, err := createAddrBookAndSetOnSwitch(config, tiasyncCfg, sw, p2pLogger, nodeKey)
 	if err != nil {
 		return nil, fmt.Errorf("could not create addrbook: %w", err)
 	}
@@ -251,6 +268,8 @@ func NewTiasync(
 		addrBook:  addrBook,
 		nodeInfo:  nodeInfo,
 		nodeKey:   nodeKey,
+
+		cometNodeKey: cometNodeKey,
 
 		stateStore:       stateStore,
 		blockStore:       blockStore,
@@ -305,7 +324,7 @@ func (t *Tiasync) Start() {
 	//}
 
 	// Start the transport.
-	addr, err := p2p.NewNetAddressString(p2p.IDAddressString(t.nodeKey.ID(), "tcp://0.0.0.0:26656"))
+	addr, err := p2p.NewNetAddressString(p2p.IDAddressString(t.nodeKey.ID(), t.tiasyncCfg.ListenAddress))
 	if err != nil {
 		panic(err)
 	}
@@ -322,7 +341,7 @@ func (t *Tiasync) Start() {
 	}
 
 	// Always connect to persistent peers
-	err = t.sw.DialPeersAsync(splitAndTrimEmpty(t.tiasyncCfg.UpstreamPeers, ",", " ")[0:1])
+	err = t.sw.DialPeersAsync(getPersistentPeers(t.tiasyncCfg.UpstreamPeers, t.cometNodeKey, t.config.P2P.ListenAddress))
 	if err != nil {
 		panic(fmt.Errorf("could not dial peers from persistent_peers field: %w", err))
 	}

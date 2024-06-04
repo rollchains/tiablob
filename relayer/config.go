@@ -19,8 +19,6 @@ const (
 	FlagOverridePubInterval = "celestia.override-pub-interval"
 	FlagQueryInterval       = "celestia.proof-query-interval"
 	FlagMaxFlushSize        = "celestia.max-flush-size"
-	FlagSyncFromCelestia    = "celestia.sync-from-celestia"
-	FlagUpstreamPeers       = "celestia.upstream-peers"
 
 	DefaultConfigTemplate = `
 
@@ -60,9 +58,6 @@ const (
 	# tiablob will try to aggregate multiple blobs published at the same height w/ a single proof
 	max-flush-size = 32
 
-	sync-from-celestia = false
-
-	upstream-peers = ""
 	`
 )
 
@@ -76,8 +71,6 @@ var DefaultCelestiaConfig = CelestiaConfig{
 	NodeAuthToken:      "auth-token",
 	ProofQueryInterval: 12 * time.Second,
 	MaxFlushSize:       32,
-	SyncFromCelestia:   false,
-	UpstreamPeers:      "",
 }
 
 // CelestiaConfig defines the configuration for the in-process Celestia relayer.
@@ -114,10 +107,6 @@ type CelestiaConfig struct {
 
 	// Only flush at most this many block proofs in an injected tx per block proposal
 	MaxFlushSize int `mapstructure:"max-flush-size"`
-
-	SyncFromCelestia bool `mapstructure:"sync-from-celestia"`
-
-	UpstreamPeers string `mapstructure:"upstream-peers"`
 }
 
 func CelestiaConfigFromAppOpts(appOpts servertypes.AppOptions) CelestiaConfig {
@@ -133,7 +122,5 @@ func CelestiaConfigFromAppOpts(appOpts servertypes.AppOptions) CelestiaConfig {
 		OverridePubInterval: cast.ToInt(appOpts.Get(FlagOverridePubInterval)),
 		ProofQueryInterval:  cast.ToDuration(appOpts.Get(FlagQueryInterval)),
 		MaxFlushSize:        cast.ToInt(appOpts.Get(FlagMaxFlushSize)),
-		SyncFromCelestia:    cast.ToBool(appOpts.Get(FlagSyncFromCelestia)),
-		UpstreamPeers:       cast.ToString(appOpts.Get(FlagUpstreamPeers)),
 	}
 }

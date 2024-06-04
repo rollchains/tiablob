@@ -66,7 +66,7 @@ type Reactor struct {
 
 // NewReactor returns new reactor instance.
 func NewReactor(state sm.State, store *store.BlockStore,
-	blockSync bool, metrics *Metrics, tiasyncCfg *relayer.CelestiaConfig, logger log.Logger,
+	blockSync bool, metrics *Metrics, celestiaCfg *relayer.CelestiaConfig, logger log.Logger,
 ) *Reactor {
 
 	// storeHeight := store.Height()
@@ -102,7 +102,7 @@ func NewReactor(state sm.State, store *store.BlockStore,
 		store:        store,
 		blockSync:    blockSync,
 		metrics:      metrics,
-		blockPool:    celestia.NewBlockPool(0, tiasyncCfg, logger.With("tsmodule", "tsblockpool")),
+		blockPool:    celestia.NewBlockPool(0, celestiaCfg, logger.With("tsmodule", "tsblockpool")),
 	}
 	bcR.BaseReactor = *p2p.NewBaseReactor("Reactor", bcR)
 	bcR.SetLogger(logger.With("tsmodule", "tsblocksync"))

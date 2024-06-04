@@ -66,6 +66,7 @@ func initAppConfig() (string, interface{}) {
 		serverconfig.Config
 
 		Celestia *relayer.CelestiaConfig `mapstructure:"celestia"`
+		Tiasync  *tiasync.TiasyncConfig `mapstructure:"tiasync"`
 	}
 
 	// Optionally allow the chain developer to overwrite the SDK's default
@@ -89,9 +90,10 @@ func initAppConfig() (string, interface{}) {
 	customAppConfig := CustomAppConfig{
 		Config:   *srvCfg,
 		Celestia: &relayer.DefaultCelestiaConfig,
+		Tiasync:  &tiasync.DefaultTiasyncConfig,
 	}
 
-	customAppTemplate := serverconfig.DefaultConfigTemplate + relayer.DefaultConfigTemplate
+	customAppTemplate := serverconfig.DefaultConfigTemplate + relayer.DefaultConfigTemplate + tiasync.DefaultConfigTemplate
 
 	return customAppTemplate, customAppConfig
 }

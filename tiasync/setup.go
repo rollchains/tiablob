@@ -84,14 +84,16 @@ func createSwitch(config *cfg.Config,
 	return sw
 }
 
-func createAddrBookAndSetOnSwitch(config *cfg.Config, sw *p2p.Switch,
+func createAddrBookAndSetOnSwitch(config *cfg.Config, tiasyncCfg *TiasyncConfig, sw *p2p.Switch,
 	p2pLogger log.Logger, nodeKey *p2p.NodeKey,
 ) (pex.AddrBook, error) {
-	addrBookFile := strings.ReplaceAll(config.P2P.AddrBookFile(), "addrbook", "tsaddrbook")
+	//addrBookFile := strings.ReplaceAll(config.P2P.AddrBookFile(), "addrbook", "tsaddrbook")
+	addrBookFile := tiasyncCfg.AddrBookFile(config.BaseConfig)
 	addrBook := pex.NewAddrBook(addrBookFile, config.P2P.AddrBookStrict)
 	addrBook.SetLogger(p2pLogger.With("tsbook", addrBookFile))
 
 	// Add ourselves to addrbook to prevent dialing ourselves
+	// We can remove this once we verify that ExternalAddress is empty
 	if config.P2P.ExternalAddress != "" {
 		addr, err := p2p.NewNetAddressString(p2p.IDAddressString(nodeKey.ID(), config.P2P.ExternalAddress))
 		if err != nil {
@@ -101,15 +103,9 @@ func createAddrBookAndSetOnSwitch(config *cfg.Config, sw *p2p.Switch,
 	}
 	//if config.P2P.ListenAddress != "" {
 		//addr, err := p2p.NewNetAddressString(p2p.IDAddressString(nodeKey.ID(), config.P2P.ListenAddress))
-		addr, err := p2p.NewNetAddressString(config.P2P.PersistentPeers)
+		addr, err := p2p.NewNetAddressString(p2p.IDAddressString(nodeKey.ID(), tiasyncCfg.ListenAddress))
 		if err != nil {
-			return nil, fmt.Errorf("p2p.laddr is incorrect: %w", err)
-		}
-		addrBook.AddOurAddress(addr)
-
-		addr, err = p2p.NewNetAddressString(p2p.IDAddressString(nodeKey.ID(), "tcp://0.0.0.0:26656"))
-		if err != nil {
-			return nil, fmt.Errorf("p2p.laddr is incorrect: %w", err)
+			return nil, fmt.Errorf("tiasync.laddr is incorrect: %w", err)
 		}
 		addrBook.AddOurAddress(addr)
 	//}
@@ -191,6 +187,7 @@ func createTransport(
 
 func makeNodeInfo(
 	//config *cfg.Config,
+	tiasyncCfg *TiasyncConfig,
 	nodeKey *p2p.NodeKey,
 	//txIndexer txindex.TxIndexer,
 	genDoc *types.GenesisDoc,
@@ -201,7 +198,6 @@ func makeNodeInfo(
 	//	txIndexerStatus = "off"
 	//}
 	txIndexerStatus := "off"
-	listenAddr := "tcp://0.0.0.0:26656"
 
 	nodeInfo := p2p.DefaultNodeInfo{
 		ProtocolVersion: p2p.NewProtocolVersion(
@@ -239,7 +235,7 @@ func makeNodeInfo(
 	//	lAddr = config.P2P.ListenAddress
 	//}
 
-	nodeInfo.ListenAddr = listenAddr
+	nodeInfo.ListenAddr = tiasyncCfg.ListenAddress
 	//nodeInfo.ListenAddr = lAddr
 
 	err := nodeInfo.Validate()
@@ -394,4 +390,10 @@ func splitAndTrimEmpty(s, sep, cutset string) []string {
 		}
 	}
 	return nonEmptyStrings
+}
+
+// TODO: use all upstream peers as persistent once state sync logic is ready
+func getPersistentPeers(upstreamPeers string, cometNodeKey *p2p.NodeKey, p2pListenAddr string) []string {
+	persistentPeers := splitAndTrimEmpty(upstreamPeers, ",", " ")[0:1]
+	return append(persistentPeers, p2p.IDAddressString(cometNodeKey.ID(), p2pListenAddr))
 }

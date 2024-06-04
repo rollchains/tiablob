@@ -173,7 +173,10 @@ func TestTiasyncStateSync(t *testing.T) {
 				"app-rpc-url":        fmt.Sprintf("http://%s:26657", celestiaAppHostname),
 				"node-rpc-url":       fmt.Sprintf("http://%s:26658", celestiaNodeHostname),
 				"override-namespace": "rc_demo0",
-				"sync-from-celestia": true,
+			},
+			"tiasync": testutil.Toml{
+				"enable": true,
+				"laddr": "tcp://0.0.0.0:26656",
 				"upstream-peers": chains.RollchainChain.Nodes().PeerString(ctx),
 			},
 		},
@@ -188,14 +191,13 @@ func TestTiasyncStateSync(t *testing.T) {
 			},
 			"p2p": testutil.Toml{
 				"laddr": "tcp://127.0.0.1:26777",
-				"persistent_peers": "2b778354788120d5a0e76824ef9aa90247487480@127.0.0.1:26656",
-				//"persistent_peers": "2b778354788120d5a0e76824ef9aa90247487480@rollchain-0-fn-0-TestTiasyncStateSync:26656",
-				"persistent_peers_max_dial_period": "15s",
+				"persistent_peers": "",
+				//"persistent_peers": "2b778354788120d5a0e76824ef9aa90247487480@127.0.0.1:26656",
+				//"persistent_peers_max_dial_period": "15s",
 				"addr_book_strict": false,
 				"allow_duplicate_ip": true,
-				"seed_mode": false,
 				"pex": false,
-				//"unconditional_peer_ids": "2b778354788120d5a0e76824ef9aa90247487480",
+				//"unconditional_peer_ids": "2b778354788120d5a0e76824ef9aa90247487480", // Probably don't need this, we only have 1 connection
 			},
 		},
 	}, 1)
