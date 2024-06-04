@@ -24,6 +24,7 @@ import (
 	//cs "github.com/cometbft/cometbft/consensus"
 
 	//"github.com/rollchains/tiablob/tiasync/blocksync"
+	"github.com/rollchains/tiablob/tiasync/statesync"
 	"github.com/rollchains/tiablob/tiasync/store"
 )
 
@@ -34,7 +35,7 @@ func createPEXReactorAndAddToSwitch(addrBook pex.AddrBook, config *cfg.Config,
 	pexReactor := pex.NewReactor(addrBook,
 		&pex.ReactorConfig{
 			//Seeds:    splitAndTrimEmpty(config.P2P.Seeds, ",", " "),
-			SeedMode: config.P2P.SeedMode,
+			SeedMode: false, // Make this configurable so that only tiasync crawls network, not cometbft
 			// See consensus/reactor.go: blocksToContributeToBecomeGoodPeer 10000
 			// blocks assuming 10s blocks ~ 28 hours.
 			// TODO (melekes): make it dynamic based on the actual block latencies
@@ -54,7 +55,7 @@ func createSwitch(config *cfg.Config,
 	peerFilters []p2p.PeerFilterFunc,
 	//mempoolReactor p2p.Reactor,
 	bcReactor p2p.Reactor,
-	//stateSyncReactor *statesync.Reactor,
+	stateSyncReactor *statesync.Reactor,
 	//consensusReactor *cs.Reactor,
 	//evidenceReactor *evidence.Reactor,
 	nodeInfo p2p.NodeInfo,
@@ -74,7 +75,7 @@ func createSwitch(config *cfg.Config,
 	sw.AddReactor("BLOCKSYNC", bcReactor)
 	//sw.AddReactor("CONSENSUS", consensusReactor)
 	//sw.AddReactor("EVIDENCE", evidenceReactor)
-	//sw.AddReactor("STATESYNC", stateSyncReactor)
+	sw.AddReactor("STATESYNC", stateSyncReactor)
 
 	sw.SetNodeInfo(nodeInfo)
 	sw.SetNodeKey(nodeKey)
@@ -101,6 +102,12 @@ func createAddrBookAndSetOnSwitch(config *cfg.Config, sw *p2p.Switch,
 	//if config.P2P.ListenAddress != "" {
 		//addr, err := p2p.NewNetAddressString(p2p.IDAddressString(nodeKey.ID(), config.P2P.ListenAddress))
 		addr, err := p2p.NewNetAddressString(config.P2P.PersistentPeers)
+		if err != nil {
+			return nil, fmt.Errorf("p2p.laddr is incorrect: %w", err)
+		}
+		addrBook.AddOurAddress(addr)
+
+		addr, err = p2p.NewNetAddressString(p2p.IDAddressString(nodeKey.ID(), "tcp://0.0.0.0:26656"))
 		if err != nil {
 			return nil, fmt.Errorf("p2p.laddr is incorrect: %w", err)
 		}
@@ -194,7 +201,7 @@ func makeNodeInfo(
 	//	txIndexerStatus = "off"
 	//}
 	txIndexerStatus := "off"
-	listenAddr := "tcp://127.0.0.1:26777"
+	listenAddr := "tcp://0.0.0.0:26656"
 
 	nodeInfo := p2p.DefaultNodeInfo{
 		ProtocolVersion: p2p.NewProtocolVersion(
@@ -211,13 +218,13 @@ func makeNodeInfo(
 			//cs.StateChannel, cs.DataChannel, cs.VoteChannel, cs.VoteSetBitsChannel,
 			//mempl.MempoolChannel,
 			//evidence.EvidenceChannel,
-			//statesync.SnapshotChannel, statesync.ChunkChannel,
+			statesync.SnapshotChannel, statesync.ChunkChannel,
 		},
 		Moniker: "tiasync",
 		//Moniker: config.Moniker,
 		Other: p2p.DefaultNodeInfoOther{
 			TxIndex:    txIndexerStatus,
-			RPCAddress: listenAddr,
+			RPCAddress: "tcp://0.0.0.0:26657", // not used? but is validated...
 			//RPCAddress: config.RPC.ListenAddress,
 		},
 	}
@@ -366,4 +373,25 @@ func saveGenesisDoc(db dbm.DB, genDoc *types.GenesisDoc) error {
 		return fmt.Errorf("failed to save genesis doc due to marshaling error: %w", err)
 	}
 	return db.SetSync(genesisDocKey, b)
+}
+
+// splitAndTrimEmpty slices s into all subslices separated by sep and returns a
+// slice of the string s with all leading and trailing Unicode code points
+// contained in cutset removed. If sep is empty, SplitAndTrim splits after each
+// UTF-8 sequence. First part is equivalent to strings.SplitN with a count of
+// -1.  also filter out empty strings, only return non-empty strings.
+func splitAndTrimEmpty(s, sep, cutset string) []string {
+	if s == "" {
+		return []string{}
+	}
+
+	spl := strings.Split(s, sep)
+	nonEmptyStrings := make([]string, 0, len(spl))
+	for i := 0; i < len(spl); i++ {
+		element := strings.Trim(spl[i], cutset)
+		if element != "" {
+			nonEmptyStrings = append(nonEmptyStrings, element)
+		}
+	}
+	return nonEmptyStrings
 }

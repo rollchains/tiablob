@@ -20,6 +20,7 @@ const (
 	FlagQueryInterval       = "celestia.proof-query-interval"
 	FlagMaxFlushSize        = "celestia.max-flush-size"
 	FlagSyncFromCelestia    = "celestia.sync-from-celestia"
+	FlagUpstreamPeers       = "celestia.upstream-peers"
 
 	DefaultConfigTemplate = `
 
@@ -60,6 +61,8 @@ const (
 	max-flush-size = 32
 
 	sync-from-celestia = false
+
+	upstream-peers = ""
 	`
 )
 
@@ -74,6 +77,7 @@ var DefaultCelestiaConfig = CelestiaConfig{
 	ProofQueryInterval: 12 * time.Second,
 	MaxFlushSize:       32,
 	SyncFromCelestia:   false,
+	UpstreamPeers:      "",
 }
 
 // CelestiaConfig defines the configuration for the in-process Celestia relayer.
@@ -112,6 +116,8 @@ type CelestiaConfig struct {
 	MaxFlushSize int `mapstructure:"max-flush-size"`
 
 	SyncFromCelestia bool `mapstructure:"sync-from-celestia"`
+
+	UpstreamPeers string `mapstructure:"upstream-peers"`
 }
 
 func CelestiaConfigFromAppOpts(appOpts servertypes.AppOptions) CelestiaConfig {
@@ -128,5 +134,6 @@ func CelestiaConfigFromAppOpts(appOpts servertypes.AppOptions) CelestiaConfig {
 		ProofQueryInterval:  cast.ToDuration(appOpts.Get(FlagQueryInterval)),
 		MaxFlushSize:        cast.ToInt(appOpts.Get(FlagMaxFlushSize)),
 		SyncFromCelestia:    cast.ToBool(appOpts.Get(FlagSyncFromCelestia)),
+		UpstreamPeers:       cast.ToString(appOpts.Get(FlagUpstreamPeers)),
 	}
 }

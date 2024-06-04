@@ -24,6 +24,7 @@ import (
 
 	"github.com/rollchains/tiablob/tiasync/blocksync"
 	"github.com/rollchains/tiablob/tiasync/store"
+	"github.com/rollchains/tiablob/tiasync/statesync"
 	"github.com/rollchains/tiablob/relayer"
 )
 
@@ -32,6 +33,7 @@ type Tiasync struct {
 
 	// config
 	config        *cfg.Config
+	tiasyncCfg    *relayer.CelestiaConfig
 	genesisDoc    *types.GenesisDoc   // initial validator set
 	privValidator types.PrivValidator // local node's validator key
 
@@ -50,8 +52,8 @@ type Tiasync struct {
 	bcReactor         p2p.Reactor       // for block-syncing
 	//mempoolReactor    p2p.Reactor       // for gossipping transactions
 	//mempool           mempl.Mempool
-	//stateSync         bool                    // whether the node should state sync on startup
-	//stateSyncReactor  *statesync.Reactor      // for hosting and restoring state sync snapshots
+	stateSync         bool                    // whether the node should state sync on startup
+	stateSyncReactor  *statesync.Reactor      // for hosting and restoring state sync snapshots
 	//stateSyncProvider statesync.StateProvider // provides state data for bootstrapping a node
 	stateSyncGenesis  sm.State                // provides the genesis state for state sync
 	//consensusState    *cs.State               // latest consensus state
@@ -116,14 +118,15 @@ func NewTiasync(
 		return genDoc, nil
 		//return types.GenesisDocFromFile(config.GenesisFile())
 	}
-	metricsProvider := func(chainID string) (*p2p.Metrics, *sm.Metrics, *proxy.Metrics, *blocksync.Metrics) {
+	metricsProvider := func(chainID string) (*p2p.Metrics, *sm.Metrics, *proxy.Metrics, *blocksync.Metrics, *statesync.Metrics) {
 		if config.Instrumentation.Prometheus {
 			return p2p.PrometheusMetrics(config.Instrumentation.Namespace, "chain_id", chainID),
 				sm.PrometheusMetrics(config.Instrumentation.Namespace, "chain_id", chainID),
 				proxy.PrometheusMetrics(config.Instrumentation.Namespace, "chain_id", chainID),
-				blocksync.PrometheusMetrics(config.Instrumentation.Namespace, "chain_id", chainID)
+				blocksync.PrometheusMetrics(config.Instrumentation.Namespace, "chain_id", chainID),
+				statesync.PrometheusMetrics(config.Instrumentation.Namespace, "chain_id", chainID)
 		}
-		return p2p.NopMetrics(), sm.NopMetrics(), proxy.NopMetrics(), blocksync.NopMetrics()
+		return p2p.NopMetrics(), sm.NopMetrics(), proxy.NopMetrics(), blocksync.NopMetrics(), statesync.NopMetrics()
 	}
 	//clientCreator := proxy.DefaultClientCreator(config.ProxyApp, config.ABCI, config.DBDir())
 	//nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
@@ -160,7 +163,7 @@ func NewTiasync(
 		return nil, err
 	}
 
-	p2pMetrics, _, _, bsMetrics := metricsProvider(genDoc.ChainID)
+	p2pMetrics, _, _, bsMetrics, ssMetrics := metricsProvider(genDoc.ChainID)
 	
 	// Create the proxyApp and establish connections to the ABCI app (consensus, mempool, query).
 	// proxyApp, err := createAndStartProxyAppConns(clientCreator, logger, abciMetrics)
@@ -195,8 +198,20 @@ func NewTiasync(
 	}*/
 
 	// TODO: replace true below, checking if state sync is running
+	stateSync := config.StateSync.Enable
+	// KEEP if stateSync && LastBlockHeight > 0 {
+	//	stateSync = false
+	//}
 	bcReactor := blocksync.NewReactor(state.Copy(), blockStore, true, bsMetrics, tiasyncCfg, logger)
 	//bcReactor := blocksync.NewReactor(state.Copy(), blockExec, blockStore, true, bsMetrics, offlineStateSyncHeight)
+
+	stateSyncReactor := statesync.NewReactor(
+		*config.StateSync,
+		//proxyApp.Snapshot(),
+		//proxyApp.Query(),
+		ssMetrics,
+	)
+	stateSyncReactor.SetLogger(logger.With("tsmodule", "tsstatesync"))
 
 	nodeInfo, err := makeNodeInfo(nodeKey, genDoc, state)
 	if err != nil {
@@ -211,13 +226,13 @@ func NewTiasync(
 	//	stateSyncReactor, consensusReactor, evidenceReactor, nodeInfo, nodeKey, p2pLogger,
 	//)
 	sw := createSwitch(
-		config, transport, p2pMetrics, peerFilters, bcReactor, nodeInfo, nodeKey, p2pLogger,
+		config, transport, p2pMetrics, peerFilters, bcReactor, stateSyncReactor, nodeInfo, nodeKey, p2pLogger,
 	)
 
-	//err = sw.AddPersistentPeers(splitAndTrimEmpty(config.P2P.PersistentPeers, ",", " "))
-	//if err != nil {
-	//	return nil, fmt.Errorf("could not add peers from persistent_peers field: %w", err)
-	//}
+	err = sw.AddPersistentPeers(splitAndTrimEmpty(tiasyncCfg.UpstreamPeers, ",", " ")[0:1])
+	if err != nil {
+		return nil, fmt.Errorf("could not add peers from persistent_peers field: %w", err)
+	}
 	addrBook, err := createAddrBookAndSetOnSwitch(config, sw, p2pLogger, nodeKey)
 	if err != nil {
 		return nil, fmt.Errorf("could not create addrbook: %w", err)
@@ -227,6 +242,7 @@ func NewTiasync(
 
 	tiasync := &Tiasync{
 		config:        config,
+		tiasyncCfg:    tiasyncCfg,
 		genesisDoc:    genDoc,
 		//privValidator: privValidator,
 
@@ -243,8 +259,8 @@ func NewTiasync(
 		//mempool:          mempool,
 		//consensusState:   consensusState,
 		//consensusReactor: consensusReactor,
-		//stateSyncReactor: stateSyncReactor,
-		//stateSync:        stateSync,
+		stateSyncReactor: stateSyncReactor,
+		stateSync:        stateSync,
 		stateSyncGenesis: state, // Shouldn't be necessary, but need a way to pass the genesis state
 		pexReactor:       pexReactor,
 		//evidencePool:     evidencePool,
@@ -289,7 +305,7 @@ func (t *Tiasync) Start() {
 	//}
 
 	// Start the transport.
-	addr, err := p2p.NewNetAddressString(p2p.IDAddressString(t.nodeKey.ID(), "tcp://127.0.0.1:26777"))
+	addr, err := p2p.NewNetAddressString(p2p.IDAddressString(t.nodeKey.ID(), "tcp://0.0.0.0:26656"))
 	if err != nil {
 		panic(err)
 	}
@@ -306,10 +322,10 @@ func (t *Tiasync) Start() {
 	}
 
 	// Always connect to persistent peers
-	//err = n.sw.DialPeersAsync(splitAndTrimEmpty(n.config.P2P.PersistentPeers, ",", " "))
-	//if err != nil {
-	//	return fmt.Errorf("could not dial peers from persistent_peers field: %w", err)
-	//}
+	err = t.sw.DialPeersAsync(splitAndTrimEmpty(t.tiasyncCfg.UpstreamPeers, ",", " ")[0:1])
+	if err != nil {
+		panic(fmt.Errorf("could not dial peers from persistent_peers field: %w", err))
+	}
 
 	timer := time.NewTimer(time.Second*5)
 	defer timer.Stop()

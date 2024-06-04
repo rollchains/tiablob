@@ -204,7 +204,7 @@ func (bcR *Reactor) AddPeer(peer p2p.Peer) {
 		Message: &bcproto.StatusResponse{
 			Base:  int64(0), 
 			//Base:   bcR.store.Base(),
-			Height: bcR.blockPool.GetHeight()+15,
+			Height: bcR.blockPool.GetHeight()+295,
 			//Height: bcR.store.Height(),
 		},
 	})
@@ -268,7 +268,7 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 		e.Src.TrySend(p2p.Envelope{
 			ChannelID: BlocksyncChannel,
 			Message: &bcproto.StatusResponse{
-				Height: bcR.blockPool.GetHeight()+15,
+				Height: bcR.blockPool.GetHeight()+295,
 				//Height: bcR.store.Height(),
 				Base:   int64(0),
 				//Base:   bcR.store.Base(),
