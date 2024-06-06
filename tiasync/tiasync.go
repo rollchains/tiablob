@@ -123,7 +123,6 @@ func NewTiasync(
 			return nil, fmt.Errorf("error reading GenesisDoc at %s: %w", config.GenesisFile(), err)
 		}
 		return genDoc, nil
-		//return types.GenesisDocFromFile(config.GenesisFile())
 	}
 	metricsProvider := func(chainID string) (*p2p.Metrics, *sm.Metrics, *proxy.Metrics, *blocksync.Metrics, *statesync.Metrics) {
 		if config.Instrumentation.Prometheus {
@@ -135,16 +134,6 @@ func NewTiasync(
 		}
 		return p2p.NopMetrics(), sm.NopMetrics(), proxy.NopMetrics(), blocksync.NopMetrics(), statesync.NopMetrics()
 	}
-	//clientCreator := proxy.DefaultClientCreator(config.ProxyApp, config.ABCI, config.DBDir())
-	//nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
-	//if err != nil {
-	//	return nil, fmt.Errorf("failed to load or gen node key %s: %w", config.NodeKeyFile(), err)
-	//}
-	//nodeKeyJson := "{\"priv_key\":{\"type\":\"tendermint/PrivKeyEd25519\",\"value\":\"O+iKUF7hOstRRkyKUUVsj28o96iIR2nD/xg8vG0KLJDVaQz24rVhdD+kWWUlm+Q/+1feJnR5mUIPcojpIyKLzg==\"}}"
-	//nodeKey := new(p2p.NodeKey)
-	//if err := cmtjson.Unmarshal([]byte(nodeKeyJson), nodeKey); err != nil {
-	//	panic(err)
-	//}
 	
 	nodeKey, err := p2p.LoadOrGenNodeKey(tiasyncCfg.NodeKeyFile(config.BaseConfig))
 	if err != nil {

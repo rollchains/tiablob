@@ -2,6 +2,7 @@ package blocksync
 
 import (
 	"fmt"
+	"math"
 	"reflect"
 	//"time"
 
@@ -207,9 +208,7 @@ func (bcR *Reactor) AddPeer(peer p2p.Peer) {
 			ChannelID: BlocksyncChannel,
 			Message: &bcproto.StatusResponse{
 				Base:  int64(0), 
-				//Base:   bcR.store.Base(),
-				Height: bcR.blockPool.GetHeight()+295,
-				//Height: bcR.store.Height(),
+				Height: math.MaxInt64-1, // Send max to keep int block sync mode, peer won't request >20 blocks at the same time
 			},
 		})
 	}	
@@ -276,10 +275,8 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 			e.Src.TrySend(p2p.Envelope{
 				ChannelID: BlocksyncChannel,
 				Message: &bcproto.StatusResponse{
-					Height: bcR.blockPool.GetHeight()+295,
-					//Height: bcR.store.Height(),
+					Height: math.MaxInt64-1, // Send max to keep int block sync mode, peer won't request >20 blocks at the same time
 					Base:   int64(0),
-					//Base:   bcR.store.Base(),
 				},
 			})
 		}
