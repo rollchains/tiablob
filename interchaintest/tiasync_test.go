@@ -6,13 +6,15 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/math"
+	"github.com/strangelove-ventures/interchaintest/v8"
+	"github.com/strangelove-ventures/interchaintest/v8/ibc"
 	"github.com/strangelove-ventures/interchaintest/v8/testutil"
 	"github.com/stretchr/testify/require"
 
-	"github.com/rollchains/rollchains/interchaintest/setup"
 	"github.com/rollchains/rollchains/interchaintest/api/rollchain"
+	"github.com/rollchains/rollchains/interchaintest/setup"
 )
-
 
 // go test -timeout 10m -v -run TestTiasyncFromGenesis . -count 1
 func TestTiasyncFromGenesis(t *testing.T) {
@@ -35,22 +37,24 @@ func TestTiasyncFromGenesis(t *testing.T) {
 				"app-rpc-url":        fmt.Sprintf("http://%s:26657", celestiaAppHostname),
 				"node-rpc-url":       fmt.Sprintf("http://%s:26658", celestiaNodeHostname),
 				"override-namespace": "rc_demo0",
-				"sync-from-celestia": true,
+			},
+			"tiasync": testutil.Toml{
+				"enable": true,
+				"laddr": "tcp://0.0.0.0:26656",
+				"upstream-peers": chains.RollchainChain.Nodes().PeerString(ctx),
 			},
 		},
 		"config/config.toml": testutil.Toml{
-			"log_level": "debug",
+			//"log_level": "debug",
 			"p2p": testutil.Toml{
-				"laddr": "tcp://127.0.0.1:26656",
-				"persistent_peers": "2b778354788120d5a0e76824ef9aa90247487480@127.0.0.1:26777",
-				"persistent_peers_max_dial_period": "15s",
+				"laddr": "tcp://127.0.0.1:26777",
+				"persistent_peers": "",
 				"addr_book_strict": false,
 				"allow_duplicate_ip": true,
-				//"unconditional_peer_ids": "2b778354788120d5a0e76824ef9aa90247487480",
+				"pex": false,
 			},
 		},
 	}, 1)
-	//require.NoError(t, err)
 	require.Error(t, err) // expected to fail, always catching up
 	fmt.Println("Error:", err)
 
@@ -72,7 +76,7 @@ func TestTiasyncFromGenesis(t *testing.T) {
 	}
 }
 
-// go test -timeout 10m -v -run TestTiasyncResubmission . -count 1
+// go test -timeout 15m -v -run TestTiasyncResubmission . -count 1
 func TestTiasyncResubmission(t *testing.T) {
 	ctx := context.Background()
 	chains := setup.StartCelestiaAndRollchains(t, ctx, 1)
@@ -93,22 +97,24 @@ func TestTiasyncResubmission(t *testing.T) {
 				"app-rpc-url":        fmt.Sprintf("http://%s:26657", celestiaAppHostname),
 				"node-rpc-url":       fmt.Sprintf("http://%s:26658", celestiaNodeHostname),
 				"override-namespace": "rc_demo0",
-				"sync-from-celestia": true,
+			},
+			"tiasync": testutil.Toml{
+				"enable": true,
+				"laddr": "tcp://0.0.0.0:26656",
+				"upstream-peers": chains.RollchainChain.Nodes().PeerString(ctx),
 			},
 		},
 		"config/config.toml": testutil.Toml{
-			"log_level": "debug",
+			//"log_level": "debug",
 			"p2p": testutil.Toml{
-				"laddr": "tcp://127.0.0.1:26656",
-				"persistent_peers": "2b778354788120d5a0e76824ef9aa90247487480@127.0.0.1:26777",
-				"persistent_peers_max_dial_period": "15s",
+				"laddr": "tcp://127.0.0.1:26777",
+				"persistent_peers": "",
 				"addr_book_strict": false,
 				"allow_duplicate_ip": true,
-				//"unconditional_peer_ids": "2b778354788120d5a0e76824ef9aa90247487480",
+				"pex": false,
 			},
 		},
 	}, 1)
-	//require.NoError(t, err)
 	require.Error(t, err) // expected to fail, always catching up
 	fmt.Println("Error:", err)
 
@@ -192,16 +198,12 @@ func TestTiasyncStateSync(t *testing.T) {
 			"p2p": testutil.Toml{
 				"laddr": "tcp://127.0.0.1:26777",
 				"persistent_peers": "",
-				//"persistent_peers": "2b778354788120d5a0e76824ef9aa90247487480@127.0.0.1:26656",
-				//"persistent_peers_max_dial_period": "15s",
 				"addr_book_strict": false,
 				"allow_duplicate_ip": true,
 				"pex": false,
-				//"unconditional_peer_ids": "2b778354788120d5a0e76824ef9aa90247487480", // Probably don't need this, we only have 1 connection
 			},
 		},
 	}, 1)
-	//require.NoError(t, err)
 	require.Error(t, err) // expected to fail, always catching up
 	fmt.Println("Error:", err)
 
@@ -233,4 +235,92 @@ func TestTiasyncStateSync(t *testing.T) {
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "height 150 is not available, lowest height is 201")
 	}
+}
+
+// go test -timeout 10m -v -run TestTiasyncTxPropagation . -count 1
+func TestTiasyncTxPropagation(t *testing.T) {
+	ctx := context.Background()
+	chains := setup.StartCelestiaAndRollchains(t, ctx, 1)
+
+	timeoutCtx, timeoutCtxCancel := context.WithTimeout(ctx, time.Minute)
+	defer timeoutCtxCancel()
+
+	err := testutil.WaitForBlocks(timeoutCtx, 10, chains.RollchainChain)
+	require.NoError(t, err, "chain did not produce blocks")
+
+	// Add a new full node that syncs from celestia
+	celestiaChainID := "celestia-1"
+	celestiaAppHostname := fmt.Sprintf("%s-val-0-%s", celestiaChainID, t.Name())            // celestia-1-val-0-TestPublish
+	celestiaNodeHostname := fmt.Sprintf("%s-celestia-node-0-%s", celestiaChainID, t.Name()) // celestia-1-celestia-node-0-TestPublish
+	err = chains.RollchainChain.AddFullNodes(ctx, testutil.Toml{
+		"config/app.toml": testutil.Toml{
+			"celestia": testutil.Toml{
+				"app-rpc-url":        fmt.Sprintf("http://%s:26657", celestiaAppHostname),
+				"node-rpc-url":       fmt.Sprintf("http://%s:26658", celestiaNodeHostname),
+				"override-namespace": "rc_demo0",
+			},
+			"tiasync": testutil.Toml{
+				"enable": true,
+				"laddr": "tcp://0.0.0.0:26656",
+				"upstream-peers": chains.RollchainChain.Nodes().PeerString(ctx),
+			},
+		},
+		"config/config.toml": testutil.Toml{
+			//"log_level": "debug",
+			"p2p": testutil.Toml{
+				"laddr": "tcp://127.0.0.1:26777",
+				"persistent_peers": "",
+				"addr_book_strict": false,
+				"allow_duplicate_ip": true,
+				"pex": false,
+			},
+		},
+	}, 1)
+	require.Error(t, err) // expected to fail, always catching up
+	fmt.Println("Error:", err)
+
+	// Create new user1 (user2 will send tokens to user1 via full node)
+	fundAmount := math.NewInt(100_000_000)
+	users1 := interchaintest.GetAndFundTestUsers(t, ctx, "user1", fundAmount, chains.RollchainChain)
+	user1 := users1[0]
+
+	// Create user2
+	user2, err := interchaintest.GetAndFundTestUserWithMnemonic(ctx, "user2", "kick raven pave wild outdoor dismiss happy start lunch discover job evil code trim network emerge summer mad army vacant chest birth subject seek", fundAmount, chains.RollchainChain)
+	require.NoError(t, err)
+
+	timeoutCtx, timeoutCtxCancel = context.WithTimeout(ctx, time.Minute*5)
+	defer timeoutCtxCancel()
+
+	previousHeight, err := chains.RollchainChain.Height(ctx)
+	require.NoError(t, err)
+
+	err = testutil.WaitForBlocks(timeoutCtx, 20, chains.RollchainChain)
+	require.NoError(t, err, "chain did not produce blocks after adding fullnode")
+
+	nodes := chains.RollchainChain.Nodes()
+	for _, node := range nodes {
+		latestHeight, err := node.Height(ctx)
+		require.NoError(t, err)
+		t.Log("Node:", node.Name(), "Previous Height:", previousHeight, "Current Height:", latestHeight)
+		require.Greater(t, latestHeight, previousHeight, "a node has not increased height enough")
+	}
+
+	fn := chains.RollchainChain.FullNodes[0]
+	err = fn.RecoverKey(ctx, user2.KeyName(), user2.Mnemonic())
+	require.NoError(t, err)
+	err = fn.BankSend(ctx, user2.KeyName(), ibc.WalletAmount{
+		Address: user1.FormattedAddress(),
+		Denom: chains.RollchainChain.Config().Denom,
+		Amount: math.NewInt(1_000_000),
+	})
+	fmt.Println("Banksend error:", err)
+
+	//err = testutil.WaitForBlocks(timeoutCtx, 20, chains.RollchainChain)
+	//require.NoError(t, err, "chain did not produce blocks after adding fullnode")
+
+	amount, err := chains.RollchainChain.BankQueryBalance(ctx, user2.FormattedAddress(), chains.RollchainChain.Config().Denom)
+	require.NoError(t, err)
+
+	fmt.Println("User 2 balance:", amount)
+
 }

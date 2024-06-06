@@ -25,6 +25,8 @@ import (
 	"github.com/rollchains/tiablob/tiasync/blocksync"
 	"github.com/rollchains/tiablob/tiasync/store"
 	"github.com/rollchains/tiablob/tiasync/statesync"
+	"github.com/rollchains/tiablob/tiasync/mempool"
+	"github.com/rollchains/tiablob/tiasync/consensus"
 	"github.com/rollchains/tiablob/relayer"
 )
 
@@ -53,14 +55,14 @@ type Tiasync struct {
 	stateStore        sm.Store
 	blockStore        *store.BlockStore // store the blockchain to disk
 	bcReactor         p2p.Reactor       // for block-syncing
-	//mempoolReactor    p2p.Reactor       // for gossipping transactions
+	mempoolReactor    p2p.Reactor       // for gossipping transactions
 	//mempool           mempl.Mempool
 	stateSync         bool                    // whether the node should state sync on startup
 	stateSyncReactor  *statesync.Reactor      // for hosting and restoring state sync snapshots
 	//stateSyncProvider statesync.StateProvider // provides state data for bootstrapping a node
 	stateSyncGenesis  sm.State                // provides the genesis state for state sync
 	//consensusState    *cs.State               // latest consensus state
-	//consensusReactor  *cs.Reactor             // for participating in the consensus
+	consensusReactor  *consensus.Reactor             // for participating in the consensus
 	pexReactor        *pex.Reactor            // for exchanging peer addresses
 	//evidencePool      *evidence.Pool          // tracking evidence
 	proxyApp          proxy.AppConns          // connection to the application
@@ -242,8 +244,17 @@ func NewTiasync(
 	//	config, transport, p2pMetrics, peerFilters, mempoolReactor, bcReactor,
 	//	stateSyncReactor, consensusReactor, evidenceReactor, nodeInfo, nodeKey, p2pLogger,
 	//)
+	mempoolReactor := mempool.NewReactor(config.Mempool, cometNodeKey.ID())
+	mempoolLogger := logger.With("tsmodule", "tsmempool")
+	mempoolReactor.SetLogger(mempoolLogger)
+
+	consensusReactor := consensus.NewReactor(cometNodeKey.ID())
+	consensusLogger := logger.With("tsmodule", "tsconsensus")
+	consensusReactor.SetLogger(consensusLogger)
+
 	sw := createSwitch(
-		config, transport, p2pMetrics, peerFilters, bcReactor, stateSyncReactor, nodeInfo, nodeKey, p2pLogger,
+		config, transport, p2pMetrics, peerFilters, mempoolReactor, bcReactor,
+		stateSyncReactor, consensusReactor, nodeInfo, nodeKey, p2pLogger,
 	)
 
 	err = sw.AddPersistentPeers(getPersistentPeers(tiasyncCfg.UpstreamPeers, cometNodeKey, config.P2P.ListenAddress))
@@ -274,10 +285,10 @@ func NewTiasync(
 		stateStore:       stateStore,
 		blockStore:       blockStore,
 		bcReactor:        bcReactor,
-		//mempoolReactor:   mempoolReactor,
+		mempoolReactor:   mempoolReactor,
 		//mempool:          mempool,
 		//consensusState:   consensusState,
-		//consensusReactor: consensusReactor,
+		consensusReactor: consensusReactor,
 		stateSyncReactor: stateSyncReactor,
 		stateSync:        stateSync,
 		stateSyncGenesis: state, // Shouldn't be necessary, but need a way to pass the genesis state

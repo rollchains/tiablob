@@ -26,6 +26,8 @@ import (
 	//"github.com/rollchains/tiablob/tiasync/blocksync"
 	"github.com/rollchains/tiablob/tiasync/statesync"
 	"github.com/rollchains/tiablob/tiasync/store"
+	"github.com/rollchains/tiablob/tiasync/mempool"
+	cs "github.com/rollchains/tiablob/tiasync/consensus"
 )
 
 func createPEXReactorAndAddToSwitch(addrBook pex.AddrBook, config *cfg.Config,
@@ -53,10 +55,10 @@ func createSwitch(config *cfg.Config,
 	transport p2p.Transport,
 	p2pMetrics *p2p.Metrics,
 	peerFilters []p2p.PeerFilterFunc,
-	//mempoolReactor p2p.Reactor,
+	mempoolReactor p2p.Reactor,
 	bcReactor p2p.Reactor,
 	stateSyncReactor *statesync.Reactor,
-	//consensusReactor *cs.Reactor,
+	consensusReactor *cs.Reactor,
 	//evidenceReactor *evidence.Reactor,
 	nodeInfo p2p.NodeInfo,
 	nodeKey *p2p.NodeKey,
@@ -70,10 +72,10 @@ func createSwitch(config *cfg.Config,
 	)
 	sw.SetLogger(p2pLogger)
 	//if config.Mempool.Type != cfg.MempoolTypeNop {
-	//	sw.AddReactor("MEMPOOL", mempoolReactor)
+	sw.AddReactor("MEMPOOL", mempoolReactor)
 	//}
 	sw.AddReactor("BLOCKSYNC", bcReactor)
-	//sw.AddReactor("CONSENSUS", consensusReactor)
+	sw.AddReactor("CONSENSUS", consensusReactor)
 	//sw.AddReactor("EVIDENCE", evidenceReactor)
 	sw.AddReactor("STATESYNC", stateSyncReactor)
 
@@ -211,8 +213,8 @@ func makeNodeInfo(
 		Channels: []byte{
 			bc.BlocksyncChannel,
 			pex.PexChannel,
-			//cs.StateChannel, cs.DataChannel, cs.VoteChannel, cs.VoteSetBitsChannel,
-			//mempl.MempoolChannel,
+			cs.StateChannel,// cs.DataChannel, cs.VoteChannel, cs.VoteSetBitsChannel,
+			mempool.MempoolChannel,
 			//evidence.EvidenceChannel,
 			statesync.SnapshotChannel, statesync.ChunkChannel,
 		},

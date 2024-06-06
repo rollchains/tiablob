@@ -2,6 +2,7 @@ package tiasync
 
 /*
 tiasync is a cometbft p2p proxy.
+It allows a full node to only execute blocks posted to Celestia.
 When enabled, proper configurations are verified and cometbft's only p2p connection is to tiasync.
 Tiasync's peers are the local cometbft instance and if necessary, at least one upstream peer.
 An upstream peer is necessary if either state sync is used or to propagate transactions.
