@@ -14,7 +14,7 @@ import (
 
 	"github.com/rollchains/tiablob/tiasync/store"
 	"github.com/rollchains/tiablob/relayer"
-	"github.com/rollchains/tiablob/tiasync/celestia"
+	"github.com/rollchains/tiablob/tiasync/blocksync/celestia"
 )
 
 const (
@@ -59,13 +59,15 @@ type Reactor struct {
 	store         sm.BlockStore
 	blockSync     bool
 
+	localPeerID p2p.ID
+
 	blockPool *celestia.BlockPool
 
 	metrics *Metrics
 }
 
 // NewReactor returns new reactor instance.
-func NewReactor(state sm.State, store *store.BlockStore,
+func NewReactor(state sm.State, store *store.BlockStore, localPeerID p2p.ID,
 	blockSync bool, metrics *Metrics, celestiaCfg *relayer.CelestiaConfig, logger log.Logger,
 ) *Reactor {
 
@@ -99,6 +101,7 @@ func NewReactor(state sm.State, store *store.BlockStore,
 	bcR := &Reactor{
 		initialState: state,
 		//blockExec:    blockExec,
+		localPeerID:  localPeerID,
 		store:        store,
 		blockSync:    blockSync,
 		metrics:      metrics,
@@ -199,15 +202,17 @@ func (bcR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 
 // AddPeer implements Reactor by sending our state to peer.
 func (bcR *Reactor) AddPeer(peer p2p.Peer) {
-	peer.Send(p2p.Envelope{
-		ChannelID: BlocksyncChannel,
-		Message: &bcproto.StatusResponse{
-			Base:  int64(0), 
-			//Base:   bcR.store.Base(),
-			Height: bcR.blockPool.GetHeight()+295,
-			//Height: bcR.store.Height(),
-		},
-	})
+	if peer.ID() == bcR.localPeerID {
+		peer.Send(p2p.Envelope{
+			ChannelID: BlocksyncChannel,
+			Message: &bcproto.StatusResponse{
+				Base:  int64(0), 
+				//Base:   bcR.store.Base(),
+				Height: bcR.blockPool.GetHeight()+295,
+				//Height: bcR.store.Height(),
+			},
+		})
+	}	
 	// it's OK if send fails. will try later in poolRoutine
 
 	// peer is added to the pool once we receive the first
@@ -261,23 +266,29 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 	switch msg := e.Message.(type) {
 	case *bcproto.BlockRequest:
 		bcR.Logger.Debug("block sync Receive BlockRequest", "height", msg.Height)
-		bcR.respondToPeer(msg, e.Src)
+		if e.Src.ID() == bcR.localPeerID {
+			bcR.respondToPeer(msg, e.Src)
+		}
 	case *bcproto.StatusRequest:
 		bcR.Logger.Debug("block sync Receive StatusRequest")
 		// Send peer our state.
-		e.Src.TrySend(p2p.Envelope{
-			ChannelID: BlocksyncChannel,
-			Message: &bcproto.StatusResponse{
-				Height: bcR.blockPool.GetHeight()+295,
-				//Height: bcR.store.Height(),
-				Base:   int64(0),
-				//Base:   bcR.store.Base(),
-			},
-		})
+		if e.Src.ID() == bcR.localPeerID {
+			e.Src.TrySend(p2p.Envelope{
+				ChannelID: BlocksyncChannel,
+				Message: &bcproto.StatusResponse{
+					Height: bcR.blockPool.GetHeight()+295,
+					//Height: bcR.store.Height(),
+					Base:   int64(0),
+					//Base:   bcR.store.Base(),
+				},
+			})
+		}
 	case *bcproto.StatusResponse:
 		bcR.Logger.Debug("block sync Receive StatusResponse", "height", msg.Height)
 		// TODO: prune block store
+		//if e.Src.ID() == bcR.localPeerID {
 		//_, _, _ := bcR.store.PruneBlocks(msg.Height, bcR.state??)
+		//}
 	default:
 		bcR.Logger.Error(fmt.Sprintf("Unknown message type %v", reflect.TypeOf(msg)))
 	}

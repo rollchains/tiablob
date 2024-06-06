@@ -221,7 +221,7 @@ func NewTiasync(
 	// KEEP if stateSync && LastBlockHeight > 0 {
 	//	stateSync = false
 	//}
-	bcReactor := blocksync.NewReactor(state.Copy(), blockStore, true, bsMetrics, celestiaCfg, logger)
+	bcReactor := blocksync.NewReactor(state.Copy(), blockStore, cometNodeKey.ID(),true, bsMetrics, celestiaCfg, logger)
 	//bcReactor := blocksync.NewReactor(state.Copy(), blockExec, blockStore, true, bsMetrics, offlineStateSyncHeight)
 
 	stateSyncReactor := statesync.NewReactor(
