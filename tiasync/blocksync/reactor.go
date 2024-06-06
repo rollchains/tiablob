@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math"
 	"reflect"
-	//"time"
+	"time"
 
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
@@ -69,7 +69,7 @@ type Reactor struct {
 
 // NewReactor returns new reactor instance.
 func NewReactor(state sm.State, store *store.BlockStore, localPeerID p2p.ID,
-	blockSync bool, metrics *Metrics, celestiaCfg *relayer.CelestiaConfig, logger log.Logger,
+	blockSync bool, metrics *Metrics, celestiaCfg *relayer.CelestiaConfig, logger log.Logger, genTime time.Time,
 ) *Reactor {
 
 	// storeHeight := store.Height()
@@ -106,7 +106,7 @@ func NewReactor(state sm.State, store *store.BlockStore, localPeerID p2p.ID,
 		store:        store,
 		blockSync:    blockSync,
 		metrics:      metrics,
-		blockPool:    celestia.NewBlockPool(0, celestiaCfg, logger.With("tsmodule", "tsblockpool")),
+		blockPool:    celestia.NewBlockPool(0, celestiaCfg, logger.With("tsmodule", "tsblockpool"), genTime),
 	}
 	bcR.BaseReactor = *p2p.NewBaseReactor("Reactor", bcR)
 	bcR.SetLogger(logger.With("tsmodule", "tsblocksync"))

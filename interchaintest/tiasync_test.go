@@ -245,7 +245,7 @@ func TestTiasyncTxPropagation(t *testing.T) {
 	timeoutCtx, timeoutCtxCancel := context.WithTimeout(ctx, time.Minute)
 	defer timeoutCtxCancel()
 
-	err := testutil.WaitForBlocks(timeoutCtx, 10, chains.RollchainChain)
+	err := testutil.WaitForBlocks(timeoutCtx, 15, chains.RollchainChain)
 	require.NoError(t, err, "chain did not produce blocks")
 
 	// Add a new full node that syncs from celestia

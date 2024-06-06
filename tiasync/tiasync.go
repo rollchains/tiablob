@@ -170,7 +170,6 @@ func NewTiasync(
 	if err != nil {
 		return nil, err
 	}
-
 	p2pMetrics, _, _, bsMetrics, ssMetrics := metricsProvider(genDoc.ChainID)
 	
 	// Create the proxyApp and establish connections to the ABCI app (consensus, mempool, query).
@@ -210,7 +209,7 @@ func NewTiasync(
 	// KEEP if stateSync && LastBlockHeight > 0 {
 	//	stateSync = false
 	//}
-	bcReactor := blocksync.NewReactor(state.Copy(), blockStore, cometNodeKey.ID(),true, bsMetrics, celestiaCfg, logger)
+	bcReactor := blocksync.NewReactor(state.Copy(), blockStore, cometNodeKey.ID(),true, bsMetrics, celestiaCfg, logger, genDoc.GenesisTime)
 	//bcReactor := blocksync.NewReactor(state.Copy(), blockExec, blockStore, true, bsMetrics, offlineStateSyncHeight)
 
 	stateSyncReactor := statesync.NewReactor(

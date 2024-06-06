@@ -35,7 +35,7 @@ type BlockPool struct {
 	mtx cmtsync.Mutex
 }
 
-func NewBlockPool(celestiaHeight int64, celestiaCfg *relayer.CelestiaConfig, logger log.Logger) *BlockPool {
+func NewBlockPool(celestiaHeight int64, celestiaCfg *relayer.CelestiaConfig, logger log.Logger, genTime time.Time) *BlockPool {
 	celestiaProvider, err := NewProvider(celestiaCfg.AppRpcURL, celestiaCfg.AppRpcTimeout)
 	if err != nil {
 		panic(err)
@@ -44,6 +44,15 @@ func NewBlockPool(celestiaHeight int64, celestiaCfg *relayer.CelestiaConfig, log
 	//if cfg.OverrideNamespace != "" {
 		celestiaNamespace := appns.MustNewV0([]byte(celestiaCfg.OverrideNamespace))
 	//}
+
+	if celestiaHeight == 0 {
+		celestiaHeight, err = celestiaProvider.GetStartingCelestiaHeight(genTime)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	logger.Debug("Starting celestia querying", "height", celestiaHeight)
 
 	return &BlockPool{
 		celestiaHeight: celestiaHeight,
