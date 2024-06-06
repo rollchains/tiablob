@@ -25,8 +25,7 @@ func NewProvider(rpcURL string, timeout time.Duration) (*CosmosProvider, error) 
 }
 
 // Get that starting celestia height to query
-func (cp *CosmosProvider) GetStartingCelestiaHeight(genTime time.Time) (int64, error) {
-	ctx := context.Background()
+func (cp *CosmosProvider) GetStartingCelestiaHeight(ctx context.Context, genTime time.Time) (int64, error) {
 	latestCelestiaHeight, err := cp.QueryLatestHeight(ctx)
 	if err != nil {
 		return 0, err

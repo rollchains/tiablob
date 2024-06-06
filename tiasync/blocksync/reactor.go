@@ -15,7 +15,7 @@ import (
 
 	"github.com/rollchains/tiablob/tiasync/store"
 	"github.com/rollchains/tiablob/relayer"
-	"github.com/rollchains/tiablob/tiasync/blocksync/celestia"
+	"github.com/rollchains/tiablob/tiasync/blocksync/blockpool"
 )
 
 const (
@@ -28,10 +28,6 @@ const (
 	// within this much of the system time.
 	// stopSyncingDurationMinutes = 10
 
-	// ask for best height every 10s
-	statusUpdateIntervalSeconds = 10
-	// check if we should switch to consensus reactor
-	switchToConsensusIntervalSeconds = 1
 )
 
 type consensusReactor interface {
@@ -60,9 +56,12 @@ type Reactor struct {
 	store         sm.BlockStore
 	blockSync     bool
 
+	// Have we started querying celestia?
+	queryCelestia bool
+
 	localPeerID p2p.ID
 
-	blockPool *celestia.BlockPool
+	blockPool *blockpool.BlockPool
 
 	metrics *Metrics
 }
@@ -99,18 +98,22 @@ func NewReactor(state sm.State, store *store.BlockStore, localPeerID p2p.ID,
 	// 	startHeight = state.InitialHeight
 	// }
 
+
+	// TODO: get celestia height from block store
+	celestiaHeight := int64(0)
+
 	bcR := &Reactor{
 		initialState: state,
 		//blockExec:    blockExec,
 		localPeerID:  localPeerID,
 		store:        store,
 		blockSync:    blockSync,
+		queryCelestia: false,
 		metrics:      metrics,
-		blockPool:    celestia.NewBlockPool(0, celestiaCfg, logger.With("tsmodule", "tsblockpool"), genTime),
+		blockPool:    blockpool.NewBlockPool(celestiaHeight, celestiaCfg, logger.With("tsmodule", "tsblockpool"), genTime),
 	}
 	bcR.BaseReactor = *p2p.NewBaseReactor("Reactor", bcR)
 	bcR.SetLogger(logger.With("tsmodule", "tsblocksync"))
-	go bcR.blockPool.Start()
 	/*go func() {
 		broadcastTicker := time.NewTimer(time.Second * 15)
 		defer broadcastTicker.Stop()
@@ -266,6 +269,13 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 	case *bcproto.BlockRequest:
 		bcR.Logger.Debug("block sync Receive BlockRequest", "height", msg.Height)
 		if e.Src.ID() == bcR.localPeerID {
+			if !bcR.queryCelestia {
+				// At this point, we start querying celestia. We don't start when the reactor is created because of state sync.
+				// We know our local node has entered block sync,
+				// and if we state sync'd, we will have our celestia da light client state with a latest height to start querying from.
+				bcR.queryCelestia = true
+				go bcR.blockPool.Start()
+			}
 			bcR.respondToPeer(msg, e.Src)
 		}
 	case *bcproto.StatusRequest:

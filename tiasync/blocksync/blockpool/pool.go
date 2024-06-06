@@ -1,4 +1,4 @@
-package celestia
+package blockpool
 
 import (
 	"context"
@@ -15,6 +15,8 @@ import (
 	"github.com/rollchains/tiablob/celestia-node/share"
 	cn "github.com/rollchains/tiablob/relayer/celestia-node"
 	"github.com/rollchains/tiablob/relayer"
+	"github.com/rollchains/tiablob/tiasync/blocksync/blockpool/celestia"
+	"github.com/rollchains/tiablob/tiasync/blocksync/blockpool/local"
 )
 
 type BlockPool struct {
@@ -28,7 +30,9 @@ type BlockPool struct {
 	celestiaChainID              string
 	celestiaNamespace            appns.Namespace
 
-	celestiaProvider *CosmosProvider
+	celestiaProvider *celestia.CosmosProvider
+	localProvider    *local.CosmosProvider
+	genTime time.Time
 
 	blockCache map[int64]*protoblocktypes.Block
 
@@ -36,7 +40,12 @@ type BlockPool struct {
 }
 
 func NewBlockPool(celestiaHeight int64, celestiaCfg *relayer.CelestiaConfig, logger log.Logger, genTime time.Time) *BlockPool {
-	celestiaProvider, err := NewProvider(celestiaCfg.AppRpcURL, celestiaCfg.AppRpcTimeout)
+	celestiaProvider, err := celestia.NewProvider(celestiaCfg.AppRpcURL, celestiaCfg.AppRpcTimeout)
+	if err != nil {
+		panic(err)
+	}
+
+	localProvider, err := local.NewProvider()
 	if err != nil {
 		panic(err)
 	}
@@ -45,20 +54,13 @@ func NewBlockPool(celestiaHeight int64, celestiaCfg *relayer.CelestiaConfig, log
 		celestiaNamespace := appns.MustNewV0([]byte(celestiaCfg.OverrideNamespace))
 	//}
 
-	if celestiaHeight == 0 {
-		celestiaHeight, err = celestiaProvider.GetStartingCelestiaHeight(genTime)
-		if err != nil {
-			panic(err)
-		}
-	}
-
-	logger.Debug("Starting celestia querying", "height", celestiaHeight)
-
 	return &BlockPool{
 		celestiaHeight: celestiaHeight,
 		logger: logger,
 		//rollchainHeight: rollchainHeight,
 		celestiaProvider: celestiaProvider,
+		localProvider: localProvider,
+		genTime: genTime,
 
 		nodeRpcUrl:        celestiaCfg.NodeRpcURL,
 		nodeAuthToken:     celestiaCfg.NodeAuthToken,
@@ -72,6 +74,30 @@ func NewBlockPool(celestiaHeight int64, celestiaCfg *relayer.CelestiaConfig, log
 func (bp *BlockPool) Start() {
 	bp.logger.Debug("Block Pool Start()")
 	ctx := context.Background()
+
+	// first query for a celestia DA light client, use that height
+	if bp.celestiaHeight == 0 {
+		clientState, err := bp.localProvider.QueryCelestiaClientState(ctx)
+		if err != nil {
+			panic(err)
+		} else {
+			if clientState.LatestHeight.RevisionHeight > 0 {
+				bp.celestiaHeight = int64(clientState.LatestHeight.RevisionHeight)
+			}
+		}
+		bp.logger.Debug("Client state latest height: ", "height", clientState.LatestHeight.RevisionHeight)
+	}
+
+	// if still 0, get an estimated start height using genesis time
+	if bp.celestiaHeight == 0 {
+		celestiaHeight, err := bp.celestiaProvider.GetStartingCelestiaHeight(ctx, bp.genTime)
+		if err != nil {
+			panic(err)
+		}
+		bp.celestiaHeight = celestiaHeight
+	}
+
+	bp.logger.Debug("Starting to query celestia at height", "height", bp.celestiaHeight)
 
 	timer := time.NewTimer(10 * time.Second)
 	defer timer.Stop()

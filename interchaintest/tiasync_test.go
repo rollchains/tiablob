@@ -145,7 +145,7 @@ func TestTiasyncResubmission(t *testing.T) {
 
 // TestStateSync produces >210 blocks (2 snapshots), gets trusted height/hash for fullnode, starts/syncs fullnode with statesync
 // verifies all nodes are producing blocks and the state sync'd fullnode does not have blocks earlier than the snapshot height
-// go test -timeout 20m -v -run TestStateSync . -count 1
+// go test -timeout 20m -v -run TestTiasyncStateSync . -count 1
 func TestTiasyncStateSync(t *testing.T) {
 	ctx := context.Background()
 	chains := setup.StartCelestiaAndRollchains(t, ctx, 1)
