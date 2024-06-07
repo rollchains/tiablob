@@ -22,7 +22,7 @@ const (
 	// BlocksyncChannel is a channel for blocks and status updates (`BlockStore` height)
 	BlocksyncChannel = byte(0x40)
 
-	trySyncIntervalMS = 10
+	//trySyncIntervalMS = 10
 
 	// stop syncing when last block's time is
 	// within this much of the system time.
@@ -30,34 +30,14 @@ const (
 
 )
 
-type consensusReactor interface {
-	// for when we switch from blocksync reactor and block sync to
-	// the consensus machine
-	SwitchToConsensus(state sm.State, skipWAL bool)
-}
-
-type peerError struct {
-	err    error
-	peerID p2p.ID
-}
-
-func (e peerError) Error() string {
-	return fmt.Sprintf("error with peer %v: %s", e.peerID, e.err.Error())
-}
-
 // Reactor handles long-term catchup syncing.
 type Reactor struct {
 	p2p.BaseReactor
 
-	// immutable
-	initialState sm.State
-
-	//blockExec     *sm.BlockExecutor
 	store         sm.BlockStore
-	blockSync     bool
 
 	// Have we started querying celestia?
-	queryCelestia bool
+	localPeerInBlockSync bool
 
 	localPeerID p2p.ID
 
@@ -67,53 +47,20 @@ type Reactor struct {
 }
 
 // NewReactor returns new reactor instance.
-func NewReactor(state sm.State, store *store.BlockStore, localPeerID p2p.ID,
-	blockSync bool, metrics *Metrics, celestiaCfg *relayer.CelestiaConfig, logger log.Logger, genTime time.Time,
+func NewReactor(store *store.BlockStore, localPeerID p2p.ID,
+	metrics *Metrics, celestiaCfg *relayer.CelestiaConfig, genTime time.Time,
 ) *Reactor {
-
-	// storeHeight := store.Height()
-	// if storeHeight == 0 {
-	// 	// If state sync was performed offline and the stores were bootstrapped to height H
-	// 	// the state store's lastHeight will be H while blockstore's Height and Base are still 0
-	// 	// 1. This scenario should not lead to a panic in this case, which is indicated by
-	// 	// having a OfflineStateSyncHeight > 0
-	// 	// 2. We need to instruct the blocksync reactor to start fetching blocks from H+1
-	// 	// instead of 0.
-	// 	storeHeight = offlineStateSyncHeight
-	// }
-	// if state.LastBlockHeight != storeHeight {
-	// 	panic(fmt.Sprintf("state (%v) and store (%v) height mismatch, stores were left in an inconsistent state", state.LastBlockHeight,
-	// 		storeHeight))
-	// }
-
-	// // It's okay to block since sendRequest is called from a separate goroutine
-	// // (bpRequester#requestRoutine; 1 per each peer).
-	// //requestsCh := make(chan BlockRequest)
-
-	// //const capacity = 1000                      // must be bigger than peers count
-	// //errorsCh := make(chan peerError, capacity) // so we don't block in #Receive#pool.AddBlock
-
-	// startHeight := storeHeight + 1
-	// if startHeight == 1 {
-	// 	startHeight = state.InitialHeight
-	// }
-
-
 	// TODO: get celestia height from block store
 	celestiaHeight := int64(0)
 
 	bcR := &Reactor{
-		initialState: state,
-		//blockExec:    blockExec,
 		localPeerID:  localPeerID,
 		store:        store,
-		blockSync:    blockSync,
-		queryCelestia: false,
+		localPeerInBlockSync: false,
 		metrics:      metrics,
-		blockPool:    blockpool.NewBlockPool(celestiaHeight, celestiaCfg, logger.With("tsmodule", "tsblockpool"), genTime),
+		blockPool:    blockpool.NewBlockPool(celestiaHeight, celestiaCfg, genTime),
 	}
 	bcR.BaseReactor = *p2p.NewBaseReactor("Reactor", bcR)
-	bcR.SetLogger(logger.With("tsmodule", "tsblocksync"))
 	/*go func() {
 		broadcastTicker := time.NewTimer(time.Second * 15)
 		defer broadcastTicker.Stop()
@@ -134,61 +81,16 @@ func NewReactor(state sm.State, store *store.BlockStore, localPeerID p2p.ID,
 // SetLogger implements service.Service by setting the logger on reactor and pool.
 func (bcR *Reactor) SetLogger(l log.Logger) {
 	bcR.BaseService.Logger = l
-	//bcR.pool.Logger = l
+	bcR.blockPool.SetLogger(l)
 }
 
 // OnStart implements service.Service.
 func (bcR *Reactor) OnStart() error {
-	bcR.Logger.Debug("block sync OnStart()")
-	// TODO: start get blocks from celestia
-	if bcR.blockSync {
-		// err := bcR.pool.Start()
-		// if err != nil {
-		// 	return err
-		// }
-		// bcR.poolRoutineWg.Add(1)
-		// go func() {
-		// 	defer bcR.poolRoutineWg.Done()
-		// 	bcR.poolRoutine(false)
-		// }()
-	}
-	return nil
-}
-
-// SwitchToBlockSync is called by the state sync reactor when switching to block sync.
-func (bcR *Reactor) SwitchToBlockSync(state sm.State) error {
-	bcR.Logger.Debug("block sync SwitchToBlockSync()")
-	bcR.blockSync = true
-	bcR.initialState = state
-
-	//go bcR.blockPool.Start()
-	// TODO: start getting blocks from celestia
-
-	// bcR.pool.height = state.LastBlockHeight + 1
-	// err := bcR.pool.Start()
-	// if err != nil {
-	// 	return err
-	// }
-	// bcR.poolRoutineWg.Add(1)
-	// go func() {
-	// 	defer bcR.poolRoutineWg.Done()
-	// 	bcR.poolRoutine(true)
-	// }()
 	return nil
 }
 
 // OnStop implements service.Service.
-func (bcR *Reactor) OnStop() {
-	bcR.Logger.Debug("block sync OnStop()")
-	if bcR.blockSync {
-		// TODO: stop getting blocks from celestia
-
-		// if err := bcR.pool.Stop(); err != nil {
-		// 	bcR.Logger.Error("Error stopping pool", "err", err)
-		// }
-		// bcR.poolRoutineWg.Wait()
-	}
-}
+func (bcR *Reactor) OnStop() {}
 
 // GetChannels implements Reactor
 func (bcR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
@@ -222,9 +124,7 @@ func (bcR *Reactor) AddPeer(peer p2p.Peer) {
 }
 
 // RemovePeer implements Reactor by removing peer from the pool.
-func (bcR *Reactor) RemovePeer(peer p2p.Peer, _ interface{}) {
-	//bcR.pool.RemovePeer(peer.ID())
-}
+func (bcR *Reactor) RemovePeer(peer p2p.Peer, _ interface{}) {}
 
 // respondToPeer loads a block and sends it to the requesting peer,
 // if we have it. Otherwise, we'll respond saying we don't have it.
@@ -269,11 +169,11 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 	case *bcproto.BlockRequest:
 		bcR.Logger.Debug("block sync Receive BlockRequest", "height", msg.Height)
 		if e.Src.ID() == bcR.localPeerID {
-			if !bcR.queryCelestia {
+			if !bcR.localPeerInBlockSync{
 				// At this point, we start querying celestia. We don't start when the reactor is created because of state sync.
 				// We know our local node has entered block sync,
 				// and if we state sync'd, we will have our celestia da light client state with a latest height to start querying from.
-				bcR.queryCelestia = true
+				bcR.localPeerInBlockSync = true
 				go bcR.blockPool.Start()
 			}
 			bcR.respondToPeer(msg, e.Src)

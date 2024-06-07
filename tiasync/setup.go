@@ -14,7 +14,6 @@ import (
 	dbm "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/types"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
-	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/evidence"
 	"github.com/cometbft/cometbft/p2p"
@@ -187,6 +186,8 @@ func createTransport(
 	return transport, peerFilters
 }
 
+// TODO: we only need state for the p2p protocol version. This is being populated from genDoc, what makes those values change?
+// Can we get that state another way? i.e. rpc?
 func makeNodeInfo(
 	//config *cfg.Config,
 	tiasyncCfg *TiasyncConfig,
@@ -195,10 +196,6 @@ func makeNodeInfo(
 	genDoc *types.GenesisDoc,
 	state sm.State,
 ) (p2p.DefaultNodeInfo, error) {
-	//txIndexerStatus := "on"
-	//if _, ok := txIndexer.(*null.TxIndex); ok {
-	//	txIndexerStatus = "off"
-	//}
 	txIndexerStatus := "off"
 
 	nodeInfo := p2p.DefaultNodeInfo{
@@ -242,16 +239,6 @@ func makeNodeInfo(
 
 	err := nodeInfo.Validate()
 	return nodeInfo, err
-}
-
-
-func createAndStartProxyAppConns(clientCreator proxy.ClientCreator, logger log.Logger, metrics *proxy.Metrics) (proxy.AppConns, error) {
-	proxyApp := proxy.NewAppConns(clientCreator, metrics)
-	proxyApp.SetLogger(logger.With("tsmodule", "tsproxy"))
-	//if err := proxyApp.Start(); err != nil {
-	//	return nil, fmt.Errorf("error starting proxy app connections: %v", err)
-	//}
-	return proxyApp, nil
 }
 
 func createEvidenceReactor(config *cfg.Config, dbProvider cfg.DBProvider,

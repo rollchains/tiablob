@@ -23,8 +23,6 @@ type BlockPool struct {
 	celestiaHeight int64
 	logger log.Logger
 
-	//rollchainHeight int64
-
 	nodeRpcUrl string
 	nodeAuthToken string
 	celestiaChainID              string
@@ -39,7 +37,7 @@ type BlockPool struct {
 	mtx cmtsync.Mutex
 }
 
-func NewBlockPool(celestiaHeight int64, celestiaCfg *relayer.CelestiaConfig, logger log.Logger, genTime time.Time) *BlockPool {
+func NewBlockPool(celestiaHeight int64, celestiaCfg *relayer.CelestiaConfig, genTime time.Time) *BlockPool {
 	celestiaProvider, err := celestia.NewProvider(celestiaCfg.AppRpcURL, celestiaCfg.AppRpcTimeout)
 	if err != nil {
 		panic(err)
@@ -56,8 +54,6 @@ func NewBlockPool(celestiaHeight int64, celestiaCfg *relayer.CelestiaConfig, log
 
 	return &BlockPool{
 		celestiaHeight: celestiaHeight,
-		logger: logger,
-		//rollchainHeight: rollchainHeight,
 		celestiaProvider: celestiaProvider,
 		localProvider: localProvider,
 		genTime: genTime,
@@ -69,6 +65,10 @@ func NewBlockPool(celestiaHeight int64, celestiaCfg *relayer.CelestiaConfig, log
 		
 		blockCache: make(map[int64]*protoblocktypes.Block),
 	}
+}
+
+func (bp *BlockPool) SetLogger(l log.Logger) {
+	bp.logger = l
 }
 
 func (bp *BlockPool) Start() {
