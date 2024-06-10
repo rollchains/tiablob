@@ -122,11 +122,6 @@ func (bs *BlockStore) LoadBlock(height int64) *cmtproto.Block {
 		panic(fmt.Sprintf("Error reading block: %v", err))
 	}
 
-	// block, err := types.BlockFromProto(pbb)
-	// if err != nil {
-	// 	panic(fmt.Errorf("error from proto block: %w", err))
-	// }
-
 	return pbb
 }
 
@@ -143,15 +138,6 @@ func (bs *BlockStore) LoadBlockPart(height int64, index int) []byte {
 	if len(bz) == 0 {
 		return nil
 	}
-
-	// err = proto.Unmarshal(bz, pbpart)
-	// if err != nil {
-	// 	panic(fmt.Errorf("unmarshal to cmtproto.Part failed: %w", err))
-	// }
-	// part, err := types.PartFromProto(pbpart)
-	// if err != nil {
-	// 	panic(fmt.Sprintf("Error reading block part: %v", err))
-	// }
 
 	return bz
 }
@@ -270,13 +256,21 @@ func (bs *BlockStore) SaveBlock(celestiaHeight int64, height int64, block []byte
 
 	bs.mtx.Lock()
 	defer bs.mtx.Unlock()
-	// if previous height + 1 == height, increment
+	
 	if bs.height + 1 == height {
 		bs.height = height
+		nextHeight := height + 1
+		hasNextBlock, _ := bs.db.Has(calcBlockMetaKey(nextHeight))
+		for ; hasNextBlock ; {
+			bs.height = nextHeight
+			nextHeight++
+			hasNextBlock, _ = bs.db.Has(calcBlockMetaKey(nextHeight)) 
+		}
 	}
-	bs.lastCelestiaHeightQueried = celestiaHeight
 
-	// TODO: get next height to see if we need to increment again
+	if celestiaHeight > bs.lastCelestiaHeightQueried {
+		bs.lastCelestiaHeightQueried = celestiaHeight
+	}
 
 	// Save new BlockStoreState descriptor. This also flushes the database.
 	err := bs.saveStateAndWriteDB(batch, "failed to save block")
@@ -347,16 +341,6 @@ func (bs *BlockStore) saveStateAndWriteDB(batch dbm.Batch, errMsg string) error 
 	return nil
 }
 
-// SaveSeenCommit saves a seen commit, used by e.g. the state sync reactor when bootstrapping node.
-// func (bs *BlockStore) SaveSeenCommit(height int64, seenCommit *types.Commit) error {
-// 	pbc := seenCommit.ToProto()
-// 	seenCommitBytes, err := proto.Marshal(pbc)
-// 	if err != nil {
-// 		return fmt.Errorf("unable to marshal commit: %w", err)
-// 	}
-// 	return bs.db.Set(calcSeenCommitKey(height), seenCommitBytes)
-// }
-
 func (bs *BlockStore) Close() error {
 	return bs.db.Close()
 }
@@ -426,13 +410,4 @@ func LoadBlockStoreState(db dbm.DB) BlockStoreState {
 	}
 
 	return bsj
-}
-
-// mustEncode proto encodes a proto.message and panics if fails
-func mustEncode(pb proto.Message) []byte {
-	bz, err := proto.Marshal(pb)
-	if err != nil {
-		panic(fmt.Errorf("unable to marshal: %w", err))
-	}
-	return bz
 }
