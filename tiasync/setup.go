@@ -15,7 +15,7 @@ import (
 	"github.com/cometbft/cometbft/types"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/evidence"
+	//"github.com/cometbft/cometbft/evidence"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/p2p/pex"
 	"github.com/cometbft/cometbft/version"
@@ -241,22 +241,22 @@ func makeNodeInfo(
 	return nodeInfo, err
 }
 
-func createEvidenceReactor(config *cfg.Config, dbProvider cfg.DBProvider,
-	stateStore sm.Store, blockStore *store.BlockStore, logger log.Logger,
-) (*evidence.Reactor, *evidence.Pool, error) {
-	evidenceDB, err := dbProvider(&cfg.DBContext{ID: "tsevidence", Config: config})
-	if err != nil {
-		return nil, nil, err
-	}
-	evidenceLogger := logger.With("tsmodule", "tsevidence")
-	evidencePool, err := evidence.NewPool(evidenceDB, stateStore, blockStore)
-	if err != nil {
-		return nil, nil, err
-	}
-	evidenceReactor := evidence.NewReactor(evidencePool)
-	evidenceReactor.SetLogger(evidenceLogger)
-	return evidenceReactor, evidencePool, nil
-}
+// func createEvidenceReactor(config *cfg.Config, dbProvider cfg.DBProvider,
+// 	stateStore sm.Store, blockStore *store.BlockStore, logger log.Logger,
+// ) (*evidence.Reactor, *evidence.Pool, error) {
+// 	evidenceDB, err := dbProvider(&cfg.DBContext{ID: "tsevidence", Config: config})
+// 	if err != nil {
+// 		return nil, nil, err
+// 	}
+// 	evidenceLogger := logger.With("tsmodule", "tsevidence")
+// 	evidencePool, err := evidence.NewPool(evidenceDB, stateStore, blockStore)
+// 	if err != nil {
+// 		return nil, nil, err
+// 	}
+// 	evidenceReactor := evidence.NewReactor(evidencePool)
+// 	evidenceReactor.SetLogger(evidenceLogger)
+// 	return evidenceReactor, evidencePool, nil
+// }
 
 // MetricsProvider returns a consensus, p2p and mempool Metrics.
 //type MetricsProvider func(chainID string) (*p2p.Metrics, *sm.Metrics, *proxy.Metrics, *blocksync.Metrics)

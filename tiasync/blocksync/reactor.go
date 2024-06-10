@@ -9,13 +9,13 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
 	bcproto "github.com/cometbft/cometbft/proto/tendermint/blocksync"
-	sm "github.com/cometbft/cometbft/state"
+	//sm "github.com/cometbft/cometbft/state"
 	//"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 
 	"github.com/rollchains/tiablob/tiasync/store"
 	"github.com/rollchains/tiablob/relayer"
-	"github.com/rollchains/tiablob/tiasync/blocksync/blockpool"
+	"github.com/rollchains/tiablob/tiasync/blocksync/blockprovider"
 )
 
 const (
@@ -34,14 +34,14 @@ const (
 type Reactor struct {
 	p2p.BaseReactor
 
-	store         sm.BlockStore
+	store         *store.BlockStore
 
 	// Have we started querying celestia?
 	localPeerInBlockSync bool
 
 	localPeerID p2p.ID
 
-	blockPool *blockpool.BlockPool
+	blockProvider *blockprovider.BlockProvider
 
 	metrics *Metrics
 }
@@ -58,7 +58,7 @@ func NewReactor(store *store.BlockStore, localPeerID p2p.ID,
 		store:        store,
 		localPeerInBlockSync: false,
 		metrics:      metrics,
-		blockPool:    blockpool.NewBlockPool(celestiaHeight, celestiaCfg, genTime),
+		blockProvider:    blockprovider.NewBlockProvider(store, celestiaHeight, celestiaCfg, genTime),
 	}
 	bcR.BaseReactor = *p2p.NewBaseReactor("Reactor", bcR)
 	/*go func() {
@@ -81,7 +81,7 @@ func NewReactor(store *store.BlockStore, localPeerID p2p.ID,
 // SetLogger implements service.Service by setting the logger on reactor and pool.
 func (bcR *Reactor) SetLogger(l log.Logger) {
 	bcR.BaseService.Logger = l
-	bcR.blockPool.SetLogger(l)
+	bcR.blockProvider.SetLogger(l)
 }
 
 // OnStart implements service.Service.
@@ -130,7 +130,7 @@ func (bcR *Reactor) RemovePeer(peer p2p.Peer, _ interface{}) {}
 // if we have it. Otherwise, we'll respond saying we don't have it.
 func (bcR *Reactor) respondToPeer(msg *bcproto.BlockRequest, src p2p.Peer) (queued bool) {
 	//block := bcR.store.LoadBlock(msg.Height)
-	block := bcR.blockPool.GetBlock(msg.Height)
+	block := bcR.blockProvider.GetBlock(msg.Height)
 	if block == nil {
 		bcR.Logger.Info("Peer asking for a block we don't have", "src", src, "height", msg.Height)
 		return src.TrySend(p2p.Envelope{
@@ -174,7 +174,7 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 				// We know our local node has entered block sync,
 				// and if we state sync'd, we will have our celestia da light client state with a latest height to start querying from.
 				bcR.localPeerInBlockSync = true
-				go bcR.blockPool.Start()
+				go bcR.blockProvider.Start()
 			}
 			bcR.respondToPeer(msg, e.Src)
 		}

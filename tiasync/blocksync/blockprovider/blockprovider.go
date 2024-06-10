@@ -1,4 +1,4 @@
-package blockpool
+package blockprovider
 
 import (
 	"context"
@@ -9,17 +9,18 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	protoblocktypes "github.com/cometbft/cometbft/proto/tendermint/types"
-	
+
 	//"github.com/rollchains/tiablob/celestia-node/blob"
-	appns "github.com/rollchains/tiablob/celestia/namespace"
 	"github.com/rollchains/tiablob/celestia-node/share"
-	cn "github.com/rollchains/tiablob/relayer/celestia-node"
+	appns "github.com/rollchains/tiablob/celestia/namespace"
 	"github.com/rollchains/tiablob/relayer"
-	"github.com/rollchains/tiablob/tiasync/blocksync/blockpool/celestia"
-	"github.com/rollchains/tiablob/tiasync/blocksync/blockpool/local"
+	cn "github.com/rollchains/tiablob/relayer/celestia-node"
+	"github.com/rollchains/tiablob/tiasync/blocksync/blockprovider/celestia"
+	"github.com/rollchains/tiablob/tiasync/blocksync/blockprovider/local"
+	"github.com/rollchains/tiablob/tiasync/store"
 )
 
-type BlockPool struct {
+type BlockProvider struct {
 	celestiaHeight int64
 	logger log.Logger
 
@@ -32,12 +33,14 @@ type BlockPool struct {
 	localProvider    *local.CosmosProvider
 	genTime time.Time
 
-	blockCache map[int64]*protoblocktypes.Block
+	store *store.BlockStore
+
+	//blockCache map[int64]*protoblocktypes.Block
 
 	mtx cmtsync.Mutex
 }
 
-func NewBlockPool(celestiaHeight int64, celestiaCfg *relayer.CelestiaConfig, genTime time.Time) *BlockPool {
+func NewBlockProvider(store *store.BlockStore, celestiaHeight int64, celestiaCfg *relayer.CelestiaConfig, genTime time.Time) *BlockProvider {
 	celestiaProvider, err := celestia.NewProvider(celestiaCfg.AppRpcURL, celestiaCfg.AppRpcTimeout)
 	if err != nil {
 		panic(err)
@@ -52,7 +55,7 @@ func NewBlockPool(celestiaHeight int64, celestiaCfg *relayer.CelestiaConfig, gen
 		celestiaNamespace := appns.MustNewV0([]byte(celestiaCfg.OverrideNamespace))
 	//}
 
-	return &BlockPool{
+	return &BlockProvider{
 		celestiaHeight: celestiaHeight,
 		celestiaProvider: celestiaProvider,
 		localProvider: localProvider,
@@ -62,17 +65,19 @@ func NewBlockPool(celestiaHeight int64, celestiaCfg *relayer.CelestiaConfig, gen
 		nodeAuthToken:     celestiaCfg.NodeAuthToken,
 		celestiaNamespace: celestiaNamespace,
 		celestiaChainID:   celestiaCfg.ChainID,
+
+		store: store,
 		
-		blockCache: make(map[int64]*protoblocktypes.Block),
+		//blockCache: make(map[int64]*protoblocktypes.Block),
 	}
 }
 
-func (bp *BlockPool) SetLogger(l log.Logger) {
+func (bp *BlockProvider) SetLogger(l log.Logger) {
 	bp.logger = l
 }
 
-func (bp *BlockPool) Start() {
-	bp.logger.Debug("Block Pool Start()")
+func (bp *BlockProvider) Start() {
+	bp.logger.Debug("Block Provider Start()")
 	ctx := context.Background()
 
 	// first query for a celestia DA light client, use that height
@@ -113,17 +118,19 @@ func (bp *BlockPool) Start() {
 
 }
 
-func (bp *BlockPool) GetBlock(height int64) *protoblocktypes.Block {
+func (bp *BlockProvider) GetBlock(height int64) *protoblocktypes.Block {
 	bp.logger.Debug("bp GetBlock()", "height", height)
-	return bp.blockCache[height]
+	//return bp.blockCache[height]
+	// TODO: we can just check the store's height, if less than requested height, it doesn't exist (seq vs non-seq)
+	return bp.store.LoadBlock(height)
 }
 
-func (bp *BlockPool) GetHeight() int64 {
-	bp.logger.Debug("bp GetHeight()", "height", len(bp.blockCache))
-	return int64(len(bp.blockCache))
-}
+// func (bp *BlockProvider) GetHeight() int64 {
+// 	bp.logger.Debug("bp GetHeight()", "height", len(bp.blockCache))
+// 	return int64(len(bp.blockCache))
+// }
 
-func (bp *BlockPool) queryCelestia(ctx context.Context) {
+func (bp *BlockProvider) queryCelestia(ctx context.Context) {
 	bp.logger.Debug("bp queryCelestia()")
 	celestiaNodeClient, err := cn.NewClient(ctx, bp.nodeRpcUrl, bp.nodeAuthToken)
 	if err != nil {
@@ -164,7 +171,8 @@ func (bp *BlockPool) queryCelestia(ctx context.Context) {
 			} else {
 				rollchainBlockHeight := blobBlockProto.Header.Height
 				bp.logger.Debug("bp adding block", "height", rollchainBlockHeight)
-				bp.blockCache[rollchainBlockHeight] = &blobBlockProto
+				bp.store.SaveBlock(celestiaLatestHeight, rollchainBlockHeight, mBlob.GetData())
+				//bp.blockCache[rollchainBlockHeight] = &blobBlockProto
 			}
 		}
 		

@@ -1,20 +1,22 @@
 package store
 
 import (
-	"errors"
+	"encoding/binary"
+	//"encoding/hex"
+	"encoding/json"
+	//"errors"
 	"fmt"
-	"strconv"
 
 	"github.com/cosmos/gogoproto/proto"
 
 	dbm "github.com/cometbft/cometbft-db"
 
-	"github.com/cometbft/cometbft/evidence"
+	//"github.com/cometbft/cometbft/evidence"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
-	cmtstore "github.com/cometbft/cometbft/proto/tendermint/store"
+	//cmtstore "github.com/cometbft/cometbft/proto/tendermint/store"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	sm "github.com/cometbft/cometbft/state"
-	"github.com/cometbft/cometbft/types"
+	//sm "github.com/cometbft/cometbft/state"
+	//"github.com/cometbft/cometbft/types"
 )
 
 // Assuming the length of a block part is 64kB (`types.BlockPartSizeBytes`),
@@ -53,8 +55,14 @@ type BlockStore struct {
 	// can't efficiently be queried from the database since the key encoding we use is not
 	// lexicographically ordered (see https://github.com/tendermint/tendermint/issues/4567).
 	mtx    cmtsync.RWMutex
-	base   int64
 	height int64
+	lastCelestiaHeightQueried int64
+}
+
+// TODO: make proto
+type BlockStoreState struct {
+	height int64
+	lastCelestiaHeightQueried int64
 }
 
 // NewBlockStore returns a new BlockStore with the given DB,
@@ -62,8 +70,8 @@ type BlockStore struct {
 func NewBlockStore(db dbm.DB) *BlockStore {
 	bs := LoadBlockStoreState(db)
 	return &BlockStore{
-		base:   bs.Base,
-		height: bs.Height,
+		lastCelestiaHeightQueried:   bs.lastCelestiaHeightQueried,
+		height: bs.height,
 		db:     db,
 	}
 }
@@ -71,14 +79,14 @@ func NewBlockStore(db dbm.DB) *BlockStore {
 func (bs *BlockStore) IsEmpty() bool {
 	bs.mtx.RLock()
 	defer bs.mtx.RUnlock()
-	return bs.base == bs.height && bs.base == 0
+	return bs.height == 0
 }
 
 // Base returns the first known contiguous block height, or 0 for empty block stores.
-func (bs *BlockStore) Base() int64 {
+func (bs *BlockStore) LastCelestiaHeightQueried() int64 {
 	bs.mtx.RLock()
 	defer bs.mtx.RUnlock()
-	return bs.base
+	return bs.lastCelestiaHeightQueried
 }
 
 // Height returns the last known contiguous block height, or 0 for empty block stores.
@@ -88,44 +96,24 @@ func (bs *BlockStore) Height() int64 {
 	return bs.height
 }
 
-// Size returns the number of blocks in the block store.
-func (bs *BlockStore) Size() int64 {
-	bs.mtx.RLock()
-	defer bs.mtx.RUnlock()
-	if bs.height == 0 {
-		return 0
-	}
-	return bs.height - bs.base + 1
-}
-
-// LoadBase atomically loads the base block meta, or returns nil if no base is found.
-func (bs *BlockStore) LoadBaseMeta() *types.BlockMeta {
-	bs.mtx.RLock()
-	defer bs.mtx.RUnlock()
-	if bs.base == 0 {
-		return nil
-	}
-	return bs.LoadBlockMeta(bs.base)
-}
-
 // LoadBlock returns the block with the given height.
 // If no block is found for that height, it returns nil.
-func (bs *BlockStore) LoadBlock(height int64) *types.Block {
-	blockMeta := bs.LoadBlockMeta(height)
-	if blockMeta == nil {
+func (bs *BlockStore) LoadBlock(height int64) *cmtproto.Block {
+	partsTotal := bs.LoadBlockMeta(height)
+	if partsTotal == 0 {
 		return nil
 	}
 
 	pbb := new(cmtproto.Block)
 	buf := []byte{}
-	for i := 0; i < int(blockMeta.BlockID.PartSetHeader.Total); i++ {
+	for i := 0; i < int(partsTotal); i++ {
 		part := bs.LoadBlockPart(height, i)
 		// If the part is missing (e.g. since it has been deleted after we
 		// loaded the block meta) we consider the whole block to be missing.
 		if part == nil {
 			return nil
 		}
-		buf = append(buf, part.Bytes...)
+		buf = append(buf, part...)
 	}
 	err := proto.Unmarshal(buf, pbb)
 	if err != nil {
@@ -134,39 +122,19 @@ func (bs *BlockStore) LoadBlock(height int64) *types.Block {
 		panic(fmt.Sprintf("Error reading block: %v", err))
 	}
 
-	block, err := types.BlockFromProto(pbb)
-	if err != nil {
-		panic(fmt.Errorf("error from proto block: %w", err))
-	}
+	// block, err := types.BlockFromProto(pbb)
+	// if err != nil {
+	// 	panic(fmt.Errorf("error from proto block: %w", err))
+	// }
 
-	return block
-}
-
-// LoadBlockByHash returns the block with the given hash.
-// If no block is found for that hash, it returns nil.
-// Panics if it fails to parse height associated with the given hash.
-func (bs *BlockStore) LoadBlockByHash(hash []byte) *types.Block {
-	bz, err := bs.db.Get(calcBlockHashKey(hash))
-	if err != nil {
-		panic(err)
-	}
-	if len(bz) == 0 {
-		return nil
-	}
-
-	s := string(bz)
-	height, err := strconv.ParseInt(s, 10, 64)
-	if err != nil {
-		panic(fmt.Sprintf("failed to extract height from %s: %v", s, err))
-	}
-	return bs.LoadBlock(height)
+	return pbb
 }
 
 // LoadBlockPart returns the Part at the given index
 // from the block at the given height.
 // If no part is found for the given height and index, it returns nil.
-func (bs *BlockStore) LoadBlockPart(height int64, index int) *types.Part {
-	pbpart := new(cmtproto.Part)
+func (bs *BlockStore) LoadBlockPart(height int64, index int) []byte {
+	//pbpart := new(cmtproto.Part)
 
 	bz, err := bs.db.Get(calcBlockPartKey(height, index))
 	if err != nil {
@@ -176,136 +144,37 @@ func (bs *BlockStore) LoadBlockPart(height int64, index int) *types.Part {
 		return nil
 	}
 
-	err = proto.Unmarshal(bz, pbpart)
-	if err != nil {
-		panic(fmt.Errorf("unmarshal to cmtproto.Part failed: %w", err))
-	}
-	part, err := types.PartFromProto(pbpart)
-	if err != nil {
-		panic(fmt.Sprintf("Error reading block part: %v", err))
-	}
+	// err = proto.Unmarshal(bz, pbpart)
+	// if err != nil {
+	// 	panic(fmt.Errorf("unmarshal to cmtproto.Part failed: %w", err))
+	// }
+	// part, err := types.PartFromProto(pbpart)
+	// if err != nil {
+	// 	panic(fmt.Sprintf("Error reading block part: %v", err))
+	// }
 
-	return part
+	return bz
 }
 
 // LoadBlockMeta returns the BlockMeta for the given height.
 // If no block is found for the given height, it returns nil.
-func (bs *BlockStore) LoadBlockMeta(height int64) *types.BlockMeta {
-	pbbm := new(cmtproto.BlockMeta)
+func (bs *BlockStore) LoadBlockMeta(height int64) uint32 {
 	bz, err := bs.db.Get(calcBlockMetaKey(height))
 	if err != nil {
 		panic(err)
 	}
 
 	if len(bz) == 0 {
-		return nil
+		return 0
 	}
 
-	err = proto.Unmarshal(bz, pbbm)
-	if err != nil {
-		panic(fmt.Errorf("unmarshal to cmtproto.BlockMeta: %w", err))
-	}
-
-	blockMeta, err := types.BlockMetaFromProto(pbbm)
-	if err != nil {
-		panic(fmt.Errorf("error from proto blockMeta: %w", err))
-	}
+	blockMeta := binary.LittleEndian.Uint32(bz)
 
 	return blockMeta
 }
 
-// LoadBlockMetaByHash returns the blockmeta who's header corresponds to the given
-// hash. If none is found, returns nil.
-func (bs *BlockStore) LoadBlockMetaByHash(hash []byte) *types.BlockMeta {
-	bz, err := bs.db.Get(calcBlockHashKey(hash))
-	if err != nil {
-		panic(err)
-	}
-	if len(bz) == 0 {
-		return nil
-	}
-
-	s := string(bz)
-	height, err := strconv.ParseInt(s, 10, 64)
-	if err != nil {
-		panic(fmt.Sprintf("failed to extract height from %s: %v", s, err))
-	}
-	return bs.LoadBlockMeta(height)
-}
-
-// LoadBlockCommit returns the Commit for the given height.
-// This commit consists of the +2/3 and other Precommit-votes for block at `height`,
-// and it comes from the block.LastCommit for `height+1`.
-// If no commit is found for the given height, it returns nil.
-func (bs *BlockStore) LoadBlockCommit(height int64) *types.Commit {
-	pbc := new(cmtproto.Commit)
-	bz, err := bs.db.Get(calcBlockCommitKey(height))
-	if err != nil {
-		panic(err)
-	}
-	if len(bz) == 0 {
-		return nil
-	}
-	err = proto.Unmarshal(bz, pbc)
-	if err != nil {
-		panic(fmt.Errorf("error reading block commit: %w", err))
-	}
-	commit, err := types.CommitFromProto(pbc)
-	if err != nil {
-		panic(fmt.Errorf("converting commit to proto: %w", err))
-	}
-	return commit
-}
-
-// LoadExtendedCommit returns the ExtendedCommit for the given height.
-// The extended commit is not guaranteed to contain the same +2/3 precommits data
-// as the commit in the block.
-func (bs *BlockStore) LoadBlockExtendedCommit(height int64) *types.ExtendedCommit {
-	pbec := new(cmtproto.ExtendedCommit)
-	bz, err := bs.db.Get(calcExtCommitKey(height))
-	if err != nil {
-		panic(fmt.Errorf("fetching extended commit: %w", err))
-	}
-	if len(bz) == 0 {
-		return nil
-	}
-	err = proto.Unmarshal(bz, pbec)
-	if err != nil {
-		panic(fmt.Errorf("decoding extended commit: %w", err))
-	}
-	extCommit, err := types.ExtendedCommitFromProto(pbec)
-	if err != nil {
-		panic(fmt.Errorf("converting extended commit: %w", err))
-	}
-	return extCommit
-}
-
-// LoadSeenCommit returns the locally seen Commit for the given height.
-// This is useful when we've seen a commit, but there has not yet been
-// a new block at `height + 1` that includes this commit in its block.LastCommit.
-func (bs *BlockStore) LoadSeenCommit(height int64) *types.Commit {
-	pbc := new(cmtproto.Commit)
-	bz, err := bs.db.Get(calcSeenCommitKey(height))
-	if err != nil {
-		panic(err)
-	}
-	if len(bz) == 0 {
-		return nil
-	}
-	err = proto.Unmarshal(bz, pbc)
-	if err != nil {
-		panic(fmt.Sprintf("error reading block seen commit: %v", err))
-	}
-
-	commit, err := types.CommitFromProto(pbc)
-	if err != nil {
-		panic(fmt.Errorf("converting seen commit: %w", err))
-	}
-	return commit
-}
-
 // PruneBlocks removes block up to (but not including) a height. It returns number of blocks pruned and the evidence retain height - the height at which data needed to prove evidence must not be removed.
-func (bs *BlockStore) PruneBlocks(height int64, state sm.State) (uint64, int64, error) {
+/*func (bs *BlockStore) PruneBlocks(height int64, state sm.State) (uint64, int64, error) {
 	if height <= 0 {
 		return 0, -1, fmt.Errorf("height must be greater than 0")
 	}
@@ -355,18 +224,6 @@ func (bs *BlockStore) PruneBlocks(height int64, state sm.State) (uint64, int64, 
 				return 0, -1, err
 			}
 		}
-		if err := batch.Delete(calcBlockHashKey(meta.BlockID.Hash)); err != nil {
-			return 0, -1, err
-		}
-		// if height is beyond the evidence point we dont delete the commit data
-		if h < evidencePoint {
-			if err := batch.Delete(calcBlockCommitKey(h)); err != nil {
-				return 0, -1, err
-			}
-		}
-		if err := batch.Delete(calcSeenCommitKey(h)); err != nil {
-			return 0, -1, err
-		}
 		for p := 0; p < int(meta.BlockID.PartSetHeader.Total); p++ {
 			if err := batch.Delete(calcBlockPartKey(h, p)); err != nil {
 				return 0, -1, err
@@ -390,7 +247,7 @@ func (bs *BlockStore) PruneBlocks(height int64, state sm.State) (uint64, int64, 
 		return 0, -1, err
 	}
 	return pruned, evidencePoint, nil
-}
+}*/
 
 // SaveBlock persists the given block, blockParts, and seenCommit to the underlying db.
 // blockParts: Must be parts of the block
@@ -399,7 +256,7 @@ func (bs *BlockStore) PruneBlocks(height int64, state sm.State) (uint64, int64, 
 //	If all the nodes restart after committing a block,
 //	we need this to reload the precommits to catch-up nodes to the
 //	most recent height.  Otherwise they'd stall at H-1.
-func (bs *BlockStore) SaveBlock(block *types.Block, blockParts *types.PartSet, seenCommit *types.Commit) {
+func (bs *BlockStore) SaveBlock(celestiaHeight int64, height int64, block []byte) {
 	if block == nil {
 		panic("BlockStore can only save a non-nil block")
 	}
@@ -407,16 +264,19 @@ func (bs *BlockStore) SaveBlock(block *types.Block, blockParts *types.PartSet, s
 	batch := bs.db.NewBatch()
 	defer batch.Close()
 
-	if err := bs.saveBlockToBatch(block, blockParts, seenCommit, batch); err != nil {
+	if err := bs.saveBlockToBatch(height, block, batch); err != nil {
 		panic(err)
 	}
 
 	bs.mtx.Lock()
 	defer bs.mtx.Unlock()
-	bs.height = block.Height
-	if bs.base == 0 {
-		bs.base = block.Height
+	// if previous height + 1 == height, increment
+	if bs.height + 1 == height {
+		bs.height = height
 	}
+	bs.lastCelestiaHeightQueried = celestiaHeight
+
+	// TODO: get next height to see if we need to increment again
 
 	// Save new BlockStoreState descriptor. This also flushes the database.
 	err := bs.saveStateAndWriteDB(batch, "failed to save block")
@@ -425,125 +285,46 @@ func (bs *BlockStore) SaveBlock(block *types.Block, blockParts *types.PartSet, s
 	}
 }
 
-// SaveBlockWithExtendedCommit persists the given block, blockParts, and
-// seenExtendedCommit to the underlying db. seenExtendedCommit is stored under
-// two keys in the database: as the seenCommit and as the ExtendedCommit data for the
-// height. This allows the vote extension data to be persisted for all blocks
-// that are saved.
-func (bs *BlockStore) SaveBlockWithExtendedCommit(block *types.Block, blockParts *types.PartSet, seenExtendedCommit *types.ExtendedCommit) {
-	if block == nil {
-		panic("BlockStore can only save a non-nil block")
-	}
-	if err := seenExtendedCommit.EnsureExtensions(true); err != nil {
-		panic(fmt.Errorf("problems saving block with extensions: %w", err))
-	}
-
-	batch := bs.db.NewBatch()
-	defer batch.Close()
-
-	if err := bs.saveBlockToBatch(block, blockParts, seenExtendedCommit.ToCommit(), batch); err != nil {
-		panic(err)
-	}
-	height := block.Height
-
-	pbec := seenExtendedCommit.ToProto()
-	extCommitBytes := mustEncode(pbec)
-	if err := batch.Set(calcExtCommitKey(height), extCommitBytes); err != nil {
-		panic(err)
-	}
-
-	bs.mtx.Lock()
-	defer bs.mtx.Unlock()
-	bs.height = height
-	if bs.base == 0 {
-		bs.base = height
-	}
-
-	// Save new BlockStoreState descriptor. This also flushes the database.
-	err := bs.saveStateAndWriteDB(batch, "failed to save block with extended commit")
-	if err != nil {
-		panic(err)
-	}
-}
-
 func (bs *BlockStore) saveBlockToBatch(
-	block *types.Block,
-	blockParts *types.PartSet,
-	seenCommit *types.Commit,
+	height int64,
+	block []byte,
 	batch dbm.Batch) error {
 
 	if block == nil {
 		panic("BlockStore can only save a non-nil block")
 	}
 
-	height := block.Height
-	hash := block.Hash()
-
-	if g, w := height, bs.Height()+1; bs.Base() > 0 && g != w {
-		return fmt.Errorf("BlockStore can only save contiguous blocks. Wanted %v, got %v", w, g)
-	}
-	if !blockParts.IsComplete() {
-		return errors.New("BlockStore can only save complete block part sets")
-	}
-	if height != seenCommit.Height {
-		return fmt.Errorf("BlockStore cannot save seen commit of a different height (block: %d, commit: %d)", height, seenCommit.Height)
-	}
+	partSet := NewPartSetFromData(block, BlockPartSizeBytes)
 
 	// If the block is small, batch save the block parts. Otherwise, save the
 	// parts individually.
-	saveBlockPartsToBatch := blockParts.Count() <= maxBlockPartsToBatch
+	saveBlockPartsToBatch := partSet.Total() <= maxBlockPartsToBatch
 
 	// Save block parts. This must be done before the block meta, since callers
 	// typically load the block meta first as an indication that the block exists
 	// and then go on to load block parts - we must make sure the block is
 	// complete as soon as the block meta is written.
-	for i := 0; i < int(blockParts.Total()); i++ {
-		part := blockParts.GetPart(i)
+	for i := 0; i < int(partSet.Total()); i++ {
+		part := partSet.GetPart(i)
 		bs.saveBlockPart(height, i, part, batch, saveBlockPartsToBatch)
 	}
 
 	// Save block meta
-	blockMeta := types.NewBlockMeta(block, blockParts)
-	pbm := blockMeta.ToProto()
-	if pbm == nil {
-		return errors.New("nil blockmeta")
-	}
-	metaBytes := mustEncode(pbm)
-	if err := batch.Set(calcBlockMetaKey(height), metaBytes); err != nil {
-		return err
-	}
-	if err := batch.Set(calcBlockHashKey(hash), []byte(fmt.Sprintf("%d", height))); err != nil {
-		return err
-	}
-
-	// Save block commit (duplicate and separate from the Block)
-	pbc := block.LastCommit.ToProto()
-	blockCommitBytes := mustEncode(pbc)
-	if err := batch.Set(calcBlockCommitKey(height-1), blockCommitBytes); err != nil {
-		return err
-	}
-
-	// Save seen commit (seen +2/3 precommits for block)
-	// NOTE: we can delete this at a later height
-	pbsc := seenCommit.ToProto()
-	seenCommitBytes := mustEncode(pbsc)
-	if err := batch.Set(calcSeenCommitKey(height), seenCommitBytes); err != nil {
+	blockMeta := make([]byte, 4)
+	binary.LittleEndian.PutUint32(blockMeta, partSet.total)
+	if err := batch.Set(calcBlockMetaKey(height), blockMeta); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (bs *BlockStore) saveBlockPart(height int64, index int, part *types.Part, batch dbm.Batch, saveBlockPartsToBatch bool) {
-	pbp, err := part.ToProto()
-	if err != nil {
-		panic(fmt.Errorf("unable to make part into proto: %w", err))
-	}
-	partBytes := mustEncode(pbp)
+func (bs *BlockStore) saveBlockPart(height int64, index int, part []byte, batch dbm.Batch, saveBlockPartsToBatch bool) {
+	var err error
 	if saveBlockPartsToBatch {
-		err = batch.Set(calcBlockPartKey(height, index), partBytes)
+		err = batch.Set(calcBlockPartKey(height, index), part)
 	} else {
-		err = bs.db.Set(calcBlockPartKey(height, index), partBytes)
+		err = bs.db.Set(calcBlockPartKey(height, index), part)
 	}
 	if err != nil {
 		panic(err)
@@ -552,29 +333,29 @@ func (bs *BlockStore) saveBlockPart(height int64, index int, part *types.Part, b
 
 // Contract: the caller MUST have, at least, a read lock on `bs`.
 func (bs *BlockStore) saveStateAndWriteDB(batch dbm.Batch, errMsg string) error {
-	bss := cmtstore.BlockStoreState{
-		Base:   bs.base,
-		Height: bs.height,
+	bss := BlockStoreState{
+		height: bs.height,
+		lastCelestiaHeightQueried: bs.lastCelestiaHeightQueried,
 	}
 	SaveBlockStoreStateBatch(&bss, batch)
 
 	err := batch.WriteSync()
 	if err != nil {
-		return fmt.Errorf("error writing batch to DB %q: (base %d, height %d): %w",
-			errMsg, bs.base, bs.height, err)
+		return fmt.Errorf("error writing batch to DB %q: (lastCelestiaHeightQueried %d, height %d): %w",
+			errMsg, bs.lastCelestiaHeightQueried, bs.height, err)
 	}
 	return nil
 }
 
 // SaveSeenCommit saves a seen commit, used by e.g. the state sync reactor when bootstrapping node.
-func (bs *BlockStore) SaveSeenCommit(height int64, seenCommit *types.Commit) error {
-	pbc := seenCommit.ToProto()
-	seenCommitBytes, err := proto.Marshal(pbc)
-	if err != nil {
-		return fmt.Errorf("unable to marshal commit: %w", err)
-	}
-	return bs.db.Set(calcSeenCommitKey(height), seenCommitBytes)
-}
+// func (bs *BlockStore) SaveSeenCommit(height int64, seenCommit *types.Commit) error {
+// 	pbc := seenCommit.ToProto()
+// 	seenCommitBytes, err := proto.Marshal(pbc)
+// 	if err != nil {
+// 		return fmt.Errorf("unable to marshal commit: %w", err)
+// 	}
+// 	return bs.db.Set(calcSeenCommitKey(height), seenCommitBytes)
+// }
 
 func (bs *BlockStore) Close() error {
 	return bs.db.Close()
@@ -590,40 +371,24 @@ func calcBlockPartKey(height int64, partIndex int) []byte {
 	return []byte(fmt.Sprintf("P:%v:%v", height, partIndex))
 }
 
-func calcBlockCommitKey(height int64) []byte {
-	return []byte(fmt.Sprintf("C:%v", height))
-}
-
-func calcSeenCommitKey(height int64) []byte {
-	return []byte(fmt.Sprintf("SC:%v", height))
-}
-
-func calcExtCommitKey(height int64) []byte {
-	return []byte(fmt.Sprintf("EC:%v", height))
-}
-
-func calcBlockHashKey(hash []byte) []byte {
-	return []byte(fmt.Sprintf("BH:%x", hash))
-}
-
 //-----------------------------------------------------------------------------
 
 var blockStoreKey = []byte("blockStore")
 
 // SaveBlockStoreState persists the blockStore state to the database.
 // deprecated: still present in this version for API compatibility
-func SaveBlockStoreState(bsj *cmtstore.BlockStoreState, db dbm.DB) {
+func SaveBlockStoreState(bsj *BlockStoreState, db dbm.DB) {
 	saveBlockStoreStateBatchInternal(bsj, db, nil)
 }
 
 // SaveBlockStoreStateBatch persists the blockStore state to the database.
 // It uses the DB batch passed as parameter
-func SaveBlockStoreStateBatch(bsj *cmtstore.BlockStoreState, batch dbm.Batch) {
+func SaveBlockStoreStateBatch(bsj *BlockStoreState, batch dbm.Batch) {
 	saveBlockStoreStateBatchInternal(bsj, nil, batch)
 }
 
-func saveBlockStoreStateBatchInternal(bsj *cmtstore.BlockStoreState, db dbm.DB, batch dbm.Batch) {
-	bytes, err := proto.Marshal(bsj)
+func saveBlockStoreStateBatchInternal(bsj *BlockStoreState, db dbm.DB, batch dbm.Batch) {
+	bytes, err := json.Marshal(bsj)
 	if err != nil {
 		panic(fmt.Sprintf("could not marshal state bytes: %v", err))
 	}
@@ -642,28 +407,24 @@ func saveBlockStoreStateBatchInternal(bsj *cmtstore.BlockStoreState, db dbm.DB, 
 
 // LoadBlockStoreState returns the BlockStoreState as loaded from disk.
 // If no BlockStoreState was previously persisted, it returns the zero value.
-func LoadBlockStoreState(db dbm.DB) cmtstore.BlockStoreState {
+func LoadBlockStoreState(db dbm.DB) BlockStoreState {
 	bytes, err := db.Get(blockStoreKey)
 	if err != nil {
 		panic(err)
 	}
 
 	if len(bytes) == 0 {
-		return cmtstore.BlockStoreState{
-			Base:   0,
-			Height: 0,
+		return BlockStoreState{
+			height: 0,
+			lastCelestiaHeightQueried:   0,
 		}
 	}
 
-	var bsj cmtstore.BlockStoreState
-	if err := proto.Unmarshal(bytes, &bsj); err != nil {
+	var bsj BlockStoreState
+	if err := json.Unmarshal(bytes, &bsj); err != nil {
 		panic(fmt.Sprintf("Could not unmarshal bytes: %X", bytes))
 	}
 
-	// Backwards compatibility with persisted data from before Base existed.
-	if bsj.Height > 0 && bsj.Base == 0 {
-		bsj.Base = 1
-	}
 	return bsj
 }
 
@@ -674,45 +435,4 @@ func mustEncode(pb proto.Message) []byte {
 		panic(fmt.Errorf("unable to marshal: %w", err))
 	}
 	return bz
-}
-
-//-----------------------------------------------------------------------------
-
-// DeleteLatestBlock removes the block pointed to by height,
-// lowering height by one.
-func (bs *BlockStore) DeleteLatestBlock() error {
-	bs.mtx.RLock()
-	targetHeight := bs.height
-	bs.mtx.RUnlock()
-
-	batch := bs.db.NewBatch()
-	defer batch.Close()
-
-	// delete what we can, skipping what's already missing, to ensure partial
-	// blocks get deleted fully.
-	if meta := bs.LoadBlockMeta(targetHeight); meta != nil {
-		if err := batch.Delete(calcBlockHashKey(meta.BlockID.Hash)); err != nil {
-			return err
-		}
-		for p := 0; p < int(meta.BlockID.PartSetHeader.Total); p++ {
-			if err := batch.Delete(calcBlockPartKey(targetHeight, p)); err != nil {
-				return err
-			}
-		}
-	}
-	if err := batch.Delete(calcBlockCommitKey(targetHeight)); err != nil {
-		return err
-	}
-	if err := batch.Delete(calcSeenCommitKey(targetHeight)); err != nil {
-		return err
-	}
-	// delete last, so as to not leave keys built on meta.BlockID dangling
-	if err := batch.Delete(calcBlockMetaKey(targetHeight)); err != nil {
-		return err
-	}
-
-	bs.mtx.Lock()
-	defer bs.mtx.Unlock()
-	bs.height = targetHeight - 1
-	return bs.saveStateAndWriteDB(batch, "failed to delete the latest block")
 }

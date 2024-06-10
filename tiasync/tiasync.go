@@ -137,6 +137,7 @@ func NewTiasync(
 		panic(err)
 	}
 
+	// TODO: move block store to block sync's block provider
 	blockStore, stateDB, err := initDBs(config, dbProvider)
 	if err != nil {
 		return nil, err
