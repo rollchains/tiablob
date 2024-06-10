@@ -35,8 +35,6 @@ type BlockProvider struct {
 
 	store *store.BlockStore
 
-	//blockCache map[int64]*protoblocktypes.Block
-
 	mtx cmtsync.Mutex
 }
 
@@ -67,8 +65,6 @@ func NewBlockProvider(store *store.BlockStore, celestiaHeight int64, celestiaCfg
 		celestiaChainID:   celestiaCfg.ChainID,
 
 		store: store,
-		
-		//blockCache: make(map[int64]*protoblocktypes.Block),
 	}
 }
 
@@ -120,8 +116,9 @@ func (bp *BlockProvider) Start() {
 
 func (bp *BlockProvider) GetBlock(height int64) *protoblocktypes.Block {
 	bp.logger.Debug("bp GetBlock()", "height", height)
-	//return bp.blockCache[height]
-	// TODO: we can just check the store's height, if less than requested height, it doesn't exist (seq vs non-seq)
+	if bp.store.Height() < height {
+		return nil
+	}
 	return bp.store.LoadBlock(height)
 }
 

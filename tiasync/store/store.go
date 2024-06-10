@@ -55,12 +55,14 @@ type BlockStore struct {
 	// can't efficiently be queried from the database since the key encoding we use is not
 	// lexicographically ordered (see https://github.com/tendermint/tendermint/issues/4567).
 	mtx    cmtsync.RWMutex
+	base   int64
 	height int64
 	lastCelestiaHeightQueried int64
 }
 
 // TODO: make proto
 type BlockStoreState struct {
+	base int64
 	height int64
 	lastCelestiaHeightQueried int64
 }
@@ -71,18 +73,26 @@ func NewBlockStore(db dbm.DB) *BlockStore {
 	bs := LoadBlockStoreState(db)
 	return &BlockStore{
 		lastCelestiaHeightQueried:   bs.lastCelestiaHeightQueried,
+		base: bs.base,
 		height: bs.height,
 		db:     db,
 	}
 }
 
+// Empty of contiguous block (may contain non-contiguous blocks)
 func (bs *BlockStore) IsEmpty() bool {
 	bs.mtx.RLock()
 	defer bs.mtx.RUnlock()
-	return bs.height == 0
+	return bs.base == bs.height && bs.base == 0
 }
 
 // Base returns the first known contiguous block height, or 0 for empty block stores.
+func (bs *BlockStore) Base() int64 {
+	bs.mtx.RLock()
+	defer bs.mtx.RUnlock()
+	return bs.base
+}
+
 func (bs *BlockStore) LastCelestiaHeightQueried() int64 {
 	bs.mtx.RLock()
 	defer bs.mtx.RUnlock()
@@ -129,8 +139,6 @@ func (bs *BlockStore) LoadBlock(height int64) *cmtproto.Block {
 // from the block at the given height.
 // If no part is found for the given height and index, it returns nil.
 func (bs *BlockStore) LoadBlockPart(height int64, index int) []byte {
-	//pbpart := new(cmtproto.Part)
-
 	bz, err := bs.db.Get(calcBlockPartKey(height, index))
 	if err != nil {
 		panic(err)
@@ -160,19 +168,19 @@ func (bs *BlockStore) LoadBlockMeta(height int64) uint32 {
 }
 
 // PruneBlocks removes block up to (but not including) a height. It returns number of blocks pruned and the evidence retain height - the height at which data needed to prove evidence must not be removed.
-/*func (bs *BlockStore) PruneBlocks(height int64, state sm.State) (uint64, int64, error) {
+func (bs *BlockStore) PruneBlocks(height int64) (uint64, error) {
 	if height <= 0 {
-		return 0, -1, fmt.Errorf("height must be greater than 0")
+		return 0, fmt.Errorf("height must be greater than 0")
 	}
 	bs.mtx.RLock()
 	if height > bs.height {
 		bs.mtx.RUnlock()
-		return 0, -1, fmt.Errorf("cannot prune beyond the latest height %v", bs.height)
+		return 0, fmt.Errorf("cannot prune beyond the latest height %v", bs.height)
 	}
 	base := bs.base
 	bs.mtx.RUnlock()
 	if height < base {
-		return 0, -1, fmt.Errorf("cannot prune to height %v, it is lower than base height %v",
+		return 0, fmt.Errorf("cannot prune to height %v, it is lower than base height %v",
 			height, base)
 	}
 
@@ -189,30 +197,19 @@ func (bs *BlockStore) LoadBlockMeta(height int64) uint32 {
 		return bs.saveStateAndWriteDB(batch, "failed to prune")
 	}
 
-	evidencePoint := height
 	for h := base; h < height; h++ {
-
-		meta := bs.LoadBlockMeta(h)
-		if meta == nil { // assume already deleted
+		totalParts := bs.LoadBlockMeta(h)
+		if totalParts == 0 { // assume already deleted
 			continue
 		}
 
-		// This logic is in place to protect data that proves malicious behavior.
-		// If the height is within the evidence age, we continue to persist the header and commit data.
-
-		if evidencePoint == height && !evidence.IsEvidenceExpired(state.LastBlockHeight, state.LastBlockTime, h, meta.Header.Time, state.ConsensusParams.Evidence) {
-			evidencePoint = h
+		if err := batch.Delete(calcBlockMetaKey(h)); err != nil {
+			return 0, err
 		}
 
-		// if height is beyond the evidence point we dont delete the header
-		if h < evidencePoint {
-			if err := batch.Delete(calcBlockMetaKey(h)); err != nil {
-				return 0, -1, err
-			}
-		}
-		for p := 0; p < int(meta.BlockID.PartSetHeader.Total); p++ {
+		for p := 0; p < int(totalParts); p++ {
 			if err := batch.Delete(calcBlockPartKey(h, p)); err != nil {
-				return 0, -1, err
+				return 0, err
 			}
 		}
 		pruned++
@@ -221,7 +218,7 @@ func (bs *BlockStore) LoadBlockMeta(height int64) uint32 {
 		if pruned%1000 == 0 && pruned > 0 {
 			err := flush(batch, h)
 			if err != nil {
-				return 0, -1, err
+				return 0, err
 			}
 			batch = bs.db.NewBatch()
 			defer batch.Close()
@@ -230,10 +227,10 @@ func (bs *BlockStore) LoadBlockMeta(height int64) uint32 {
 
 	err := flush(batch, height)
 	if err != nil {
-		return 0, -1, err
+		return 0, err
 	}
-	return pruned, evidencePoint, nil
-}*/
+	return pruned, nil
+}
 
 // SaveBlock persists the given block, blockParts, and seenCommit to the underlying db.
 // blockParts: Must be parts of the block
@@ -256,6 +253,10 @@ func (bs *BlockStore) SaveBlock(celestiaHeight int64, height int64, block []byte
 
 	bs.mtx.Lock()
 	defer bs.mtx.Unlock()
+
+	if bs.base == 0 {
+		bs.base = height
+	}
 	
 	if bs.height + 1 == height {
 		bs.height = height
@@ -328,6 +329,7 @@ func (bs *BlockStore) saveBlockPart(height int64, index int, part []byte, batch 
 // Contract: the caller MUST have, at least, a read lock on `bs`.
 func (bs *BlockStore) saveStateAndWriteDB(batch dbm.Batch, errMsg string) error {
 	bss := BlockStoreState{
+		base: bs.base,
 		height: bs.height,
 		lastCelestiaHeightQueried: bs.lastCelestiaHeightQueried,
 	}
@@ -399,6 +401,7 @@ func LoadBlockStoreState(db dbm.DB) BlockStoreState {
 
 	if len(bytes) == 0 {
 		return BlockStoreState{
+			base: 0,
 			height: 0,
 			lastCelestiaHeightQueried:   0,
 		}
