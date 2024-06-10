@@ -70,9 +70,7 @@ func createSwitch(config *cfg.Config,
 		p2p.SwitchPeerFilters(peerFilters...),
 	)
 	sw.SetLogger(p2pLogger)
-	//if config.Mempool.Type != cfg.MempoolTypeNop {
 	sw.AddReactor("MEMPOOL", mempoolReactor)
-	//}
 	sw.AddReactor("BLOCKSYNC", bcReactor)
 	sw.AddReactor("CONSENSUS", consensusReactor)
 	//sw.AddReactor("EVIDENCE", evidenceReactor)
@@ -81,7 +79,7 @@ func createSwitch(config *cfg.Config,
 	sw.SetNodeInfo(nodeInfo)
 	sw.SetNodeKey(nodeKey)
 
-	p2pLogger.Info("P2P Node ID", "ID", nodeKey.ID(), "file", config.NodeKeyFile())
+	p2pLogger.Info("P2P Node ID", "ID", nodeKey.ID())
 	return sw
 }
 

@@ -73,11 +73,11 @@ func (bp *BlockProvider) SetLogger(l log.Logger) {
 }
 
 func (bp *BlockProvider) Start() {
-	bp.logger.Debug("Block Provider Start()")
+	bp.logger.Info("Block Provider Start()", "celestia height", bp.celestiaHeight)
 	ctx := context.Background()
 
 	// first query for a celestia DA light client, use that height
-	if bp.celestiaHeight == 0 {
+	if bp.celestiaHeight <= 0 {
 		clientState, err := bp.localProvider.QueryCelestiaClientState(ctx)
 		if err != nil {
 			panic(err)
@@ -86,11 +86,11 @@ func (bp *BlockProvider) Start() {
 				bp.celestiaHeight = int64(clientState.LatestHeight.RevisionHeight)
 			}
 		}
-		bp.logger.Debug("Client state latest height: ", "height", clientState.LatestHeight.RevisionHeight)
+		bp.logger.Info("Client state latest height: ", "height", clientState.LatestHeight.RevisionHeight)
 	}
 
 	// if still 0, get an estimated start height using genesis time
-	if bp.celestiaHeight == 0 {
+	if bp.celestiaHeight <= 0 {
 		celestiaHeight, err := bp.celestiaProvider.GetStartingCelestiaHeight(ctx, bp.genTime)
 		if err != nil {
 			panic(err)
@@ -98,9 +98,9 @@ func (bp *BlockProvider) Start() {
 		bp.celestiaHeight = celestiaHeight
 	}
 
-	bp.logger.Debug("Starting to query celestia at height", "height", bp.celestiaHeight)
+	bp.logger.Info("Starting to query celestia at height", "height", bp.celestiaHeight)
 
-	timer := time.NewTimer(10 * time.Second)
+	timer := time.NewTimer(5 * time.Second)
 	defer timer.Stop()
 	for {
 		select {
@@ -108,14 +108,14 @@ func (bp *BlockProvider) Start() {
 			return
 		case <-timer.C:
 			bp.queryCelestia(ctx)
-			timer.Reset(10 * time.Second)
+			timer.Reset(5 * time.Second)
 		}
 	}
 
 }
 
 func (bp *BlockProvider) GetBlock(height int64) *protoblocktypes.Block {
-	bp.logger.Debug("bp GetBlock()", "height", height)
+	bp.logger.Info("bp GetBlock()", "height", height)
 	if bp.store.Height() < height {
 		return nil
 	}
@@ -128,7 +128,7 @@ func (bp *BlockProvider) GetBlock(height int64) *protoblocktypes.Block {
 // }
 
 func (bp *BlockProvider) queryCelestia(ctx context.Context) {
-	bp.logger.Debug("bp queryCelestia()")
+	bp.logger.Info("bp queryCelestia()")
 	celestiaNodeClient, err := cn.NewClient(ctx, bp.nodeRpcUrl, bp.nodeAuthToken)
 	if err != nil {
 		fmt.Println("creating celestia node client", "error", err)
@@ -144,7 +144,7 @@ func (bp *BlockProvider) queryCelestia(ctx context.Context) {
 		return
 	}
 
-	bp.logger.Debug("bp celestia latest height", "height", celestiaLatestHeight)
+	bp.logger.Info("bp celestia latest height", "height", celestiaLatestHeight)
 	for queryHeight := bp.celestiaHeight + 1; queryHeight < celestiaLatestHeight; queryHeight++ {
 		// get the namespace blobs from that height
 		blobs, err := celestiaNodeClient.Blob.GetAll(ctx, uint64(queryHeight), []share.Namespace{bp.celestiaNamespace.Bytes()})
@@ -167,8 +167,8 @@ func (bp *BlockProvider) queryCelestia(ctx context.Context) {
 				//r.logger.Info("blob unmarshal", "note", "may be a namespace collision", "height", queryHeight, "error", err)
 			} else {
 				rollchainBlockHeight := blobBlockProto.Header.Height
-				bp.logger.Debug("bp adding block", "height", rollchainBlockHeight)
-				bp.store.SaveBlock(celestiaLatestHeight, rollchainBlockHeight, mBlob.GetData())
+				bp.logger.Info("bp adding block", "height", rollchainBlockHeight)
+				bp.store.SaveBlock(queryHeight, rollchainBlockHeight, mBlob.GetData())
 				//bp.blockCache[rollchainBlockHeight] = &blobBlockProto
 			}
 		}

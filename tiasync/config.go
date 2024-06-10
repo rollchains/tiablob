@@ -28,7 +28,7 @@ const (
 
 	laddr = ""
 
-	node-key-path = "config/tiasync_addrbook.json"
+	node-key-path = "config/tiasync_node_key.json"
 
 	upstream-peers = ""
 	`

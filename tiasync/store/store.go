@@ -62,9 +62,9 @@ type BlockStore struct {
 
 // TODO: make proto
 type BlockStoreState struct {
-	base int64
-	height int64
-	lastCelestiaHeightQueried int64
+	Base int64 `json:"base"`
+	Height int64 `json:"height"`
+	LastCelestiaHeightQueried int64 `json:"last_celestia_height_queried"`
 }
 
 // NewBlockStore returns a new BlockStore with the given DB,
@@ -72,9 +72,9 @@ type BlockStoreState struct {
 func NewBlockStore(db dbm.DB) *BlockStore {
 	bs := LoadBlockStoreState(db)
 	return &BlockStore{
-		lastCelestiaHeightQueried:   bs.lastCelestiaHeightQueried,
-		base: bs.base,
-		height: bs.height,
+		lastCelestiaHeightQueried:   bs.LastCelestiaHeightQueried,
+		base: bs.Base,
+		height: bs.Height,
 		db:     db,
 	}
 }
@@ -329,9 +329,9 @@ func (bs *BlockStore) saveBlockPart(height int64, index int, part []byte, batch 
 // Contract: the caller MUST have, at least, a read lock on `bs`.
 func (bs *BlockStore) saveStateAndWriteDB(batch dbm.Batch, errMsg string) error {
 	bss := BlockStoreState{
-		base: bs.base,
-		height: bs.height,
-		lastCelestiaHeightQueried: bs.lastCelestiaHeightQueried,
+		Base: bs.base,
+		Height: bs.height,
+		LastCelestiaHeightQueried: bs.lastCelestiaHeightQueried,
 	}
 	SaveBlockStoreStateBatch(&bss, batch)
 
@@ -360,12 +360,6 @@ func calcBlockPartKey(height int64, partIndex int) []byte {
 //-----------------------------------------------------------------------------
 
 var blockStoreKey = []byte("blockStore")
-
-// SaveBlockStoreState persists the blockStore state to the database.
-// deprecated: still present in this version for API compatibility
-func SaveBlockStoreState(bsj *BlockStoreState, db dbm.DB) {
-	saveBlockStoreStateBatchInternal(bsj, db, nil)
-}
 
 // SaveBlockStoreStateBatch persists the blockStore state to the database.
 // It uses the DB batch passed as parameter
@@ -401,9 +395,9 @@ func LoadBlockStoreState(db dbm.DB) BlockStoreState {
 
 	if len(bytes) == 0 {
 		return BlockStoreState{
-			base: 0,
-			height: 0,
-			lastCelestiaHeightQueried:   0,
+			Base: 0,
+			Height: 0,
+			LastCelestiaHeightQueried:   0,
 		}
 	}
 

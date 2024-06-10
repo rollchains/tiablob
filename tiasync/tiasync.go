@@ -9,6 +9,7 @@ import (
 
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/log"
+	cmtflags "github.com/cometbft/cometbft/libs/cli/flags"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/p2p/pex"
 	"github.com/cometbft/cometbft/proxy"
@@ -89,6 +90,11 @@ func TiasyncRoutine(svrCtx *server.Context) {
 	if !tiasyncCfg.Enable {
 		return
 	}
+
+	logger, err := cmtflags.ParseLogLevel(cometCfg.LogLevel, logger, cfg.DefaultLogLevel)
+	if err != nil {
+		panic(err)
+	}
 	ts, err := NewTiasync(cometCfg, &tiasyncCfg, &celestiaCfg, logger)
 	if err != nil {
 		panic(err)
@@ -127,10 +133,12 @@ func NewTiasync(
 		return p2p.NopMetrics(), blocksync.NopMetrics(), statesync.NopMetrics()
 	}
 	
+	logger.Info("Tiasync node key file", "file", tiasyncCfg.NodeKeyFile(config.BaseConfig))
 	nodeKey, err := p2p.LoadOrGenNodeKey(tiasyncCfg.NodeKeyFile(config.BaseConfig))
 	if err != nil {
 		panic(err)
 	}
+	logger.Info("Tiasync key id", "id", nodeKey.ID())
 	
 	cometNodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
 	if err != nil {

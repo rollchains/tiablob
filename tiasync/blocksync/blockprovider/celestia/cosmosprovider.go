@@ -38,10 +38,28 @@ func (cp *CosmosProvider) GetStartingCelestiaHeight(ctx context.Context, genTime
 
 	// If genTime is later than estimated celestia height time, continue narrowing (adds blocks)
 	// If genTime is >10m than estimated celestia height time, continue narrowing (subtracts blocks)
-	for ; genTime.Sub(timeAtEstimatedCelestiaHeight).Seconds() < 0 || genTime.Sub(timeAtEstimatedCelestiaHeight).Seconds() > 600; {
+	estimatedCount := 0
+	estimatedAt1Count := 0
+	secondsFromFirstPossibleBlock := float64(600) // try to get within 10 minutes of the necessary celestia block (increases as needed)
+	for ; genTime.Sub(timeAtEstimatedCelestiaHeight).Seconds() < 0 || genTime.Sub(timeAtEstimatedCelestiaHeight).Seconds() > secondsFromFirstPossibleBlock; {
 		estimatedCelestiaHeight, timeAtEstimatedCelestiaHeight, err = cp.getEstimatedCelestiaHeight(ctx, genTime, estimatedCelestiaHeight)
 		if err != nil {
 			return 0, err
+		}
+
+		estimatedCount++
+		if estimatedCelestiaHeight == 1 {
+			estimatedAt1Count++
+		}
+
+		// This should only occur during testing and/or new testnets
+		if estimatedAt1Count > 3 {
+			break
+		}
+
+		// After 5 calculations, increase our threshold (could be due to a celestia halt)
+		if estimatedCount > 5 {
+			secondsFromFirstPossibleBlock = secondsFromFirstPossibleBlock * 2
 		}
 	}
 

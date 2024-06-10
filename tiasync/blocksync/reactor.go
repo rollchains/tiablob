@@ -43,8 +43,8 @@ type Reactor struct {
 func NewReactor(store *store.BlockStore, localPeerID p2p.ID,
 	metrics *Metrics, celestiaCfg *relayer.CelestiaConfig, genTime time.Time,
 ) *Reactor {
-	// TODO: get celestia height from block store
-	celestiaHeight := int64(0)
+	// Get the last height queried and if available, redo that query to ensure we got everything
+	celestiaHeight := store.LastCelestiaHeightQueried()-1
 
 	bcR := &Reactor{
 		localPeerID:  localPeerID,

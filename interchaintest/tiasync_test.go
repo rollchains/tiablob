@@ -324,3 +324,80 @@ func TestTiasyncTxPropagation(t *testing.T) {
 	fmt.Println("User 2 balance:", amount)
 
 }
+
+// go test -timeout 10m -v -run TestTiasyncRestartFullnode . -count 1
+func TestTiasyncRestartFullnode(t *testing.T) {
+	ctx := context.Background()
+	chains := setup.StartCelestiaAndRollchains(t, ctx, 1)
+
+	timeoutCtx, timeoutCtxCancel := context.WithTimeout(ctx, time.Minute)
+	defer timeoutCtxCancel()
+
+	err := testutil.WaitForBlocks(timeoutCtx, 10, chains.RollchainChain)
+	require.NoError(t, err, "chain did not produce blocks")
+
+	// Add a new full node that syncs from celestia
+	celestiaChainID := "celestia-1"
+	celestiaAppHostname := fmt.Sprintf("%s-val-0-%s", celestiaChainID, t.Name())            // celestia-1-val-0-TestPublish
+	celestiaNodeHostname := fmt.Sprintf("%s-celestia-node-0-%s", celestiaChainID, t.Name()) // celestia-1-celestia-node-0-TestPublish
+	err = chains.RollchainChain.AddFullNodes(ctx, testutil.Toml{
+		"config/app.toml": testutil.Toml{
+			"celestia": testutil.Toml{
+				"app-rpc-url":        fmt.Sprintf("http://%s:26657", celestiaAppHostname),
+				"node-rpc-url":       fmt.Sprintf("http://%s:26658", celestiaNodeHostname),
+				"override-namespace": "rc_demo0",
+			},
+			"tiasync": testutil.Toml{
+				"enable": true,
+				"laddr": "tcp://0.0.0.0:26656",
+				"upstream-peers": chains.RollchainChain.Nodes().PeerString(ctx),
+			},
+		},
+		"config/config.toml": testutil.Toml{
+			//"log_level": "debug",
+			"p2p": testutil.Toml{
+				"laddr": "tcp://127.0.0.1:26777",
+				"persistent_peers": "",
+				"addr_book_strict": false,
+				"allow_duplicate_ip": true,
+				"pex": false,
+			},
+		},
+	}, 1)
+	require.Error(t, err) // expected to fail, always catching up
+	fmt.Println("Error:", err)
+
+	err = chains.RollchainChain.FullNodes[0].StopContainer(ctx)
+	require.NoError(t, err)
+	err = chains.RollchainChain.FullNodes[0].RemoveContainer(ctx)
+	require.NoError(t, err)
+
+	timeoutCtx, timeoutCtxCancel = context.WithTimeout(ctx, time.Minute)
+	defer timeoutCtxCancel()
+	err = testutil.WaitForBlocks(timeoutCtx, 2, chains.RollchainChain)
+	require.NoError(t, err, "chain did not produce blocks after adding fullnode")
+
+
+	err = chains.RollchainChain.FullNodes[0].CreateNodeContainer(ctx)
+	require.NoError(t, err)
+	err = chains.RollchainChain.FullNodes[0].StartContainer(ctx)
+	require.Error(t, err) // expected to fail, always catching up
+	fmt.Println("Error:", err)
+
+	timeoutCtx, timeoutCtxCancel = context.WithTimeout(ctx, time.Minute)
+	defer timeoutCtxCancel()
+
+	previousHeight, err := chains.RollchainChain.Height(ctx)
+	require.NoError(t, err)
+
+	err = testutil.WaitForBlocks(timeoutCtx, 25, chains.RollchainChain)
+	require.NoError(t, err, "chain did not produce blocks after adding fullnode")
+
+	nodes := chains.RollchainChain.Nodes()
+	for _, node := range nodes {
+		latestHeight, err := node.Height(ctx)
+		require.NoError(t, err)
+		t.Log("Node:", node.Name(), "Previous Height:", previousHeight, "Current Height:", latestHeight)
+		require.Greater(t, latestHeight, previousHeight, "a node has not increased height enough")
+	}
+}
