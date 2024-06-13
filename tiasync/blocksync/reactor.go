@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"math"
 	"reflect"
-	"time"
 
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
 	bcproto "github.com/cometbft/cometbft/proto/tendermint/blocksync"
-	//sm "github.com/cometbft/cometbft/state"
-	//"github.com/cometbft/cometbft/store"
+	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
+	"github.com/cosmos/cosmos-sdk/client"
 
 	"github.com/rollchains/tiablob/tiasync/store"
 	"github.com/rollchains/tiablob/relayer"
@@ -29,8 +28,11 @@ type Reactor struct {
 
 	store         *store.BlockStore
 
-	// Have we started querying celestia?
+	// Local peer is in block sync mode
 	localPeerInBlockSync bool
+
+	blockProviderStarted bool
+
 
 	localPeerID p2p.ID
 
@@ -40,8 +42,9 @@ type Reactor struct {
 }
 
 // NewReactor returns new reactor instance.
-func NewReactor(store *store.BlockStore, localPeerID p2p.ID,
-	metrics *Metrics, celestiaCfg *relayer.CelestiaConfig, genTime time.Time,
+func NewReactor(state sm.State, store *store.BlockStore, localPeerID p2p.ID,
+	metrics *Metrics, celestiaCfg *relayer.CelestiaConfig, genDoc *types.GenesisDoc,
+	clientCtx client.Context,
 ) *Reactor {
 	// Get the last height queried and if available, redo that query to ensure we got everything
 	celestiaHeight := store.LastCelestiaHeightQueried()-1
@@ -50,8 +53,9 @@ func NewReactor(store *store.BlockStore, localPeerID p2p.ID,
 		localPeerID:  localPeerID,
 		store:        store,
 		localPeerInBlockSync: false,
+		blockProviderStarted: false,
 		metrics:      metrics,
-		blockProvider:    blockprovider.NewBlockProvider(store, celestiaHeight, celestiaCfg, genTime),
+		blockProvider:    blockprovider.NewBlockProvider(state, store, celestiaHeight, celestiaCfg, genDoc, clientCtx),
 	}
 	bcR.BaseReactor = *p2p.NewBaseReactor("Reactor", bcR)
 
@@ -110,7 +114,7 @@ func (bcR *Reactor) RemovePeer(peer p2p.Peer, _ interface{}) {}
 // if we have it. Otherwise, we'll respond saying we don't have it.
 func (bcR *Reactor) respondToPeer(msg *bcproto.BlockRequest, src p2p.Peer) (queued bool) {
 	//block := bcR.store.LoadBlock(msg.Height)
-	block := bcR.blockProvider.GetBlock(msg.Height)
+	block := bcR.blockProvider.GetVerifiedBlock(msg.Height)
 	if block == nil {
 		bcR.Logger.Info("Peer asking for a block we don't have", "src", src, "height", msg.Height)
 		return src.TrySend(p2p.Envelope{
@@ -156,7 +160,10 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 				// We know our local node has entered block sync,
 				// and if we state sync'd, we will have our celestia da light client state with a latest height to start querying from.
 				bcR.localPeerInBlockSync = true
-				go bcR.blockProvider.Start()
+				e.Src.TrySend(p2p.Envelope{
+					ChannelID: BlocksyncChannel,
+					Message:   &bcproto.StatusRequest{},
+				})
 			}
 			bcR.respondToPeer(msg, e.Src)
 		}
@@ -173,10 +180,25 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 			})
 		}
 	case *bcproto.StatusResponse:
-		bcR.Logger.Debug("block sync Receive StatusResponse", "height", msg.Height)
+		bcR.Logger.Info("block sync Receive StatusResponse", "height", msg.Height)
 		if e.Src.ID() == bcR.localPeerID {
-			pruned, _ := bcR.store.PruneBlocks(msg.Height)
-			bcR.Logger.Debug("blocks pruned", "pruned", pruned)
+			pruned, err := bcR.store.PruneBlocks(msg.Height, false)
+			if err != nil {
+				bcR.Logger.Error("Error pruning blocks", "error", err)
+			}
+			bcR.Logger.Info("blocks pruned", "pruned", pruned)
+			if bcR.localPeerInBlockSync && !bcR.blockProviderStarted {
+				bcR.blockProviderStarted = true
+				pruned, err := bcR.store.PruneBlocks(msg.Height, true)
+				if err != nil {
+					bcR.Logger.Error("Error pruning blocks on startup", "error", err)
+				}
+				bcR.Logger.Info("blocks pruned on startup", "pruned", pruned)
+				if bcR.store.IsEmpty() {
+					bcR.store.SetInitialState(msg.Height)
+				}
+				go bcR.blockProvider.Start()
+			}
 		}
 	default:
 		bcR.Logger.Error(fmt.Sprintf("Unknown message type %v", reflect.TypeOf(msg)))

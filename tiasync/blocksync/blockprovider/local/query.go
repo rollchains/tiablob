@@ -24,6 +24,16 @@ func (cc *CosmosProvider) GetBlockAtHeight(ctx context.Context, height int64) (*
 	return block, nil
 }
 
+// TODO: this can be removed
+func (cc *CosmosProvider) Validators(ctx context.Context) (*coretypes.ResultValidators, error) {
+	height := int64(1)
+	vals, err := cc.rpcClient.Validators(ctx, &height, nil, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error querying validators at latest uncommitted height")
+	}
+	return vals, nil
+}
+
 // Status queries the status of this node, can be used to check if it is catching up or a validator
 func (cc *CosmosProvider) Status(ctx context.Context) (*coretypes.ResultStatus, error) {
 	status, err := cc.rpcClient.Status(ctx)

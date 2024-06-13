@@ -3,26 +3,27 @@ package tiasync
 import (
 	"fmt"
 	"net"
-	"time"
 	"os"
 	"strings"
+	"time"
 
 	cfg "github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/libs/log"
 	cmtflags "github.com/cometbft/cometbft/libs/cli/flags"
+	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/p2p/pex"
-	"github.com/cometbft/cometbft/proxy"
+
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
+	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/server"
 
-	"github.com/rollchains/tiablob/tiasync/blocksync"
-	"github.com/rollchains/tiablob/tiasync/store"
-	"github.com/rollchains/tiablob/tiasync/statesync"
-	"github.com/rollchains/tiablob/tiasync/mempool"
-	"github.com/rollchains/tiablob/tiasync/consensus"
 	"github.com/rollchains/tiablob/relayer"
+	"github.com/rollchains/tiablob/tiasync/blocksync"
+	"github.com/rollchains/tiablob/tiasync/consensus"
+	"github.com/rollchains/tiablob/tiasync/mempool"
+	"github.com/rollchains/tiablob/tiasync/statesync"
+	"github.com/rollchains/tiablob/tiasync/store"
 )
 
 
@@ -60,7 +61,7 @@ type Tiasync struct {
 	consensusReactor  *consensus.Reactor             // for participating in the consensus
 	pexReactor        *pex.Reactor            // for exchanging peer addresses
 	//evidencePool      *evidence.Pool          // tracking evidence
-	proxyApp          proxy.AppConns          // connection to the application
+	//proxyApp          proxy.AppConns          // connection to the application
 	rpcListeners      []net.Listener          // rpc servers
 	//txIndexer         txindex.TxIndexer
 	//blockIndexer      indexer.BlockIndexer
@@ -71,7 +72,7 @@ type Tiasync struct {
 	Logger log.Logger
 }
 
-func TiasyncRoutine(svrCtx *server.Context) {
+func TiasyncRoutine(svrCtx *server.Context, clientCtx client.Context) {
 	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 	
 	cometCfg := svrCtx.Config
@@ -95,7 +96,7 @@ func TiasyncRoutine(svrCtx *server.Context) {
 	if err != nil {
 		panic(err)
 	}
-	ts, err := NewTiasync(cometCfg, &tiasyncCfg, &celestiaCfg, logger)
+	ts, err := NewTiasync(cometCfg, &tiasyncCfg, &celestiaCfg, logger, clientCtx)
 	if err != nil {
 		panic(err)
 	}
@@ -108,6 +109,7 @@ func NewTiasync(
 	tiasyncCfg *TiasyncConfig,
 	celestiaCfg *relayer.CelestiaConfig,
 	logger log.Logger,
+	clientCtx client.Context,
 ) (*Tiasync, error) {
 	dbProvider := cfg.DefaultDBProvider
 	genesisDocProvider := func() (*types.GenesisDoc, error) {
@@ -133,12 +135,10 @@ func NewTiasync(
 		return p2p.NopMetrics(), blocksync.NopMetrics(), statesync.NopMetrics()
 	}
 	
-	logger.Info("Tiasync node key file", "file", tiasyncCfg.NodeKeyFile(config.BaseConfig))
 	nodeKey, err := p2p.LoadOrGenNodeKey(tiasyncCfg.NodeKeyFile(config.BaseConfig))
 	if err != nil {
 		panic(err)
 	}
-	logger.Info("Tiasync key id", "id", nodeKey.ID())
 	
 	cometNodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
 	if err != nil {
@@ -162,7 +162,7 @@ func NewTiasync(
 	// 	return nil, err
 	// }
 
-	bcReactor := blocksync.NewReactor(blockStore, cometNodeKey.ID(), bsMetrics, celestiaCfg, genDoc.GenesisTime)
+	bcReactor := blocksync.NewReactor(state, blockStore, cometNodeKey.ID(), bsMetrics, celestiaCfg, genDoc, clientCtx)
 	bcReactor.SetLogger(logger.With("tsmodule", "tsblocksync"))
 
 	stateSyncReactor := statesync.NewReactor(

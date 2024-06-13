@@ -1,22 +1,15 @@
 package store
 
 import (
-	"encoding/binary"
-	//"encoding/hex"
 	"encoding/json"
-	//"errors"
 	"fmt"
 
 	"github.com/cosmos/gogoproto/proto"
 
 	dbm "github.com/cometbft/cometbft-db"
 
-	//"github.com/cometbft/cometbft/evidence"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
-	//cmtstore "github.com/cometbft/cometbft/proto/tendermint/store"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	//sm "github.com/cometbft/cometbft/state"
-	//"github.com/cometbft/cometbft/types"
 )
 
 // Assuming the length of a block part is 64kB (`types.BlockPartSizeBytes`),
@@ -67,6 +60,12 @@ type BlockStoreState struct {
 	LastCelestiaHeightQueried int64 `json:"last_celestia_height_queried"`
 }
 
+// TODO: make proto
+type BlockMeta struct {
+	Count int
+	PartSetSizes []int
+}
+
 // NewBlockStore returns a new BlockStore with the given DB,
 // initialized to the last height that was committed to the DB.
 func NewBlockStore(db dbm.DB) *BlockStore {
@@ -79,11 +78,20 @@ func NewBlockStore(db dbm.DB) *BlockStore {
 	}
 }
 
+func (bs *BlockStore) SetInitialState(height int64) {
+	bs.mtx.Lock()
+	defer bs.mtx.Unlock()
+
+	bs.base = height + 1
+	bs.height = height
+}
+
 // Empty of contiguous block (may contain non-contiguous blocks)
 func (bs *BlockStore) IsEmpty() bool {
 	bs.mtx.RLock()
 	defer bs.mtx.RUnlock()
-	return bs.base == bs.height && bs.base == 0
+	return bs.base > bs.height || 
+		(bs.base == bs.height && bs.base == 0)
 }
 
 // Base returns the first known contiguous block height, or 0 for empty block stores.
@@ -108,16 +116,21 @@ func (bs *BlockStore) Height() int64 {
 
 // LoadBlock returns the block with the given height.
 // If no block is found for that height, it returns nil.
-func (bs *BlockStore) LoadBlock(height int64) *cmtproto.Block {
-	partsTotal := bs.LoadBlockMeta(height)
-	if partsTotal == 0 {
+func (bs *BlockStore) LoadBlock(height int64, blockIndex int) *cmtproto.Block {
+	blockMeta := bs.LoadBlockMeta(height)
+
+	if blockMeta == nil {
+		return nil
+	}
+
+	if len(blockMeta.PartSetSizes)-1 < blockIndex {
 		return nil
 	}
 
 	pbb := new(cmtproto.Block)
 	buf := []byte{}
-	for i := 0; i < int(partsTotal); i++ {
-		part := bs.LoadBlockPart(height, i)
+	for i := 0; i < blockMeta.PartSetSizes[blockIndex]; i++ {
+		part := bs.LoadBlockPart(height, blockIndex, i)
 		// If the part is missing (e.g. since it has been deleted after we
 		// loaded the block meta) we consider the whole block to be missing.
 		if part == nil {
@@ -138,8 +151,8 @@ func (bs *BlockStore) LoadBlock(height int64) *cmtproto.Block {
 // LoadBlockPart returns the Part at the given index
 // from the block at the given height.
 // If no part is found for the given height and index, it returns nil.
-func (bs *BlockStore) LoadBlockPart(height int64, index int) []byte {
-	bz, err := bs.db.Get(calcBlockPartKey(height, index))
+func (bs *BlockStore) LoadBlockPart(height int64, blockIndex int, partIndex int) []byte {
+	bz, err := bs.db.Get(calcBlockPartKey(height, blockIndex, partIndex))
 	if err != nil {
 		panic(err)
 	}
@@ -152,30 +165,35 @@ func (bs *BlockStore) LoadBlockPart(height int64, index int) []byte {
 
 // LoadBlockMeta returns the BlockMeta for the given height.
 // If no block is found for the given height, it returns nil.
-func (bs *BlockStore) LoadBlockMeta(height int64) uint32 {
+func (bs *BlockStore) LoadBlockMeta(height int64) *BlockMeta {
 	bz, err := bs.db.Get(calcBlockMetaKey(height))
 	if err != nil {
 		panic(err)
 	}
 
 	if len(bz) == 0 {
-		return 0
+		return nil
 	}
 
-	blockMeta := binary.LittleEndian.Uint32(bz)
+	var blockMeta BlockMeta
+	err = json.Unmarshal(bz, &blockMeta)
+	if err != nil {
+		panic(err)
+	}
 
-	return blockMeta
+	return &blockMeta
 }
 
-// PruneBlocks removes block up to (but not including) a height. It returns number of blocks pruned and the evidence retain height - the height at which data needed to prove evidence must not be removed.
-func (bs *BlockStore) PruneBlocks(height int64) (uint64, error) {
+// PruneBlocks removes block up to (but not including) a height. It returns number of blocks pruned.
+// It can prune blocks above the store's height, but then the store is considered empty
+func (bs *BlockStore) PruneBlocks(height int64, startup bool) (uint64, error) {
 	if height <= 0 {
 		return 0, fmt.Errorf("height must be greater than 0")
 	}
 	bs.mtx.RLock()
-	if height > bs.height {
-		bs.mtx.RUnlock()
-		return 0, fmt.Errorf("cannot prune beyond the latest height %v", bs.height)
+	if !startup && height > bs.height {
+	 	bs.mtx.RUnlock()
+	 	return 0, fmt.Errorf("cannot prune beyond the latest height %v", bs.height)
 	}
 	base := bs.base
 	bs.mtx.RUnlock()
@@ -198,8 +216,8 @@ func (bs *BlockStore) PruneBlocks(height int64) (uint64, error) {
 	}
 
 	for h := base; h < height; h++ {
-		totalParts := bs.LoadBlockMeta(h)
-		if totalParts == 0 { // assume already deleted
+		blockMeta := bs.LoadBlockMeta(h)
+		if blockMeta == nil { // assume already deleted
 			continue
 		}
 
@@ -207,15 +225,17 @@ func (bs *BlockStore) PruneBlocks(height int64) (uint64, error) {
 			return 0, err
 		}
 
-		for p := 0; p < int(totalParts); p++ {
-			if err := batch.Delete(calcBlockPartKey(h, p)); err != nil {
-				return 0, err
+		for blockIndex := 0; blockIndex < blockMeta.Count; blockIndex++ {
+			for partIndex := 0; partIndex < blockMeta.PartSetSizes[blockIndex]; partIndex++ {
+				if err := batch.Delete(calcBlockPartKey(h, blockIndex, partIndex)); err != nil {
+					return 0, err
+				}
 			}
 		}
 		pruned++
 
-		// flush every 1000 blocks to avoid batches becoming too large
-		if pruned%1000 == 0 && pruned > 0 {
+		// flush every 100 blocks to avoid batches becoming too large
+		if pruned%100 == 0 && pruned > 0 {
 			err := flush(batch, h)
 			if err != nil {
 				return 0, err
@@ -242,6 +262,11 @@ func (bs *BlockStore) PruneBlocks(height int64) (uint64, error) {
 func (bs *BlockStore) SaveBlock(celestiaHeight int64, height int64, block []byte) {
 	if block == nil {
 		panic("BlockStore can only save a non-nil block")
+	}
+
+	if height < bs.Base() {
+		// Ignore blocks we don't need
+		return
 	}
 
 	batch := bs.db.NewBatch()
@@ -295,31 +320,47 @@ func (bs *BlockStore) saveBlockToBatch(
 	// parts individually.
 	saveBlockPartsToBatch := partSet.Total() <= maxBlockPartsToBatch
 
+	blockMeta := bs.LoadBlockMeta(height)
+	if blockMeta != nil {
+		blockMeta.Count++
+		partSetSizes := blockMeta.PartSetSizes
+		blockMeta.PartSetSizes = append(partSetSizes, partSet.total)
+	} else {
+		blockMeta = &BlockMeta{
+			Count: 1,
+			PartSetSizes: []int{partSet.total},
+//			IndexVerified: -1,
+		}
+	}
+
 	// Save block parts. This must be done before the block meta, since callers
 	// typically load the block meta first as an indication that the block exists
 	// and then go on to load block parts - we must make sure the block is
 	// complete as soon as the block meta is written.
 	for i := 0; i < int(partSet.Total()); i++ {
 		part := partSet.GetPart(i)
-		bs.saveBlockPart(height, i, part, batch, saveBlockPartsToBatch)
+		bs.saveBlockPart(height, blockMeta.Count-1, i, part, batch, saveBlockPartsToBatch)
 	}
 
 	// Save block meta
-	blockMeta := make([]byte, 4)
-	binary.LittleEndian.PutUint32(blockMeta, partSet.total)
-	if err := batch.Set(calcBlockMetaKey(height), blockMeta); err != nil {
+	blockMetaBz, err := json.Marshal(blockMeta)
+	if err != nil {
+		panic(err)
+	}
+
+	if err := batch.Set(calcBlockMetaKey(height), blockMetaBz); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (bs *BlockStore) saveBlockPart(height int64, index int, part []byte, batch dbm.Batch, saveBlockPartsToBatch bool) {
+func (bs *BlockStore) saveBlockPart(height int64, blockIndex int, partIndex int, part []byte, batch dbm.Batch, saveBlockPartsToBatch bool) {
 	var err error
 	if saveBlockPartsToBatch {
-		err = batch.Set(calcBlockPartKey(height, index), part)
+		err = batch.Set(calcBlockPartKey(height, blockIndex, partIndex), part)
 	} else {
-		err = bs.db.Set(calcBlockPartKey(height, index), part)
+		err = bs.db.Set(calcBlockPartKey(height, blockIndex, partIndex), part)
 	}
 	if err != nil {
 		panic(err)
@@ -353,8 +394,8 @@ func calcBlockMetaKey(height int64) []byte {
 	return []byte(fmt.Sprintf("H:%v", height))
 }
 
-func calcBlockPartKey(height int64, partIndex int) []byte {
-	return []byte(fmt.Sprintf("P:%v:%v", height, partIndex))
+func calcBlockPartKey(height int64, blockIndex int, partIndex int) []byte {
+	return []byte(fmt.Sprintf("P:%v:%v:%v", height, blockIndex, partIndex))
 }
 
 //-----------------------------------------------------------------------------

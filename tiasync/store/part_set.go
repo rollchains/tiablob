@@ -6,23 +6,23 @@ import (
 
 const (
 	// BlockPartSizeBytes is the size of one block part.
-	BlockPartSizeBytes uint32 = 65536 // 64kB
+	BlockPartSizeBytes = 65536 // 64kB
 )
 
 type PartSet struct {
-	total uint32
+	total int
 	parts [][]byte
 }
 
 // Returns an immutable, full PartSet from the data bytes.
 // The data bytes are split into "partSize" chunks, and merkle tree computed.
 // CONTRACT: partSize is greater than zero.
-func NewPartSetFromData(data []byte, partSize uint32) *PartSet {
+func NewPartSetFromData(data []byte, partSize int) *PartSet {
 	// divide data into 4kb parts.
-	total := (uint32(len(data)) + partSize - 1) / partSize
+	total := (len(data) + partSize - 1) / partSize
 	parts := make([][]byte, total)
-	for i := uint32(0); i < total; i++ {
-		part := data[i*partSize : cmtmath.MinInt(len(data), int((i+1)*partSize))]
+	for i := 0; i < total; i++ {
+		part := data[i*partSize : cmtmath.MinInt(len(data), (i+1)*partSize)]
 		parts[i] = part
 	}
 	
@@ -32,7 +32,7 @@ func NewPartSetFromData(data []byte, partSize uint32) *PartSet {
 	}
 }
 
-func (p *PartSet) Total() uint32 {
+func (p *PartSet) Total() int {
 	return p.total
 }
 
