@@ -90,7 +90,7 @@ func (bp *BlockProvider) SetLogger(l log.Logger) {
 	bp.logger = l
 }
 
-func (bp *BlockProvider) Start() {
+func (bp *BlockProvider) Start(celestiaPollInterval time.Duration) {
 	bp.logger.Info("Block Provider Start()", "celestia height", bp.celestiaHeight)
 	ctx := context.Background()
 
@@ -124,7 +124,7 @@ func (bp *BlockProvider) Start() {
 
 	bp.queryLocalValSet(ctx)
 	bp.queryCelestia(ctx)
-	timer := time.NewTimer(5 * time.Second) // TODO: make configurable
+	timer := time.NewTimer(celestiaPollInterval)
 	defer timer.Stop()
 	for {
 		select {
@@ -133,7 +133,7 @@ func (bp *BlockProvider) Start() {
 		case <-timer.C:
 			bp.queryLocalValSet(ctx)
 			bp.queryCelestia(ctx)
-			timer.Reset(5 * time.Second)
+			timer.Reset(celestiaPollInterval)
 		}
 	}
 
@@ -172,6 +172,7 @@ func (bp *BlockProvider) GetVerifiedBlock(height int64) *protoblocktypes.Block {
 
 			bp.mtx.Lock()
 			defer bp.mtx.Unlock()
+
 			// if valSet is nil, we have blocks, and those blocks are w/in 20 blocks of genesis initial height, get genesis val set
 			if bp.valSet == nil && height <= bp.genState.InitialHeight+20 {
 				bp.valSet = bp.getGenesisValidatorSet()
@@ -229,11 +230,6 @@ func (bp *BlockProvider) GetVerifiedBlock(height int64) *protoblocktypes.Block {
 
 	return nil
 }
-
-// func (bp *BlockProvider) GetHeight() int64 {
-// 	bp.logger.Debug("bp GetHeight()", "height", len(bp.blockCache))
-// 	return int64(len(bp.blockCache))
-// }
 
 func (bp *BlockProvider) queryLocalValSet(ctx context.Context) {
 	valSet, err := bp.clientCtx.Client.Validators(ctx, nil, nil, nil)

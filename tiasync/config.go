@@ -2,6 +2,7 @@ package tiasync
 
 import (
 	"path/filepath"
+	"time"
 
 	cfg "github.com/cometbft/cometbft/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
@@ -9,11 +10,12 @@ import (
 )
 
 const (
-	FlagAddrBookPath  = "tiasync.addr-book-path"
-	FlagEnable        = "tiasync.enable"
-	FlagListenAddress = "tiasync.laddr"
-	FlagNodeKeyPath   = "tiasync.node-key-path"
-	FlagUpstreamPeers = "tiasync.upstream-peers"
+	FlagAddrBookPath    = "tiasync.addr-book-path"
+	FlagEnable          = "tiasync.enable"
+	FlagListenAddress   = "tiasync.laddr"
+	FlagNodeKeyPath     = "tiasync.node-key-path"
+	FlagTiaPollInterval = "tiasync.tia-poll-interval"
+	FlagUpstreamPeers   = "tiasync.upstream-peers"
 
 	DefaultConfigDir    = "config"
 	DefaultNodeKeyName  = "tiasync_node_key.json"
@@ -22,14 +24,23 @@ const (
 	DefaultConfigTemplate = `
 
 	[tiasync]
+	# Path to tiasync's address book
 	addr-book-path = "config/tiasync_addrbook.json"
 
+	# Switch to enable/disable tiasync
 	enable = false
 
+	# Address to listen for incoming connections from the validator network
 	laddr = ""
 
+	# Path to the JSON file containing the private key to use for node authentication in the p2p protocol
+	# Tiasync must have a different key than the full node's cometbft instance
 	node-key-path = "config/tiasync_node_key.json"
 
+	# Cadence to query celestia for new blocks
+	tia-poll-interval = "5s"
+
+	# Peers that are upstream from this node and on the validator network
 	upstream-peers = ""
 	`
 )
@@ -40,31 +51,44 @@ var (
 )
 
 var DefaultTiasyncConfig = TiasyncConfig{
+	AddrBookPath: defaultAddrBookPath,
 	Enable:   false,
 	ListenAddress: "",
+	NodeKeyPath: defaultNodeKeyPath,
+	TiaPollInterval: time.Second * 5,
 	UpstreamPeers:      "",
 }
 
 // TiasyncConfig defines the configuration for the in-process tiasync.
 type TiasyncConfig struct {
+	// Path to tiasync's address book
 	AddrBookPath string `mapstructure:"addr-book-path"`
 
+	// Switch to enable/disable tiasync
 	Enable bool `mapstructure:"enable"`
 
+	// Address to listen for incoming connections from the validator network
 	ListenAddress string `mapstructure:"laddr"`
 
+	// Path to the JSON file containing the private key to use for node authentication in the p2p protocol
+	// Tiasync must have a different key than the full node's cometbft instance
 	NodeKeyPath string `mapstructure:"node-key-path"`
 
+	// Cadence to query celestia for new blocks
+	TiaPollInterval time.Duration `mapstructure:"tia-poll-interval"`
+
+	// Peers that are upstream from this node and on the validator network
 	UpstreamPeers string `mapstructure:"upstream-peers"`
 }
 
 func TiasyncConfigFromAppOpts(appOpts servertypes.AppOptions) TiasyncConfig {
 	return TiasyncConfig{
-		AddrBookPath:  cast.ToString(appOpts.Get(FlagAddrBookPath)),
-		Enable:        cast.ToBool(appOpts.Get(FlagEnable)),
-		ListenAddress: cast.ToString(appOpts.Get(FlagListenAddress)),
-		NodeKeyPath:   cast.ToString(appOpts.Get(FlagNodeKeyPath)),
-		UpstreamPeers: cast.ToString(appOpts.Get(FlagUpstreamPeers)),
+		AddrBookPath:    cast.ToString(appOpts.Get(FlagAddrBookPath)),
+		Enable:          cast.ToBool(appOpts.Get(FlagEnable)),
+		ListenAddress:   cast.ToString(appOpts.Get(FlagListenAddress)),
+		NodeKeyPath:     cast.ToString(appOpts.Get(FlagNodeKeyPath)),
+		TiaPollInterval: cast.ToDuration(appOpts.Get(FlagTiaPollInterval)),
+		UpstreamPeers:   cast.ToString(appOpts.Get(FlagUpstreamPeers)),
 	}
 }
 

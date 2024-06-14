@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"reflect"
+	"time"
 
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/log"
@@ -36,6 +37,7 @@ type Reactor struct {
 	localPeerID p2p.ID
 
 	blockProvider *blockprovider.BlockProvider
+	celestiaPollInterval time.Duration
 
 	metrics *Metrics
 }
@@ -43,7 +45,7 @@ type Reactor struct {
 // NewReactor returns new reactor instance.
 func NewReactor(state sm.State, store *store.BlockStore, localPeerID p2p.ID,
 	metrics *Metrics, celestiaCfg *relayer.CelestiaConfig, genDoc *types.GenesisDoc,
-	clientCtx client.Context, cmtConfig *cfg.Config,
+	clientCtx client.Context, cmtConfig *cfg.Config, celestiaPollInterval time.Duration,
 ) *Reactor {
 
 	bcR := &Reactor{
@@ -53,6 +55,7 @@ func NewReactor(state sm.State, store *store.BlockStore, localPeerID p2p.ID,
 		clientCtx: clientCtx,
 		metrics:      metrics,
 		blockProvider:    blockprovider.NewBlockProvider(state, store, celestiaCfg, genDoc, clientCtx, cmtConfig),
+		celestiaPollInterval: celestiaPollInterval,
 	}
 	bcR.BaseReactor = *p2p.NewBaseReactor("Reactor", bcR)
 
@@ -173,7 +176,7 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 				if bcR.store.IsEmpty() {
 					bcR.store.SetInitialState(res2.Response.LastBlockHeight)
 				}
-				go bcR.blockProvider.Start()
+				go bcR.blockProvider.Start(bcR.celestiaPollInterval)
 			}
 			bcR.respondToPeer(msg, e.Src)
 		}
