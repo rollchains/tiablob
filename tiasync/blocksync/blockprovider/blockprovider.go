@@ -3,21 +3,23 @@ package blockprovider
 import (
 	"context"
 	"encoding/json"
+	"sort"
 	"strings"
 	"time"
 
+	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
-	cmttypes "github.com/cometbft/cometbft/types"
 	protoblocktypes "github.com/cometbft/cometbft/proto/tendermint/types"
 	sm "github.com/cometbft/cometbft/state"
+	cmttypes "github.com/cometbft/cometbft/types"
 
-	gutypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	"github.com/cosmos/cosmos-sdk/client"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	gutypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	"github.com/rollchains/tiablob/celestia-node/share"
 	appns "github.com/rollchains/tiablob/celestia/namespace"
@@ -25,6 +27,7 @@ import (
 	cn "github.com/rollchains/tiablob/relayer/celestia-node"
 	"github.com/rollchains/tiablob/tiasync/blocksync/blockprovider/celestia"
 	"github.com/rollchains/tiablob/tiasync/blocksync/blockprovider/local"
+	"github.com/rollchains/tiablob/tiasync/blocksync/blockprovider/trustedrpc"
 	"github.com/rollchains/tiablob/tiasync/store"
 )
 
@@ -40,18 +43,18 @@ type BlockProvider struct {
 	celestiaProvider *celestia.CosmosProvider
 	localProvider    *local.CosmosProvider
 	genDoc *cmttypes.GenesisDoc
+	cmtConfig *cfg.Config
 
 	genState sm.State
 	clientCtx client.Context
 	store *store.BlockStore
 	
 	valSet *cmttypes.ValidatorSet
-
 	mtx cmtsync.Mutex
 }
 
 func NewBlockProvider(state sm.State, store *store.BlockStore, celestiaHeight int64, celestiaCfg *relayer.CelestiaConfig,
-	genDoc *cmttypes.GenesisDoc, clientCtx client.Context) *BlockProvider {
+	genDoc *cmttypes.GenesisDoc, clientCtx client.Context, cmtConfig *cfg.Config) *BlockProvider {
 	celestiaProvider, err := celestia.NewProvider(celestiaCfg.AppRpcURL, celestiaCfg.AppRpcTimeout)
 	if err != nil {
 		panic(err)
@@ -72,6 +75,7 @@ func NewBlockProvider(state sm.State, store *store.BlockStore, celestiaHeight in
 		localProvider: localProvider,
 		genDoc: genDoc,
 		clientCtx: clientCtx,
+		cmtConfig: cmtConfig,
 
 		nodeRpcUrl:        celestiaCfg.NodeRpcURL,
 		nodeAuthToken:     celestiaCfg.NodeAuthToken,
@@ -115,6 +119,8 @@ func (bp *BlockProvider) Start() {
 
 	bp.logger.Info("Starting to query celestia at height", "height", bp.celestiaHeight)
 
+	bp.queryLocalValSet(ctx)
+	bp.queryCelestia(ctx)
 	timer := time.NewTimer(5 * time.Second) // TODO: make configurable
 	defer timer.Stop()
 	for {
@@ -160,10 +166,41 @@ func (bp *BlockProvider) GetVerifiedBlock(height int64) *protoblocktypes.Block {
 			if err != nil {
 				continue
 			}
-			// if verified
+
+			bp.mtx.Lock()
+			defer bp.mtx.Unlock()
+			// if valSet is nil, we have blocks, and those blocks are w/in 20 blocks of genesis initial height, get genesis val set
 			if bp.valSet == nil && height <= bp.genState.InitialHeight+20 {
 				bp.valSet = bp.getGenesisValidatorSet()
 			}
+			
+			// if valSet is nil, we have blocks, states sync is enabled, and we are w/in 1 block of the base, get val set from trusted rpc
+			if bp.valSet == nil && bp.cmtConfig.StateSync.Enable && height <= bp.store.Base()+2 {
+				trustedServer := bp.cmtConfig.StateSync.RPCServers[0]
+				if !strings.Contains(trustedServer, "://") {
+					trustedServer = "http://" + trustedServer
+				}
+				trustedRpc, err := trustedrpc.NewProvider(trustedServer)
+				if err != nil {
+					bp.logger.Error("trusted rpc", "error", err)
+					continue
+				}
+				// TODO: add a static context, don't create a new one each time
+				valSet, err := trustedRpc.Validators(context.Background(), height)
+				if err != nil {
+					bp.logger.Error("trusted rpc validators", "error", err)
+					continue
+				}
+				bp.valSet = &cmttypes.ValidatorSet{
+					Validators: valSet.Validators,
+				} 
+				// Remove val set if we used a trusted node for the first two blocks after state sync
+				defer func() {
+					bp.valSet = nil
+				}()
+			}
+			
+			// otherwise, if valset is still nil, return although we shouldn't enter here
 			if bp.valSet == nil {
 				bp.logger.Info("Val set is nil")
 				return nil
@@ -199,9 +236,11 @@ func (bp *BlockProvider) queryLocalValSet(ctx context.Context) {
 	valSet, err := bp.clientCtx.Client.Validators(ctx, nil, nil, nil)
 	if err == nil {
 		bp.logger.Info("Updating val set")
+		bp.mtx.Lock()
 		bp.valSet = &cmttypes.ValidatorSet{
 			Validators: valSet.Validators,
 		}
+		bp.mtx.Unlock()
 	}
 }
 
@@ -303,6 +342,8 @@ func (bp *BlockProvider) getGenesisValidatorSet() *cmttypes.ValidatorSet {
 			}
 		}
 	}
+
+	sort.Sort(cmttypes.ValidatorsByVotingPower(valSet.Validators))
 
 	return &valSet
 }

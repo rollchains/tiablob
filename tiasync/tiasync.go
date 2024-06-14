@@ -30,7 +30,7 @@ import (
 type Tiasync struct {
 
 	// config
-	config        *cfg.Config
+	cmtConfig        *cfg.Config
 	celestiaCfg   *relayer.CelestiaConfig
 	tiasyncCfg    *TiasyncConfig
 	genesisDoc    *types.GenesisDoc   // initial validator set
@@ -77,16 +77,12 @@ func TiasyncRoutine(svrCtx *server.Context, clientCtx client.Context) {
 	
 	cometCfg := svrCtx.Config
 	logger.Info("Comet config:", "Moniker", cometCfg.Moniker, "TimeoutCommit", cometCfg.Consensus.TimeoutCommit, "RootDir", cometCfg.RootDir)
-	fmt.Println("Comet config:", "Moniker", cometCfg.Moniker, "TimeoutCommit", cometCfg.Consensus.TimeoutCommit, "RootDir", cometCfg.RootDir)
 	logger.Info("Comet config:", "TimeoutPrecommit", cometCfg.Consensus.TimeoutPrecommit, "TimeoutPrevote", cometCfg.Consensus.TimeoutPrevote, "TimeoutPropose", cometCfg.Consensus.TimeoutPropose)
-	fmt.Println("Comet config:", "TimeoutPrecommit", cometCfg.Consensus.TimeoutPrecommit, "TimeoutPrevote", cometCfg.Consensus.TimeoutPrevote, "TimeoutPropose", cometCfg.Consensus.TimeoutPropose)
 	logger.Info("P2P:", "AddrBookStrict", cometCfg.P2P.AddrBookStrict, "ExternalAddress", cometCfg.P2P.ExternalAddress, "PersistentPeers", cometCfg.P2P.PersistentPeers, "ListenAddress", cometCfg.P2P.ListenAddress, "Seeds", cometCfg.P2P.Seeds)
-	fmt.Println("P2P:", "AddrBookStrict", cometCfg.P2P.AddrBookStrict, "ExternalAddress", cometCfg.P2P.ExternalAddress, "PersistentPeers", cometCfg.P2P.PersistentPeers, "ListenAddress", cometCfg.P2P.ListenAddress, "Seeds", cometCfg.P2P.Seeds)
 
 	tiasyncCfg := TiasyncConfigFromAppOpts(svrCtx.Viper)
 	celestiaCfg := relayer.CelestiaConfigFromAppOpts(svrCtx.Viper)
 	logger.Info("App opts: ", "Sync-from-celestia/enable", tiasyncCfg.Enable, "chain id", celestiaCfg.ChainID, "app rpc", celestiaCfg.AppRpcURL)
-	fmt.Println("App opts: ", "Sync-from-celestia/enable", tiasyncCfg.Enable, "chain id", celestiaCfg.ChainID, "app rpc", celestiaCfg.AppRpcURL)
 
 	if !tiasyncCfg.Enable {
 		return
@@ -105,7 +101,7 @@ func TiasyncRoutine(svrCtx *server.Context, clientCtx client.Context) {
 }
 
 func NewTiasync(
-	config *cfg.Config,
+	cmtConfig *cfg.Config,
 	tiasyncCfg *TiasyncConfig,
 	celestiaCfg *relayer.CelestiaConfig,
 	logger log.Logger,
@@ -113,7 +109,7 @@ func NewTiasync(
 ) (*Tiasync, error) {
 	dbProvider := cfg.DefaultDBProvider
 	genesisDocProvider := func() (*types.GenesisDoc, error) {
-		jsonBlob, err := os.ReadFile(config.GenesisFile())
+		jsonBlob, err := os.ReadFile(cmtConfig.GenesisFile())
 		if err != nil {
 			return nil, fmt.Errorf("couldn't read GenesisDoc file: %w", err)
 		}
@@ -122,31 +118,31 @@ func NewTiasync(
 		fmt.Println(jsonBlobStr)
 		genDoc, err := types.GenesisDocFromJSON([]byte(jsonBlobStr))
 		if err != nil {
-			return nil, fmt.Errorf("error reading GenesisDoc at %s: %w", config.GenesisFile(), err)
+			return nil, fmt.Errorf("error reading GenesisDoc at %s: %w", cmtConfig.GenesisFile(), err)
 		}
 		return genDoc, nil
 	}
 	metricsProvider := func(chainID string) (*p2p.Metrics, *blocksync.Metrics, *statesync.Metrics) {
-		if config.Instrumentation.Prometheus {
-			return p2p.PrometheusMetrics(config.Instrumentation.Namespace, "chain_id", chainID),
-				blocksync.PrometheusMetrics(config.Instrumentation.Namespace, "chain_id", chainID),
-				statesync.PrometheusMetrics(config.Instrumentation.Namespace, "chain_id", chainID)
+		if cmtConfig.Instrumentation.Prometheus {
+			return p2p.PrometheusMetrics(cmtConfig.Instrumentation.Namespace, "chain_id", chainID),
+				blocksync.PrometheusMetrics(cmtConfig.Instrumentation.Namespace, "chain_id", chainID),
+				statesync.PrometheusMetrics(cmtConfig.Instrumentation.Namespace, "chain_id", chainID)
 		}
 		return p2p.NopMetrics(), blocksync.NopMetrics(), statesync.NopMetrics()
 	}
 	
-	nodeKey, err := p2p.LoadOrGenNodeKey(tiasyncCfg.NodeKeyFile(config.BaseConfig))
+	nodeKey, err := p2p.LoadOrGenNodeKey(tiasyncCfg.NodeKeyFile(cmtConfig.BaseConfig))
 	if err != nil {
 		panic(err)
 	}
 	
-	cometNodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
+	cometNodeKey, err := p2p.LoadOrGenNodeKey(cmtConfig.NodeKeyFile())
 	if err != nil {
 		panic(err)
 	}
 
 	// TODO: move block store to block sync's block provider
-	blockStore, stateDB, err := initDBs(config, dbProvider)
+	blockStore, stateDB, err := initDBs(cmtConfig, dbProvider)
 	if err != nil {
 		return nil, err
 	}
@@ -162,11 +158,11 @@ func NewTiasync(
 	// 	return nil, err
 	// }
 
-	bcReactor := blocksync.NewReactor(state, blockStore, cometNodeKey.ID(), bsMetrics, celestiaCfg, genDoc, clientCtx)
+	bcReactor := blocksync.NewReactor(state, blockStore, cometNodeKey.ID(), bsMetrics, celestiaCfg, genDoc, clientCtx, cmtConfig)
 	bcReactor.SetLogger(logger.With("tsmodule", "tsblocksync"))
 
 	stateSyncReactor := statesync.NewReactor(
-		*config.StateSync,
+		*cmtConfig.StateSync,
 		ssMetrics,
 	)
 	stateSyncReactor.SetLogger(logger.With("tsmodule", "tsstatesync"))
@@ -176,11 +172,11 @@ func NewTiasync(
 		return nil, err
 	}
 
-	transport, peerFilters := createTransport(config, nodeInfo, nodeKey)
+	transport, peerFilters := createTransport(cmtConfig, nodeInfo, nodeKey)
 
 	p2pLogger := logger.With("tsmodule", "tsp2p")
 	
-	mempoolReactor := mempool.NewReactor(config.Mempool, cometNodeKey.ID())
+	mempoolReactor := mempool.NewReactor(cmtConfig.Mempool, cometNodeKey.ID())
 	mempoolLogger := logger.With("tsmodule", "tsmempool")
 	mempoolReactor.SetLogger(mempoolLogger)
 
@@ -189,23 +185,23 @@ func NewTiasync(
 	consensusReactor.SetLogger(consensusLogger)
 
 	sw := createSwitch(
-		config, transport, p2pMetrics, peerFilters, mempoolReactor, bcReactor,
+		cmtConfig, transport, p2pMetrics, peerFilters, mempoolReactor, bcReactor,
 		stateSyncReactor, consensusReactor, nodeInfo, nodeKey, p2pLogger,
 	)
 
-	err = sw.AddPersistentPeers(getPersistentPeers(tiasyncCfg.UpstreamPeers, cometNodeKey, config.P2P.ListenAddress))
+	err = sw.AddPersistentPeers(getPersistentPeers(tiasyncCfg.UpstreamPeers, cometNodeKey, cmtConfig.P2P.ListenAddress))
 	if err != nil {
 		return nil, fmt.Errorf("could not add peers from persistent_peers field: %w", err)
 	}
-	addrBook, err := createAddrBookAndSetOnSwitch(config, tiasyncCfg, sw, p2pLogger, nodeKey)
+	addrBook, err := createAddrBookAndSetOnSwitch(cmtConfig, tiasyncCfg, sw, p2pLogger, nodeKey)
 	if err != nil {
 		return nil, fmt.Errorf("could not create addrbook: %w", err)
 	}
 
-	pexReactor := createPEXReactorAndAddToSwitch(addrBook, config, sw, logger)
+	pexReactor := createPEXReactorAndAddToSwitch(addrBook, cmtConfig, sw, logger)
 
 	tiasync := &Tiasync{
-		config:        config,
+		cmtConfig:        cmtConfig,
 		tiasyncCfg:    tiasyncCfg,
 		genesisDoc:    genDoc,
 		//privValidator: privValidator,
@@ -261,7 +257,7 @@ func (t *Tiasync) Start() {
 	}
 
 	// Always connect to persistent peers
-	err = t.sw.DialPeersAsync(getPersistentPeers(t.tiasyncCfg.UpstreamPeers, t.cometNodeKey, t.config.P2P.ListenAddress))
+	err = t.sw.DialPeersAsync(getPersistentPeers(t.tiasyncCfg.UpstreamPeers, t.cometNodeKey, t.cmtConfig.P2P.ListenAddress))
 	if err != nil {
 		panic(fmt.Errorf("could not dial peers from persistent_peers field: %w", err))
 	}
