@@ -3,6 +3,7 @@ package blockprovider
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"sort"
 	"strings"
 	"time"
@@ -22,11 +23,12 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	"github.com/rollchains/tiablob/celestia-node/share"
+	"github.com/rollchains/tiablob"
+	lc "github.com/rollchains/tiablob/lightclients/celestia"
 	appns "github.com/rollchains/tiablob/celestia/namespace"
 	"github.com/rollchains/tiablob/relayer"
 	cn "github.com/rollchains/tiablob/relayer/celestia-node"
 	"github.com/rollchains/tiablob/tiasync/blocksync/blockprovider/celestia"
-	"github.com/rollchains/tiablob/tiasync/blocksync/blockprovider/local"
 	"github.com/rollchains/tiablob/tiasync/blocksync/blockprovider/trustedrpc"
 	"github.com/rollchains/tiablob/tiasync/store"
 )
@@ -41,7 +43,6 @@ type BlockProvider struct {
 	celestiaNamespace            appns.Namespace
 
 	celestiaProvider *celestia.CosmosProvider
-	localProvider    *local.CosmosProvider
 	genDoc *cmttypes.GenesisDoc
 	cmtConfig *cfg.Config
 
@@ -54,31 +55,25 @@ type BlockProvider struct {
 }
 
 func NewBlockProvider(state sm.State, store *store.BlockStore, celestiaCfg *relayer.CelestiaConfig,
-	genDoc *cmttypes.GenesisDoc, clientCtx client.Context, cmtConfig *cfg.Config) *BlockProvider {
+	genDoc *cmttypes.GenesisDoc, clientCtx client.Context, cmtConfig *cfg.Config, celestiaNamespaceStr string) *BlockProvider {
 	celestiaProvider, err := celestia.NewProvider(celestiaCfg.AppRpcURL, celestiaCfg.AppRpcTimeout)
 	if err != nil {
 		panic(err)
 	}
 
-	localProvider, err := local.NewProvider()
-	if err != nil {
-		panic(err)
+	if celestiaCfg.OverrideNamespace != "" {
+		celestiaNamespaceStr = celestiaCfg.OverrideNamespace
 	}
-
-	//if cfg.OverrideNamespace != "" {
-		celestiaNamespace := appns.MustNewV0([]byte(celestiaCfg.OverrideNamespace))
-	//}
 
 	return &BlockProvider{
 		celestiaProvider: celestiaProvider,
-		localProvider: localProvider,
 		genDoc: genDoc,
 		clientCtx: clientCtx,
 		cmtConfig: cmtConfig,
 
 		nodeRpcUrl:        celestiaCfg.NodeRpcURL,
 		nodeAuthToken:     celestiaCfg.NodeAuthToken,
-		celestiaNamespace: celestiaNamespace,
+		celestiaNamespace: appns.MustNewV0([]byte(celestiaNamespaceStr)),
 		celestiaChainID:   celestiaCfg.ChainID,
 
 		genState: state,
@@ -100,7 +95,7 @@ func (bp *BlockProvider) Start(celestiaPollInterval time.Duration) {
 
 	// first query for a celestia DA light client, use that height (i.e. coming from state sync)
 	if bp.celestiaHeight <= 0 {
-		clientState, err := bp.localProvider.QueryCelestiaClientState(ctx)
+		clientState, err := bp.QueryCelestiaClientState(ctx)
 		if err != nil {
 			panic(err)
 		} else {
@@ -345,4 +340,21 @@ func (bp *BlockProvider) getGenesisValidatorSet() *cmttypes.ValidatorSet {
 	sort.Sort(cmttypes.ValidatorsByVotingPower(valSet.Validators))
 
 	return &valSet
+}
+
+func (bp *BlockProvider) QueryCelestiaClientState(ctx context.Context) (*lc.ClientState, error) {
+	path := fmt.Sprintf("store/%s/key", tiablob.StoreKey)
+	key := []byte(fmt.Sprintf("%s%s", tiablob.ClientStoreKey, lc.KeyClientState))
+
+	res, err := bp.clientCtx.Client.ABCIQuery(ctx, path, key)
+	if err != nil {
+		return nil, err
+	}
+
+	var clientState lc.ClientState
+	if err = bp.clientCtx.Codec.Unmarshal(res.Response.Value, &clientState); err != nil {
+		return nil, err
+	}
+
+	return &clientState, nil
 }

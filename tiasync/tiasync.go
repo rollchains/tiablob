@@ -72,7 +72,7 @@ type Tiasync struct {
 	Logger log.Logger
 }
 
-func TiasyncRoutine(svrCtx *server.Context, clientCtx client.Context) {
+func TiasyncRoutine(svrCtx *server.Context, clientCtx client.Context, celestiaNamespace string) {
 	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 	
 	cometCfg := svrCtx.Config
@@ -92,7 +92,7 @@ func TiasyncRoutine(svrCtx *server.Context, clientCtx client.Context) {
 	if err != nil {
 		panic(err)
 	}
-	ts, err := NewTiasync(cometCfg, &tiasyncCfg, &celestiaCfg, logger, clientCtx)
+	ts, err := NewTiasync(cometCfg, &tiasyncCfg, &celestiaCfg, logger, clientCtx, celestiaNamespace)
 	if err != nil {
 		panic(err)
 	}
@@ -106,6 +106,7 @@ func NewTiasync(
 	celestiaCfg *relayer.CelestiaConfig,
 	logger log.Logger,
 	clientCtx client.Context,
+	celestiaNamespace string,
 ) (*Tiasync, error) {
 	dbProvider := cfg.DefaultDBProvider
 	genesisDocProvider := func() (*types.GenesisDoc, error) {
@@ -158,7 +159,7 @@ func NewTiasync(
 	// 	return nil, err
 	// }
 
-	bcReactor := blocksync.NewReactor(state, blockStore, cometNodeKey.ID(), bsMetrics, celestiaCfg, genDoc, clientCtx, cmtConfig, tiasyncCfg.TiaPollInterval)
+	bcReactor := blocksync.NewReactor(state, blockStore, cometNodeKey.ID(), bsMetrics, celestiaCfg, genDoc, clientCtx, cmtConfig, tiasyncCfg.TiaPollInterval, celestiaNamespace)
 	bcReactor.SetLogger(logger.With("tsmodule", "tsblocksync"))
 
 	stateSyncReactor := statesync.NewReactor(

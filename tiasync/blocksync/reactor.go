@@ -46,6 +46,7 @@ type Reactor struct {
 func NewReactor(state sm.State, store *store.BlockStore, localPeerID p2p.ID,
 	metrics *Metrics, celestiaCfg *relayer.CelestiaConfig, genDoc *types.GenesisDoc,
 	clientCtx client.Context, cmtConfig *cfg.Config, celestiaPollInterval time.Duration,
+	celestiaNamespace string,
 ) *Reactor {
 
 	bcR := &Reactor{
@@ -54,7 +55,7 @@ func NewReactor(state sm.State, store *store.BlockStore, localPeerID p2p.ID,
 		localPeerInBlockSync: false,
 		clientCtx: clientCtx,
 		metrics:      metrics,
-		blockProvider:    blockprovider.NewBlockProvider(state, store, celestiaCfg, genDoc, clientCtx, cmtConfig),
+		blockProvider:    blockprovider.NewBlockProvider(state, store, celestiaCfg, genDoc, clientCtx, cmtConfig, celestiaNamespace),
 		celestiaPollInterval: celestiaPollInterval,
 	}
 	bcR.BaseReactor = *p2p.NewBaseReactor("Reactor", bcR)
