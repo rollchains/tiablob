@@ -19,18 +19,7 @@ import (
 const maxBlockPartsToBatch = 10
 
 /*
-BlockStore is a simple low level store for blocks.
-
-There are three types of information stored:
-  - BlockMeta:   Meta information about each block
-  - Block part:  Parts of each block, aggregated w/ PartSet
-  - Commit:      The commit part of each block, for gossiping precommit votes
-
-Currently the precommit signatures are duplicated in the Block parts as
-well as the Commit.  In the future this may change, perhaps by moving
-the Commit data outside the Block. (TODO)
-
-The store can be assumed to contain all contiguous blocks between base and height (inclusive).
+BlockStore is a simple low level store for non-contiguous blocks.
 
 // NOTE: BlockStore methods will panic if they encounter errors
 // deserializing loaded data, indicating probable corruption on disk.
@@ -53,14 +42,14 @@ type BlockStore struct {
 	lastCelestiaHeightQueried int64
 }
 
-// TODO: make proto
+// TODO: make proto, low priority
 type BlockStoreState struct {
 	Base int64 `json:"base"`
 	Height int64 `json:"height"`
 	LastCelestiaHeightQueried int64 `json:"last_celestia_height_queried"`
 }
 
-// TODO: make proto
+// TODO: make proto, low priority
 type BlockMeta struct {
 	Count int
 	PartSetSizes []int
@@ -84,6 +73,14 @@ func (bs *BlockStore) SetInitialState(height int64) {
 
 	bs.base = height + 1
 	bs.height = height
+	bs.lastCelestiaHeightQueried = 0
+	
+	bss := BlockStoreState{
+		Base: bs.base,
+		Height: bs.height,
+		LastCelestiaHeightQueried: bs.lastCelestiaHeightQueried,
+	}
+	saveBlockStoreStateBatchInternal(&bss, bs.db, nil)
 }
 
 // Empty of contiguous block (may contain non-contiguous blocks)

@@ -1,16 +1,13 @@
 package tiasync
 
 import (
-	//"context"
 	"errors"
 	"fmt"
-	//"net"
 	"strings"
 	"time"
 
 	cfg "github.com/cometbft/cometbft/config"
 	sm "github.com/cometbft/cometbft/state"
-	//"github.com/cometbft/cometbft/store"
 	dbm "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/types"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
@@ -20,9 +17,7 @@ import (
 	"github.com/cometbft/cometbft/p2p/pex"
 	"github.com/cometbft/cometbft/version"
 	bc "github.com/cometbft/cometbft/blocksync"
-	//cs "github.com/cometbft/cometbft/consensus"
 
-	//"github.com/rollchains/tiablob/tiasync/blocksync"
 	"github.com/rollchains/tiablob/tiasync/statesync"
 	"github.com/rollchains/tiablob/tiasync/store"
 	"github.com/rollchains/tiablob/tiasync/mempool"
@@ -32,11 +27,9 @@ import (
 func createPEXReactorAndAddToSwitch(addrBook pex.AddrBook, config *cfg.Config,
 	sw *p2p.Switch, logger log.Logger,
 ) *pex.Reactor {
-	// TODO persistent peers ? so we can have their DNS addrs saved
 	pexReactor := pex.NewReactor(addrBook,
 		&pex.ReactorConfig{
-			//Seeds:    splitAndTrimEmpty(config.P2P.Seeds, ",", " "),
-			SeedMode: false, // Make this configurable so that only tiasync crawls network, not cometbft
+			SeedMode: false,
 			// See consensus/reactor.go: blocksToContributeToBecomeGoodPeer 10000
 			// blocks assuming 10s blocks ~ 28 hours.
 			// TODO (melekes): make it dynamic based on the actual block latencies
@@ -134,50 +127,9 @@ func createTransport(
 		connFilters = append(connFilters, p2p.ConnDuplicateIPFilter())
 	}
 
-	// Filter peers by addr or pubkey with an ABCI query.
-	// If the query return code is OK, add peer.
-	/*if config.FilterPeers {
-		connFilters = append(
-			connFilters,
-			// ABCI query for address filtering.
-			func(_ p2p.ConnSet, c net.Conn, _ []net.IP) error {
-				res, err := proxyApp.Query().Query(context.TODO(), &abci.RequestQuery{
-					Path: fmt.Sprintf("/p2p/filter/addr/%s", c.RemoteAddr().String()),
-				})
-				if err != nil {
-					return err
-				}
-				if res.IsErr() {
-					return fmt.Errorf("error querying abci app: %v", res)
-				}
-
-				return nil
-			},
-		)
-
-		peerFilters = append(
-			peerFilters,
-			// ABCI query for ID filtering.
-			func(_ p2p.IPeerSet, p p2p.Peer) error {
-				res, err := proxyApp.Query().Query(context.TODO(), &abci.RequestQuery{
-					Path: fmt.Sprintf("/p2p/filter/id/%s", p.ID()),
-				})
-				if err != nil {
-					return err
-				}
-				if res.IsErr() {
-					return fmt.Errorf("error querying abci app: %v", res)
-				}
-
-				return nil
-			},
-		)
-	}*/
-
 	p2p.MultiplexTransportConnFilters(connFilters...)(transport)
 
-	// Limit the number of incoming connections.
-	//max := config.P2P.MaxNumInboundPeers + len(splitAndTrimEmpty(config.P2P.UnconditionalPeerIDs, ",", " "))
+	// Limit the number of incoming connections. Our are mainly outbound.
 	max := 1
 	p2p.MultiplexTransportMaxIncomingConnections(max)(transport)
 
@@ -214,11 +166,9 @@ func makeNodeInfo(
 			statesync.SnapshotChannel, statesync.ChunkChannel,
 		},
 		Moniker: "tiasync",
-		//Moniker: config.Moniker,
 		Other: p2p.DefaultNodeInfoOther{
 			TxIndex:    txIndexerStatus,
 			RPCAddress: "tcp://0.0.0.0:26657", // not used? but is validated...
-			//RPCAddress: config.RPC.ListenAddress,
 		},
 	}
 

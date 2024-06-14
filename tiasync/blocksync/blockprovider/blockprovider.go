@@ -53,7 +53,7 @@ type BlockProvider struct {
 	mtx cmtsync.Mutex
 }
 
-func NewBlockProvider(state sm.State, store *store.BlockStore, celestiaHeight int64, celestiaCfg *relayer.CelestiaConfig,
+func NewBlockProvider(state sm.State, store *store.BlockStore, celestiaCfg *relayer.CelestiaConfig,
 	genDoc *cmttypes.GenesisDoc, clientCtx client.Context, cmtConfig *cfg.Config) *BlockProvider {
 	celestiaProvider, err := celestia.NewProvider(celestiaCfg.AppRpcURL, celestiaCfg.AppRpcTimeout)
 	if err != nil {
@@ -70,7 +70,6 @@ func NewBlockProvider(state sm.State, store *store.BlockStore, celestiaHeight in
 	//}
 
 	return &BlockProvider{
-		celestiaHeight: celestiaHeight,
 		celestiaProvider: celestiaProvider,
 		localProvider: localProvider,
 		genDoc: genDoc,
@@ -94,6 +93,10 @@ func (bp *BlockProvider) SetLogger(l log.Logger) {
 func (bp *BlockProvider) Start() {
 	bp.logger.Info("Block Provider Start()", "celestia height", bp.celestiaHeight)
 	ctx := context.Background()
+
+	// Get the last height queried and if available, redo that query to ensure we got everything
+	// Only perform this on Start() since we could have cleared it if the store was emptied
+	bp.celestiaHeight = bp.store.LastCelestiaHeightQueried()-1
 
 	// first query for a celestia DA light client, use that height (i.e. coming from state sync)
 	if bp.celestiaHeight <= 0 {
@@ -199,7 +202,7 @@ func (bp *BlockProvider) GetVerifiedBlock(height int64) *protoblocktypes.Block {
 					bp.valSet = nil
 				}()
 			}
-			
+
 			// otherwise, if valset is still nil, return although we shouldn't enter here
 			if bp.valSet == nil {
 				bp.logger.Info("Val set is nil")

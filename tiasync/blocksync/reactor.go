@@ -45,8 +45,6 @@ func NewReactor(state sm.State, store *store.BlockStore, localPeerID p2p.ID,
 	metrics *Metrics, celestiaCfg *relayer.CelestiaConfig, genDoc *types.GenesisDoc,
 	clientCtx client.Context, cmtConfig *cfg.Config,
 ) *Reactor {
-	// Get the last height queried and if available, redo that query to ensure we got everything
-	celestiaHeight := store.LastCelestiaHeightQueried()-1
 
 	bcR := &Reactor{
 		localPeerID:  localPeerID,
@@ -54,7 +52,7 @@ func NewReactor(state sm.State, store *store.BlockStore, localPeerID p2p.ID,
 		localPeerInBlockSync: false,
 		clientCtx: clientCtx,
 		metrics:      metrics,
-		blockProvider:    blockprovider.NewBlockProvider(state, store, celestiaHeight, celestiaCfg, genDoc, clientCtx, cmtConfig),
+		blockProvider:    blockprovider.NewBlockProvider(state, store, celestiaCfg, genDoc, clientCtx, cmtConfig),
 	}
 	bcR.BaseReactor = *p2p.NewBaseReactor("Reactor", bcR)
 
@@ -158,7 +156,7 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 				// We know our local node has entered block sync,
 				// and if we state sync'd, we will have our celestia da light client state with a latest height to start querying from.
 				bcR.localPeerInBlockSync = true
-				ctx := context.Background()
+				ctx := context.Background() // TODO: move
 				res2, err := bcR.clientCtx.Client.ABCIInfo(ctx)
 				if err != nil {
 					bcR.localPeerInBlockSync = false

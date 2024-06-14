@@ -52,7 +52,6 @@ func (conR *Reactor) SwitchToConsensus(state sm.State, skipWAL bool) {
 
 // GetChannels implements Reactor
 func (conR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
-	// TODO optimize
 	return []*p2p.ChannelDescriptor{
 		{
 			ID:                  StateChannel,
@@ -89,7 +88,6 @@ func defaultRoundStepMessage() (nrsMsg *cmtcons.NewRoundStep) {
 
 // String returns a string representation of the Reactor.
 // NOTE: For now, it is just a hard-coded string to avoid accessing unprotected shared variables.
-// TODO: improve!
 func (conR *Reactor) String() string {
 	// better not to access shared variables
 	return "ConsensusReactor" // conR.StringIndented("")
