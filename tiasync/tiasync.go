@@ -159,7 +159,7 @@ func NewTiasync(
 	// 	return nil, err
 	// }
 
-	bcReactor := blocksync.NewReactor(state, blockStore, cometNodeKey.ID(), bsMetrics, celestiaCfg, genDoc, clientCtx, cmtConfig, tiasyncCfg.TiaPollInterval, celestiaNamespace)
+	bcReactor := blocksync.NewReactor(state, blockStore, cometNodeKey.ID(), bsMetrics, celestiaCfg, genDoc, clientCtx, cmtConfig, tiasyncCfg.TiaPollInterval, celestiaNamespace, tiasyncCfg.ChainID)
 	bcReactor.SetLogger(logger.With("tsmodule", "tsblocksync"))
 
 	stateSyncReactor := statesync.NewReactor(

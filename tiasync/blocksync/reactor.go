@@ -46,7 +46,7 @@ type Reactor struct {
 func NewReactor(state sm.State, store *store.BlockStore, localPeerID p2p.ID,
 	metrics *Metrics, celestiaCfg *relayer.CelestiaConfig, genDoc *types.GenesisDoc,
 	clientCtx client.Context, cmtConfig *cfg.Config, celestiaPollInterval time.Duration,
-	celestiaNamespace string,
+	celestiaNamespace string, chainID string,
 ) *Reactor {
 
 	bcR := &Reactor{
@@ -55,7 +55,7 @@ func NewReactor(state sm.State, store *store.BlockStore, localPeerID p2p.ID,
 		localPeerInBlockSync: false,
 		clientCtx: clientCtx,
 		metrics:      metrics,
-		blockProvider:    blockprovider.NewBlockProvider(state, store, celestiaCfg, genDoc, clientCtx, cmtConfig, celestiaNamespace),
+		blockProvider:    blockprovider.NewBlockProvider(state, store, celestiaCfg, genDoc, clientCtx, cmtConfig, celestiaNamespace, chainID),
 		celestiaPollInterval: celestiaPollInterval,
 	}
 	bcR.BaseReactor = *p2p.NewBaseReactor("Reactor", bcR)
@@ -160,7 +160,7 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 				// We know our local node has entered block sync,
 				// and if we state sync'd, we will have our celestia da light client state with a latest height to start querying from.
 				bcR.localPeerInBlockSync = true
-				ctx := context.Background() // TODO: move
+				ctx := context.Background()
 				res2, err := bcR.clientCtx.Client.ABCIInfo(ctx)
 				if err != nil {
 					bcR.localPeerInBlockSync = false

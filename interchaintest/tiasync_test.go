@@ -39,6 +39,7 @@ func TestTiasyncFromGenesis(t *testing.T) {
 				"override-namespace": "rc_demo0",
 			},
 			"tiasync": testutil.Toml{
+				"chain-id": chains.RollchainChain.Config().ChainID,
 				"enable": true,
 				"laddr": "tcp://0.0.0.0:26656",
 				"upstream-peers": chains.RollchainChain.Nodes().PeerString(ctx),

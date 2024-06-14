@@ -39,8 +39,8 @@ type BlockProvider struct {
 
 	nodeRpcUrl string
 	nodeAuthToken string
-	celestiaChainID              string
 	celestiaNamespace            appns.Namespace
+	chainID string
 
 	celestiaProvider *celestia.CosmosProvider
 	genDoc *cmttypes.GenesisDoc
@@ -54,8 +54,16 @@ type BlockProvider struct {
 	mtx cmtsync.Mutex
 }
 
-func NewBlockProvider(state sm.State, store *store.BlockStore, celestiaCfg *relayer.CelestiaConfig,
-	genDoc *cmttypes.GenesisDoc, clientCtx client.Context, cmtConfig *cfg.Config, celestiaNamespaceStr string) *BlockProvider {
+func NewBlockProvider(
+	state sm.State,
+	store *store.BlockStore,
+	celestiaCfg *relayer.CelestiaConfig,
+	genDoc *cmttypes.GenesisDoc,
+	clientCtx client.Context,
+	cmtConfig *cfg.Config,
+	celestiaNamespaceStr string,
+	chainID string,
+) *BlockProvider {
 	celestiaProvider, err := celestia.NewProvider(celestiaCfg.AppRpcURL, celestiaCfg.AppRpcTimeout)
 	if err != nil {
 		panic(err)
@@ -74,7 +82,7 @@ func NewBlockProvider(state sm.State, store *store.BlockStore, celestiaCfg *rela
 		nodeRpcUrl:        celestiaCfg.NodeRpcURL,
 		nodeAuthToken:     celestiaCfg.NodeAuthToken,
 		celestiaNamespace: appns.MustNewV0([]byte(celestiaNamespaceStr)),
-		celestiaChainID:   celestiaCfg.ChainID,
+		chainID: chainID,
 
 		genState: state,
 		store: store,
@@ -117,7 +125,7 @@ func (bp *BlockProvider) Start(celestiaPollInterval time.Duration) {
 
 	bp.logger.Info("Starting to query celestia at height", "height", bp.celestiaHeight)
 
-	bp.queryLocalValSet(ctx)
+	bp.queryLocalNode(ctx)
 	bp.queryCelestia(ctx)
 	timer := time.NewTimer(celestiaPollInterval)
 	defer timer.Stop()
@@ -126,7 +134,7 @@ func (bp *BlockProvider) Start(celestiaPollInterval time.Duration) {
 		case <-ctx.Done():
 			return
 		case <-timer.C:
-			bp.queryLocalValSet(ctx)
+			bp.queryLocalNode(ctx)
 			bp.queryCelestia(ctx)
 			timer.Reset(celestiaPollInterval)
 		}
@@ -204,7 +212,6 @@ func (bp *BlockProvider) GetVerifiedBlock(height int64) *protoblocktypes.Block {
 				bp.logger.Info("Val set is nil")
 				return nil
 			}
-			// TODO: pass in chain id
 			// We are currently using the below method to verify 2/3 of the val set has signed the block.
 			// Tiasync's val set is always at or near the current height, but we don't want to query it every block.
 			// 2/3 is a little overkill for our needs which is to just to filter out blocks from namespace collisions
@@ -226,7 +233,7 @@ func (bp *BlockProvider) GetVerifiedBlock(height int64) *protoblocktypes.Block {
 	return nil
 }
 
-func (bp *BlockProvider) queryLocalValSet(ctx context.Context) {
+func (bp *BlockProvider) queryLocalNode(ctx context.Context) {
 	valSet, err := bp.clientCtx.Client.Validators(ctx, nil, nil, nil)
 	if err == nil {
 		bp.logger.Info("Updating val set")
@@ -275,8 +282,11 @@ func (bp *BlockProvider) queryCelestia(ctx context.Context) {
 				return
 			}
 
-			// TODO: add some more checks like chain-id before saving
-		
+			if bp.chainID != "" && blobBlockProto.Header.ChainID != bp.chainID {
+				bp.logger.Info("blob's block does not have our chain id", "expected", bp.clientCtx.ChainID, "actual", blobBlockProto.Header.ChainID)
+				return
+			}
+
 			rollchainBlockHeight := blobBlockProto.Header.Height
 			bp.logger.Info("bp adding block", "height", rollchainBlockHeight)
 			bp.store.SaveBlock(queryHeight, rollchainBlockHeight, mBlob.GetData())
