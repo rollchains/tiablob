@@ -14,6 +14,7 @@ import (
 	protoblocktypes "github.com/cometbft/cometbft/proto/tendermint/types"
 	sm "github.com/cometbft/cometbft/state"
 	cmttypes "github.com/cometbft/cometbft/types"
+	cmtmath "github.com/cometbft/cometbft/libs/math"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -212,20 +213,28 @@ func (bp *BlockProvider) GetVerifiedBlock(height int64) *protoblocktypes.Block {
 				bp.logger.Info("Val set is nil")
 				return nil
 			}
-			// We are currently using the below method to verify 2/3 of the val set has signed the block.
-			// Tiasync's val set is always at or near the current height, but we don't want to query it every block.
-			// 2/3 is a little overkill for our needs which is to just to filter out blocks from namespace collisions
-			// or malicious blocks. We may move towards using the light client verify with a trust level of 1/3.
-			// If we use the light client verify method, we will also need to check that the txs, evidence, last commit 
-			// hash correctly. The change may be warrented if the tiasync polling interval is high or 1/3 of the
-			// validator set could frequently change. In either case, block sync will timeout more frequently and 
-			// could impact catching up or staying at the expected height that Celestia has.
-			err = bp.valSet.VerifyCommitLight(block1.Header.ChainID, block1ID, block1.Height, block2.LastCommit)
+
+			// Verify that the block id of the block being verified matches that of the next block's last commit's block id
+			// This verifies the txs, evidence, and last commit.
+			if !block1ID.Equals(block2.LastCommit.BlockID) {
+				bp.logger.Info("Block being verified does not match the next block's last commit block id, note: not an error", "height", block1.Height)
+				continue
+			}
+
+			// Verify that 1/3 of our known val set has signed this block, this is to filter out invalid blocks due to namespace collisions or maliciousness.
+			// After delivery via block sync, our local node will still verify 2/3 of the current val has signed it.
+			// We use VerifyCommitLightTrusting instead of VerifyCommitLight in order to set the trusting level to 1/3, not require the val set size to
+			// exactly match commit's signature size, and to look up signatures by address rather than index (val set doesn't necessarily correspond
+			// with the val set that signed the block).
+			// Most importantly, we do not need to have the latest val set. Since tiasync does not apply the blocks, we would need to query
+			// the local node for the latest val set every block. This would result in block sync timing out every block (15 sec), slowing down syncing to
+			// below the validator network's block production rate, and steadily getting further and further behind.
+			err = bp.valSet.VerifyCommitLightTrusting(block1.Header.ChainID, block2.LastCommit, cmtmath.Fraction{Numerator: 1, Denominator: 3})
 			if err == nil {
-				bp.logger.Info("Block verified", "height", height)
+				bp.logger.Info("Block verified w/ 1/3", "height", height)
 				return block1Proto
 			} else {
-				bp.logger.Error("Block not verified", "height", height, "error", err)
+				bp.logger.Info("Block not verified, note: not an error", "height", height, "error", err)
 			}
 		}
 	}
