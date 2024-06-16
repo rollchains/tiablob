@@ -1,7 +1,9 @@
 package tiasync
 
 import (
+	"fmt"
 	"path/filepath"
+	"strings"
 	"time"
 
 	cfg "github.com/cometbft/cometbft/config"
@@ -110,14 +112,31 @@ func (t TiasyncConfig) AddrBookFile(cometCfg cfg.BaseConfig) string {
 }
 
 // only if tiasync is enabled
-func verifyConfigs() {
-	// If state sync is enabled, must have upstream-peers in tiasync
-	// p2p.laddr must be localhost??
-	// one node-key is set, persistent_peers must be empty
-	// p2p.addr_book_strict must be false
-	// p2p.allow_duplicate_ip must be true
-	// p2p.pex must be false
-	// p2p.external-addr is empty
+func verifyConfigs(tiasyncCfg *TiasyncConfig, cometCfg *cfg.Config) error {
+	if tiasyncCfg.Enable {
+		if cometCfg.StateSync.Enable && tiasyncCfg.UpstreamPeers == "" {
+			return fmt.Errorf("tiasync enabled, must have at least one tiasync upstream peer with state sync enabled")
+		}
+		if !strings.Contains(cometCfg.P2P.ListenAddress, "127.0.0.1") {
+			return fmt.Errorf("tiasync enabled, comet config's P2P ListenAddress/laddr must contain 127.0.0.1")
+		}
+		if cometCfg.P2P.Seeds != "" || cometCfg.P2P.PersistentPeers != "" {
+			return fmt.Errorf("tiasync enabled, comet config's P2P seeds/persistent peers must be empty")
+		}
+		if cometCfg.P2P.AddrBookStrict {
+			return fmt.Errorf("tiasync enabled, comet config's P2P address book strict must be false")
+		}
+		if !cometCfg.P2P.AllowDuplicateIP {
+			return fmt.Errorf("tiasync enabled, comet config's P2P allow duplicate IP must be true")
+		}
+		if cometCfg.P2P.PexReactor {
+			return fmt.Errorf("tiasync enabled, comet config's P2P pex reactor must be false")
+		}
+		if cometCfg.P2P.ExternalAddress != "" {
+			return fmt.Errorf("tiasync enabled, comet config's P2P external address must be empty")
+		}
+	}
+	return nil
 }
 
 // helper function to make config creation independent of root dir

@@ -184,24 +184,7 @@ func (bp *BlockProvider) GetVerifiedBlock(height int64) *protoblocktypes.Block {
 			
 			// if valSet is nil, we have blocks, states sync is enabled, and we are w/in 1 block of the base, get val set from trusted rpc
 			if bp.valSet == nil && bp.cmtConfig.StateSync.Enable && height <= bp.store.Base()+2 {
-				trustedServer := bp.cmtConfig.StateSync.RPCServers[0]
-				if !strings.Contains(trustedServer, "://") {
-					trustedServer = "http://" + trustedServer
-				}
-				trustedRpc, err := trustedrpc.NewProvider(trustedServer)
-				if err != nil {
-					bp.logger.Error("trusted rpc", "error", err)
-					continue
-				}
-				// TODO: add a static context, don't create a new one each time
-				valSet, err := trustedRpc.Validators(context.Background(), height)
-				if err != nil {
-					bp.logger.Error("trusted rpc validators", "error", err)
-					continue
-				}
-				bp.valSet = &cmttypes.ValidatorSet{
-					Validators: valSet.Validators,
-				} 
+				bp.getValSetFromTrustedRpc(height)
 				// Remove val set if we used a trusted node for the first two blocks after state sync
 				defer func() {
 					bp.valSet = nil
@@ -376,4 +359,27 @@ func (bp *BlockProvider) QueryCelestiaClientState(ctx context.Context) (*lc.Clie
 	}
 
 	return &clientState, nil
+}
+
+func (bp *BlockProvider) getValSetFromTrustedRpc(height int64) {
+	ctx := context.Background()
+	for _, trustedServer := range bp.cmtConfig.StateSync.RPCServers {
+		if !strings.Contains(trustedServer, "://") {
+			trustedServer = "http://" + trustedServer
+		}
+		trustedRpc, err := trustedrpc.NewProvider(trustedServer)
+		if err != nil {
+			bp.logger.Error("trusted rpc new provider", "error", err)
+			continue
+		}
+		valSet, err := trustedRpc.Validators(ctx, height)
+		if err != nil {
+			bp.logger.Error("trusted rpc validators", "error", err)
+			continue
+		}
+		bp.valSet = &cmttypes.ValidatorSet{
+			Validators: valSet.Validators,
+		} 
+		return
+	}
 }

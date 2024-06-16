@@ -76,16 +76,15 @@ func TiasyncRoutine(svrCtx *server.Context, clientCtx client.Context, celestiaNa
 	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 	
 	cometCfg := svrCtx.Config
-	logger.Info("Comet config:", "Moniker", cometCfg.Moniker, "TimeoutCommit", cometCfg.Consensus.TimeoutCommit, "RootDir", cometCfg.RootDir)
-	logger.Info("Comet config:", "TimeoutPrecommit", cometCfg.Consensus.TimeoutPrecommit, "TimeoutPrevote", cometCfg.Consensus.TimeoutPrevote, "TimeoutPropose", cometCfg.Consensus.TimeoutPropose)
-	logger.Info("P2P:", "AddrBookStrict", cometCfg.P2P.AddrBookStrict, "ExternalAddress", cometCfg.P2P.ExternalAddress, "PersistentPeers", cometCfg.P2P.PersistentPeers, "ListenAddress", cometCfg.P2P.ListenAddress, "Seeds", cometCfg.P2P.Seeds)
-
 	tiasyncCfg := TiasyncConfigFromAppOpts(svrCtx.Viper)
 	celestiaCfg := relayer.CelestiaConfigFromAppOpts(svrCtx.Viper)
-	logger.Info("App opts: ", "Sync-from-celestia/enable", tiasyncCfg.Enable, "chain id", celestiaCfg.ChainID, "app rpc", celestiaCfg.AppRpcURL)
 
 	if !tiasyncCfg.Enable {
 		return
+	}
+
+	if err := verifyConfigs(&tiasyncCfg, cometCfg); err != nil {
+		panic(err)
 	}
 
 	logger, err := cmtflags.ParseLogLevel(cometCfg.LogLevel, logger, cfg.DefaultLogLevel)
