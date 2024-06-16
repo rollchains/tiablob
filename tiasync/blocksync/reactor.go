@@ -38,13 +38,11 @@ type Reactor struct {
 
 	blockProvider *blockprovider.BlockProvider
 	celestiaPollInterval time.Duration
-
-	metrics *Metrics
 }
 
 // NewReactor returns new reactor instance.
 func NewReactor(state sm.State, store *store.BlockStore, localPeerID p2p.ID,
-	metrics *Metrics, celestiaCfg *relayer.CelestiaConfig, genDoc *types.GenesisDoc,
+	celestiaCfg *relayer.CelestiaConfig, genDoc *types.GenesisDoc,
 	clientCtx client.Context, cmtConfig *cfg.Config, celestiaPollInterval time.Duration,
 	celestiaNamespace string, chainID string,
 ) *Reactor {
@@ -54,7 +52,6 @@ func NewReactor(state sm.State, store *store.BlockStore, localPeerID p2p.ID,
 		store:        store,
 		localPeerInBlockSync: false,
 		clientCtx: clientCtx,
-		metrics:      metrics,
 		blockProvider:    blockprovider.NewBlockProvider(state, store, celestiaCfg, genDoc, clientCtx, cmtConfig, celestiaNamespace, chainID),
 		celestiaPollInterval: celestiaPollInterval,
 	}
@@ -102,10 +99,6 @@ func (bcR *Reactor) AddPeer(peer p2p.Peer) {
 			},
 		})
 	}	
-	// it's OK if send fails. will try later in poolRoutine
-
-	// peer is added to the pool once we receive the first
-	// bcStatusResponseMessage from the peer and call pool.SetPeerRange
 }
 
 // RemovePeer implements Reactor by removing peer from the pool.

@@ -5,7 +5,6 @@ import (
 	"net"
 	"os"
 	"strings"
-	"time"
 
 	cfg "github.com/cometbft/cometbft/config"
 	cmtflags "github.com/cometbft/cometbft/libs/cli/flags"
@@ -97,6 +96,9 @@ func TiasyncRoutine(svrCtx *server.Context, clientCtx client.Context, celestiaNa
 	}
 
 	ts.Start()
+
+	// Run forever
+	select {}
 }
 
 func NewTiasync(
@@ -122,13 +124,12 @@ func NewTiasync(
 		}
 		return genDoc, nil
 	}
-	metricsProvider := func(chainID string) (*p2p.Metrics, *blocksync.Metrics, *statesync.Metrics) {
+	metricsProvider := func(chainID string) (*p2p.Metrics, *statesync.Metrics) {
 		if cmtConfig.Instrumentation.Prometheus {
 			return p2p.PrometheusMetrics(cmtConfig.Instrumentation.Namespace, "chain_id", chainID),
-				blocksync.PrometheusMetrics(cmtConfig.Instrumentation.Namespace, "chain_id", chainID),
 				statesync.PrometheusMetrics(cmtConfig.Instrumentation.Namespace, "chain_id", chainID)
 		}
-		return p2p.NopMetrics(), blocksync.NopMetrics(), statesync.NopMetrics()
+		return p2p.NopMetrics(), statesync.NopMetrics()
 	}
 	
 	nodeKey, err := p2p.LoadOrGenNodeKey(tiasyncCfg.NodeKeyFile(cmtConfig.BaseConfig))
@@ -141,7 +142,6 @@ func NewTiasync(
 		panic(err)
 	}
 
-	// TODO: move block store to block sync's block provider
 	blockStore, stateDB, err := initDBs(cmtConfig, dbProvider)
 	if err != nil {
 		return nil, err
@@ -151,14 +151,14 @@ func NewTiasync(
 	if err != nil {
 		return nil, err
 	}
-	p2pMetrics, bsMetrics, ssMetrics := metricsProvider(genDoc.ChainID)
+	p2pMetrics, ssMetrics := metricsProvider(genDoc.ChainID)
 	
 	// _, evidencePool, err := createEvidenceReactor(config, dbProvider, stateStore, blockStore, logger)
 	// if err != nil {
 	// 	return nil, err
 	// }
 
-	bcReactor := blocksync.NewReactor(state, blockStore, cometNodeKey.ID(), bsMetrics, celestiaCfg, genDoc, clientCtx, cmtConfig, tiasyncCfg.TiaPollInterval, celestiaNamespace, tiasyncCfg.ChainID)
+	bcReactor := blocksync.NewReactor(state, blockStore, cometNodeKey.ID(), celestiaCfg, genDoc, clientCtx, cmtConfig, tiasyncCfg.TiaPollInterval, celestiaNamespace, tiasyncCfg.ChainID)
 	bcReactor.SetLogger(logger.With("tsmodule", "tsblocksync"))
 
 	stateSyncReactor := statesync.NewReactor(
@@ -261,14 +261,4 @@ func (t *Tiasync) Start() {
 	if err != nil {
 		panic(fmt.Errorf("could not dial peers from persistent_peers field: %w", err))
 	}
-
-	timer := time.NewTimer(time.Second*5)
-	defer timer.Stop()
-	for {
-		select {
-		case <- timer.C:
-			timer.Reset(time.Second*5)
-		}
-	}
-
 }

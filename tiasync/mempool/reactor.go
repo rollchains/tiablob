@@ -2,16 +2,12 @@ package mempool
 
 import (
 	"context"
-	//"errors"
-	//"fmt"
 	"time"
 
 	cfg "github.com/cometbft/cometbft/config"
-	//"github.com/cometbft/cometbft/libs/clist"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
 	protomem "github.com/cometbft/cometbft/proto/tendermint/mempool"
-	//"github.com/cometbft/cometbft/types"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -48,11 +44,6 @@ func NewReactor(config *cfg.MempoolConfig, localPeerID p2p.ID) *Reactor {
 
 	return memR
 }
-
-// InitPeer implements Reactor by creating a state for the peer.
-//func (memR *Reactor) InitPeer(peer p2p.Peer) p2p.Peer {
-//	return peer
-//}
 
 // SetLogger sets the Logger on the reactor and the underlying mempool.
 func (memR *Reactor) SetLogger(l log.Logger) {
