@@ -5,7 +5,6 @@ import (
 	"time"
 
 	cfg "github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
 	protomem "github.com/cometbft/cometbft/proto/tendermint/mempool"
 	"golang.org/x/sync/semaphore"
@@ -16,8 +15,7 @@ const (
 )
 
 // Reactor handles mempool tx broadcasting amongst peers.
-// It maintains a map from peer ID to counter, to prevent gossiping txs to the
-// peers you received it from.
+// It maintains a map from peer ID to peer. Broadcasting is only outward to val network.
 type Reactor struct {
 	p2p.BaseReactor
 	config  *cfg.MempoolConfig
@@ -31,7 +29,7 @@ type Reactor struct {
 	activeNonPersistentPeersSemaphore *semaphore.Weighted
 }
 
-// NewReactor returns a new Reactor with the given config and mempool.
+// NewReactor returns a new Reactor with the given config.
 func NewReactor(config *cfg.MempoolConfig, localPeerID p2p.ID) *Reactor {
 	memR := &Reactor{
 		config:  config,
@@ -43,11 +41,6 @@ func NewReactor(config *cfg.MempoolConfig, localPeerID p2p.ID) *Reactor {
 	memR.activeNonPersistentPeersSemaphore = semaphore.NewWeighted(int64(memR.config.ExperimentalMaxGossipConnectionsToNonPersistentPeers))
 
 	return memR
-}
-
-// SetLogger sets the Logger on the reactor and the underlying mempool.
-func (memR *Reactor) SetLogger(l log.Logger) {
-	memR.Logger = l
 }
 
 // OnStart implements p2p.BaseReactor.
@@ -114,8 +107,8 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 		}
 		
 	default:
-		memR.Logger.Error("unknown message type", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
-		//memR.Switch.StopPeerForError(e.Src, fmt.Errorf("mempool cannot handle message of type: %T", e.Message)) // don't stop peer, we only support a subset of messages
+		// note: tiasync only supports 1 message, so we may enter here occasionally
+		memR.Logger.Debug("unknown message type", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
 		return
 	}
 
