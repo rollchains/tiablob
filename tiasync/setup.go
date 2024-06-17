@@ -79,28 +79,15 @@ func createSwitch(config *cfg.Config,
 func createAddrBookAndSetOnSwitch(config *cfg.Config, tiasyncCfg *TiasyncConfig, sw *p2p.Switch,
 	p2pLogger log.Logger, nodeKey *p2p.NodeKey,
 ) (pex.AddrBook, error) {
-	//addrBookFile := strings.ReplaceAll(config.P2P.AddrBookFile(), "addrbook", "tsaddrbook")
 	addrBookFile := tiasyncCfg.AddrBookFile(config.BaseConfig)
 	addrBook := pex.NewAddrBook(addrBookFile, config.P2P.AddrBookStrict)
 	addrBook.SetLogger(p2pLogger.With("tsbook", addrBookFile))
 
-	// Add ourselves to addrbook to prevent dialing ourselves
-	// We can remove this once we verify that ExternalAddress is empty
-	if config.P2P.ExternalAddress != "" {
-		addr, err := p2p.NewNetAddressString(p2p.IDAddressString(nodeKey.ID(), config.P2P.ExternalAddress))
-		if err != nil {
-			return nil, fmt.Errorf("p2p.external_address is incorrect: %w", err)
-		}
-		addrBook.AddOurAddress(addr)
+	addr, err := p2p.NewNetAddressString(p2p.IDAddressString(nodeKey.ID(), tiasyncCfg.ListenAddress))
+	if err != nil {
+		return nil, fmt.Errorf("tiasync.laddr is incorrect: %w", err)
 	}
-	//if config.P2P.ListenAddress != "" {
-		//addr, err := p2p.NewNetAddressString(p2p.IDAddressString(nodeKey.ID(), config.P2P.ListenAddress))
-		addr, err := p2p.NewNetAddressString(p2p.IDAddressString(nodeKey.ID(), tiasyncCfg.ListenAddress))
-		if err != nil {
-			return nil, fmt.Errorf("tiasync.laddr is incorrect: %w", err)
-		}
-		addrBook.AddOurAddress(addr)
-	//}
+	addrBook.AddOurAddress(addr)
 
 	sw.SetAddrBook(addrBook)
 
@@ -111,7 +98,6 @@ func createTransport(
 	config *cfg.Config,
 	nodeInfo p2p.NodeInfo,
 	nodeKey *p2p.NodeKey,
-	//proxyApp proxy.AppConns,
 ) (
 	*p2p.MultiplexTransport,
 	[]p2p.PeerFilterFunc,
@@ -142,7 +128,6 @@ func makeNodeInfo(
 	//config *cfg.Config,
 	tiasyncCfg *TiasyncConfig,
 	nodeKey *p2p.NodeKey,
-	//txIndexer txindex.TxIndexer,
 	genDoc *types.GenesisDoc,
 	state sm.State,
 ) (p2p.DefaultNodeInfo, error) {
@@ -172,18 +157,7 @@ func makeNodeInfo(
 		},
 	}
 
-	//if config.P2P.PexReactor {
-	//	nodeInfo.Channels = append(nodeInfo.Channels, pex.PexChannel)
-	//}
-
-	//lAddr := config.P2P.ExternalAddress
-
-	//if lAddr == "" {
-	//	lAddr = config.P2P.ListenAddress
-	//}
-
 	nodeInfo.ListenAddr = tiasyncCfg.ListenAddress
-	//nodeInfo.ListenAddr = lAddr
 
 	err := nodeInfo.Validate()
 	return nodeInfo, err
@@ -206,22 +180,6 @@ func makeNodeInfo(
 // 	return evidenceReactor, evidencePool, nil
 // }
 
-// MetricsProvider returns a consensus, p2p and mempool Metrics.
-//type MetricsProvider func(chainID string) (*p2p.Metrics, *sm.Metrics, *proxy.Metrics, *blocksync.Metrics)
-
-// DefaultMetricsProvider returns Metrics build using Prometheus client library
-// if Prometheus is enabled. Otherwise, it returns no-op Metrics.
-// func DefaultMetricsProvider(config *cfg.InstrumentationConfig) MetricsProvider {
-// 	return func(chainID string) (*p2p.Metrics, *sm.Metrics, *proxy.Metrics, *blocksync.Metrics) {
-// 		if config.Prometheus {
-// 			return p2p.PrometheusMetrics(config.Namespace, "chain_id", chainID),
-// 				sm.PrometheusMetrics(config.Namespace, "chain_id", chainID),
-// 				proxy.PrometheusMetrics(config.Namespace, "chain_id", chainID),
-// 				blocksync.PrometheusMetrics(config.Namespace, "chain_id", chainID)
-// 		}
-// 		return p2p.NopMetrics(), sm.NopMetrics(), proxy.NopMetrics(), blocksync.NopMetrics()
-// 	}
-// }
 
 func initDBs(config *cfg.Config, dbProvider cfg.DBProvider) (blockStore *store.BlockStore, stateDB dbm.DB, err error) {
 	var blockStoreDB dbm.DB
@@ -329,8 +287,7 @@ func splitAndTrimEmpty(s, sep, cutset string) []string {
 	return nonEmptyStrings
 }
 
-// TODO: use all upstream peers as persistent once state sync logic is ready
 func getPersistentPeers(upstreamPeers string, cometNodeKey *p2p.NodeKey, p2pListenAddr string) []string {
-	persistentPeers := splitAndTrimEmpty(upstreamPeers, ",", " ")[0:1]
+	persistentPeers := splitAndTrimEmpty(upstreamPeers, ",", " ")
 	return append(persistentPeers, p2p.IDAddressString(cometNodeKey.ID(), p2pListenAddr))
 }

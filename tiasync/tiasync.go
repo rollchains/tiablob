@@ -46,27 +46,16 @@ type Tiasync struct {
 	cometNodeKey     *p2p.NodeKey // our node privkey
 
 	// services
-	//eventBus          *types.EventBus // pub/sub for services
-	stateStore        sm.Store
 	blockStore        *store.BlockStore // store the blockchain to disk
 	bcReactor         p2p.Reactor       // for block-syncing
 	mempoolReactor    p2p.Reactor       // for gossipping transactions
-	//mempool           mempl.Mempool
 	stateSync         bool                    // whether the node should state sync on startup
 	stateSyncReactor  *statesync.Reactor      // for hosting and restoring state sync snapshots
-	//stateSyncProvider statesync.StateProvider // provides state data for bootstrapping a node
 	stateSyncGenesis  sm.State                // provides the genesis state for state sync
-	//consensusState    *cs.State               // latest consensus state
 	consensusReactor  *consensus.Reactor             // for participating in the consensus
 	pexReactor        *pex.Reactor            // for exchanging peer addresses
 	//evidencePool      *evidence.Pool          // tracking evidence
-	//proxyApp          proxy.AppConns          // connection to the application
 	rpcListeners      []net.Listener          // rpc servers
-	//txIndexer         txindex.TxIndexer
-	//blockIndexer      indexer.BlockIndexer
-	//indexerService    *txindex.IndexerService
-	//prometheusSrv     *http.Server
-	//pprofSrv          *http.Server
 
 	Logger log.Logger
 }
@@ -124,12 +113,11 @@ func NewTiasync(
 		}
 		return genDoc, nil
 	}
-	metricsProvider := func(chainID string) (*p2p.Metrics, *statesync.Metrics) {
+	metricsProvider := func(chainID string) (*p2p.Metrics) {
 		if cmtConfig.Instrumentation.Prometheus {
-			return p2p.PrometheusMetrics(cmtConfig.Instrumentation.Namespace, "chain_id", chainID),
-				statesync.PrometheusMetrics(cmtConfig.Instrumentation.Namespace, "chain_id", chainID)
+			return p2p.PrometheusMetrics(cmtConfig.Instrumentation.Namespace, "chain_id", chainID)
 		}
-		return p2p.NopMetrics(), statesync.NopMetrics()
+		return p2p.NopMetrics()
 	}
 	
 	nodeKey, err := p2p.LoadOrGenNodeKey(tiasyncCfg.NodeKeyFile(cmtConfig.BaseConfig))
@@ -151,7 +139,7 @@ func NewTiasync(
 	if err != nil {
 		return nil, err
 	}
-	p2pMetrics, ssMetrics := metricsProvider(genDoc.ChainID)
+	p2pMetrics := metricsProvider(genDoc.ChainID)
 	
 	// _, evidencePool, err := createEvidenceReactor(config, dbProvider, stateStore, blockStore, logger)
 	// if err != nil {
@@ -163,7 +151,7 @@ func NewTiasync(
 
 	stateSyncReactor := statesync.NewReactor(
 		*cmtConfig.StateSync,
-		ssMetrics,
+		cometNodeKey.ID(),
 	)
 	stateSyncReactor.SetLogger(logger.With("tsmodule", "tsstatesync"))
 
@@ -204,7 +192,6 @@ func NewTiasync(
 		cmtConfig:        cmtConfig,
 		tiasyncCfg:    tiasyncCfg,
 		genesisDoc:    genDoc,
-		//privValidator: privValidator,
 
 		transport: transport,
 		sw:        sw,
@@ -214,23 +201,13 @@ func NewTiasync(
 
 		cometNodeKey: cometNodeKey,
 
-		//stateStore:       stateStore,
 		blockStore:       blockStore,
 		bcReactor:        bcReactor,
 		mempoolReactor:   mempoolReactor,
-		//mempool:          mempool,
-		//consensusState:   consensusState,
 		consensusReactor: consensusReactor,
 		stateSyncReactor: stateSyncReactor,
-		//stateSync:        stateSync,
-		//stateSyncGenesis: state, // Shouldn't be necessary, but need a way to pass the genesis state
 		pexReactor:       pexReactor,
 		//evidencePool:     evidencePool,
-		//proxyApp:         proxyApp,
-		//txIndexer:        txIndexer,
-		//indexerService:   indexerService,
-		//blockIndexer:     blockIndexer,
-		//eventBus:         eventBus,
 		Logger: logger,
 	}
 
