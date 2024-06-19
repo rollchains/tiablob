@@ -33,9 +33,9 @@ func RollchainChainSpecs(testName string, numRc int) []*interchaintest.ChainSpec
 	chainSpecs := make([]*interchaintest.ChainSpec, numRc)
 	for i := 0; i < numRc; i++ {
 		if i == 0 {
-			chainSpecs[i] = RollchainChainSpec(testName, 2, i, fmt.Sprintf("rc_demo%d", i))
+			chainSpecs[i] = RollchainChainSpec(testName, 2, i, fmt.Sprintf("rc_demo%d", i), 0)
 		} else {
-			chainSpecs[i] = RollchainChainSpec(testName, 1, i, fmt.Sprintf("rc_demo%d", i))
+			chainSpecs[i] = RollchainChainSpec(testName, 1, i, fmt.Sprintf("rc_demo%d", i), 0)
 		}
 	}
 	return chainSpecs
@@ -44,7 +44,7 @@ func RollchainChainSpecs(testName string, numRc int) []*interchaintest.ChainSpec
 // Set up default rollchain chain spec with custom values
 // testName: to generate celestia's app and node hostnames
 // numVals: each chain will want this custom (non-primaries expected to be 1)
-func RollchainChainSpec(testName string, numVals int, index int, namespace string) *interchaintest.ChainSpec {
+func RollchainChainSpec(testName string, numVals int, index int, namespace string, pubInterval int) *interchaintest.ChainSpec {
 	NumberFullNodes := 0
 	celestiaAppHostname := fmt.Sprintf("%s-val-0-%s", celestiaChainID, testName)            // celestia-1-val-0-TestPublish
 	celestiaNodeHostname := fmt.Sprintf("%s-celestia-node-0-%s", celestiaChainID, testName) // celestia-1-celestia-node-0-TestPublish
@@ -89,9 +89,14 @@ func RollchainChainSpec(testName string, numVals int, index int, namespace strin
 		ConfigFileOverrides: testutil.Toml{
 			"config/app.toml": testutil.Toml{
 				"celestia": testutil.Toml{
-					"app-rpc-url":        fmt.Sprintf("http://%s:26657", celestiaAppHostname),
-					"node-rpc-url":       fmt.Sprintf("http://%s:26658", celestiaNodeHostname),
-					"override-namespace": namespace,
+					"app-rpc-url":           fmt.Sprintf("http://%s:26657", celestiaAppHostname),
+					"node-rpc-url":          fmt.Sprintf("http://%s:26658", celestiaNodeHostname),
+					"override-namespace":    namespace,
+					"override-pub-interval": pubInterval,
+				},
+				"state-sync": testutil.Toml{
+					"snapshot-interval":    100,
+					"snapshot-keep-recent": 2,
 				},
 			},
 		},

@@ -6,12 +6,14 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/rollchains/tiablob/lightclients/celestia"
+
+	"github.com/rollchains/tiablob"
 )
 
 const DelayAfterUpgrade = int64(10)
 
-func (k Keeper) prepareInjectData(ctx sdk.Context, currentBlockTime time.Time, latestProvenHeight int64) InjectedData {
-	return InjectedData{
+func (k *Keeper) prepareInjectData(ctx sdk.Context, currentBlockTime time.Time, latestProvenHeight int64) tiablob.InjectedData {
+	return tiablob.InjectedData{
 		CreateClient:  k.prepareCreateClient(ctx),
 		PendingBlocks: k.preparePostBlocks(ctx, currentBlockTime),
 		Proofs:        k.relayer.GetCachedProofs(k.injectedProofsLimit, latestProvenHeight),
@@ -19,7 +21,7 @@ func (k Keeper) prepareInjectData(ctx sdk.Context, currentBlockTime time.Time, l
 	}
 }
 
-func (k Keeper) addTiablobDataToTxs(injectDataBz []byte, maxTxBytes int64, txs [][]byte) [][]byte {
+func (k *Keeper) addTiablobDataToTxs(injectDataBz []byte, maxTxBytes int64, txs [][]byte) [][]byte {
 	if len(injectDataBz) > 0 {
 		var finalTxs [][]byte
 		totalTxBytes := int64(len(injectDataBz))
@@ -39,7 +41,7 @@ func (k Keeper) addTiablobDataToTxs(injectDataBz []byte, maxTxBytes int64, txs [
 	return txs
 }
 
-func (k Keeper) prepareCreateClient(ctx sdk.Context) *celestia.CreateClient {
+func (k *Keeper) prepareCreateClient(ctx sdk.Context) *celestia.CreateClient {
 	// If there is no client state, create a client
 	_, clientFound := k.GetClientState(ctx)
 	if !clientFound {
@@ -48,9 +50,12 @@ func (k Keeper) prepareCreateClient(ctx sdk.Context) *celestia.CreateClient {
 	return nil
 }
 
-func (k Keeper) preparePostBlocks(ctx sdk.Context, currentBlockTime time.Time) PendingBlocks {
-	// Call PostNextBlocks to publish next blocks (if necessary)
-	newBlocks := k.relayer.ProposePostNextBlocks(ctx)
+func (k *Keeper) preparePostBlocks(ctx sdk.Context, currentBlockTime time.Time) tiablob.PendingBlocks {
+	provenHeight, err := k.GetProvenHeight(ctx)
+	if err != nil {
+		return tiablob.PendingBlocks{}
+	}
+	newBlocks := k.relayer.ProposePostNextBlocks(ctx, provenHeight)
 
 	// If there are no new blocks to propose, check for expired blocks
 	// Additionally, if the block interval is 1, we need to also be able to re-publish an expired block
@@ -68,14 +73,46 @@ func (k Keeper) preparePostBlocks(ctx sdk.Context, currentBlockTime time.Time) P
 		}
 	}
 
-	return PendingBlocks{
+	return tiablob.PendingBlocks{
 		BlockHeights: newBlocks,
 	}
 }
 
 // shouldGetExpiredBlocks checks if this chain has recently upgraded.
 // If so, it will delay publishing expired blocks so that the relayer has time to populate block proof cache first
-func (k Keeper) shouldGetExpiredBlock(ctx sdk.Context) bool {
+func (k *Keeper) shouldGetExpiredBlock(ctx sdk.Context) bool {
 	_, lastUpgradeHeight, _ := k.upgradeKeeper.GetLastCompletedUpgrade(ctx)
 	return ctx.BlockHeight() >= lastUpgradeHeight+DelayAfterUpgrade
+}
+
+// marshalMaxBytes will marshal the injected data ensuring it fits within the max bytes.
+// If it does not fit, it will decrement the number of proofs to inject by 1 and retry.
+// This new configuration will persist until the node is restarted. If a decrement is required,
+// there was most likely a misconfiguration for block proof cache limit.
+// Injected data is roughly 1KB/proof
+func (k *Keeper) marshalMaxBytes(injectData *tiablob.InjectedData, maxBytes int64, latestProvenHeight int64) []byte {
+	if injectData.IsEmpty() {
+		return nil
+	}
+
+	injectDataBz, err := k.cdc.Marshal(injectData)
+	if err != nil {
+		return nil
+	}
+
+	proofLimit := k.injectedProofsLimit
+	for int64(len(injectDataBz)) > maxBytes {
+		proofLimit = proofLimit - 1
+		injectData.Proofs = k.relayer.GetCachedProofs(proofLimit, latestProvenHeight)
+		injectData.Headers = k.relayer.GetCachedHeaders(proofLimit, latestProvenHeight)
+		if len(injectData.Proofs) == 0 {
+			return nil
+		}
+		injectDataBz, err = k.cdc.Marshal(injectData)
+		if err != nil {
+			return nil
+		}
+	}
+
+	return injectDataBz
 }

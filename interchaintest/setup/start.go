@@ -45,6 +45,7 @@ func StartWithSpecs(t *testing.T, ctx context.Context, celestiaChainSpec *interc
 	ic = ic.AddChain(chains.CelestiaChain, addCelestiaWallets...)
 
 	client, network := interchaintest.DockerSetup(t)
+	chains.Client = client
 
 	require.NoError(t, ic.Build(ctx, nil, interchaintest.InterchainBuildOptions{
 		TestName:         t.Name(),
