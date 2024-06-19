@@ -54,7 +54,6 @@ type Tiasync struct {
 	stateSyncGenesis  sm.State                // provides the genesis state for state sync
 	consensusReactor  *consensus.Reactor             // for participating in the consensus
 	pexReactor        *pex.Reactor            // for exchanging peer addresses
-	//evidencePool      *evidence.Pool          // tracking evidence
 	rpcListeners      []net.Listener          // rpc servers
 
 	Logger log.Logger
@@ -141,11 +140,6 @@ func NewTiasync(
 	}
 	p2pMetrics := metricsProvider(genDoc.ChainID)
 	
-	// _, evidencePool, err := createEvidenceReactor(config, dbProvider, stateStore, blockStore, logger)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
 	bcReactor := blocksync.NewReactor(state, blockStore, cometNodeKey.ID(), celestiaCfg, genDoc, clientCtx, cmtConfig, tiasyncCfg.TiaPollInterval, celestiaNamespace, tiasyncCfg.ChainID)
 	bcReactor.SetLogger(logger.With("tsmodule", "tsblocksync"))
 
@@ -207,7 +201,6 @@ func NewTiasync(
 		consensusReactor: consensusReactor,
 		stateSyncReactor: stateSyncReactor,
 		pexReactor:       pexReactor,
-		//evidencePool:     evidencePool,
 		Logger: logger,
 	}
 
