@@ -35,7 +35,7 @@ const (
 
 	// namespace identifier for this rollchain on Celestia
 	// TODO: Change me
-	celestiaNamespace = "rc_demo"
+	CelestiaNamespace = "rc_demo"
 
 	// publish blocks to celestia every n blocks.
 	publishToCelestiaBlockInterval = 10
@@ -75,7 +75,7 @@ func NewChainApp(
 	)
 
     // ...
-	nodeNamespace, err := nodens.NewBlobNamespaceV0([]byte(celestiaNamespace))
+	nodeNamespace, err := nodens.NewBlobNamespaceV0([]byte(CelestiaNamespace))
 	if err != nil {
 		panic(err)
 	}
@@ -97,7 +97,7 @@ func NewChainApp(
 		logger,
 		appCodec,
 		appOpts,
-		appns.MustNewV0([]byte(celestiaNamespace)),
+		appns.MustNewV0([]byte(CelestiaNamespace)),
 		filepath.Join(homePath, "keys"),
 		publishToCelestiaBlockInterval,
 	)
@@ -216,19 +216,20 @@ In your application commands file, typically named `cmd/$APP/commands.go`, incor
 
 1. Imports
 
-Within the imported packages, add the `tiablob` dependencies.
+Within the imported packages, add the `tiablob` and `tiasync` dependencies.
 
 ```golang
 import (
     // ...
 	tiablobcli "github.com/rollchains/tiablob/client/cli"
 	"github.com/rollchains/tiablob/relayer"
+	"github.com/rollchains/tiablob/tiasync"
 )
 ```
 
 2. Init App Config
 
-The `app.toml` configuration file needs to be extended with the `tiablob` relayer options.
+The `app.toml` configuration file needs to be extended with the `tiasync` and `tiablob` relayer options.
 
 ```golang
 func initAppConfig() (string, interface{}) {
@@ -237,6 +238,7 @@ func initAppConfig() (string, interface{}) {
 		serverconfig.Config
 
 		Celestia *relayer.CelestiaConfig `mapstructure:"celestia"`
+		Tiasync  *tiasync.TiasyncConfig  `mapstructure:"tiasync"`
 	}
 
     // ...
@@ -244,9 +246,10 @@ func initAppConfig() (string, interface{}) {
 	customAppConfig := CustomAppConfig{
 		Config:   *srvCfg,
 		Celestia: &relayer.DefaultCelestiaConfig,
+		Tiasync:  &tiasync.DefaultTiasyncConfig,
 	}
 
-	customAppTemplate := serverconfig.DefaultConfigTemplate + relayer.DefaultConfigTemplate
+	customAppTemplate := serverconfig.DefaultConfigTemplate + relayer.DefaultConfigTemplate + tiasync.DefaultConfigTemplate
 
 	return customAppTemplate, customAppConfig
 }
@@ -273,6 +276,28 @@ func initRootCmd(
 		queryCommand(),
 		txCommand(),
 		keysCmd, // replace keys.Commands() here with this
+	)
+}
+```
+
+4. Add start command post setup function to kick off a `tiasync` go routine.
+
+```golang
+func AddCommands(
+	// ...
+) {
+	// ...
+	startCmd := server.StartCmdWithOptions(appCreator, defaultNodeHome, server.StartCmdOptions{
+		PostSetup: func(svrCtx *server.Context, clientCtx client.Context, ctx context.Context, g *errgroup.Group) error {
+			go tiasync.TiasyncRoutine(svrCtx, clientCtx, app.CelestiaNamespace)
+			return nil
+
+		},
+	})
+	addStartFlags(startCmd)
+	rootCmd.AddCommand(
+		startCmd,
+		// ...
 	)
 }
 ```

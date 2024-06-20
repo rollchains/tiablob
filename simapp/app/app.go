@@ -159,7 +159,7 @@ const (
 	Bech32Prefix = "rc"
 	// namespace identifier for this rollchain on Celestia
 	// TODO: Change me
-	celestiaNamespace = "rc_demo"
+	CelestiaNamespace = "rc_demo"
 
 	// publish blocks to celestia every n rollchain blocks.
 	publishToCelestiaBlockInterval = 5 // smaller size == faster testing
@@ -718,7 +718,7 @@ func NewChainApp(
 		AddRoute(icahosttypes.SubModuleName, icaHostStack)
 	app.IBCKeeper.SetRouter(ibcRouter)
 
-	nodeNamespace, err := nodens.NewBlobNamespaceV0([]byte(celestiaNamespace))
+	nodeNamespace, err := nodens.NewBlobNamespaceV0([]byte(CelestiaNamespace))
 	if err != nil {
 		panic(err)
 	}
@@ -737,7 +737,7 @@ func NewChainApp(
 		logger,
 		appCodec,
 		appOpts,
-		appns.MustNewV0([]byte(celestiaNamespace)),
+		appns.MustNewV0([]byte(CelestiaNamespace)),
 		filepath.Join(homePath, "keys"),
 		publishToCelestiaBlockInterval,
 	)

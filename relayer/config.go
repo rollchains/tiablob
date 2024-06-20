@@ -57,6 +57,7 @@ const (
 	# Must be greater than 0 and less than 100, proofs are roughly 1KB each
 	# tiablob will try to aggregate multiple blobs published at the same height w/ a single proof
 	max-flush-size = 32
+
 	`
 )
 

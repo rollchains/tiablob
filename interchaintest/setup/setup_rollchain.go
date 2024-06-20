@@ -100,6 +100,14 @@ func RollchainChainSpec(testName string, numVals int, index int, namespace strin
 				},
 			},
 		},
+		/*HostPortOverride: map[int]int{
+			26657: 26657,
+			1317: 1317,
+			9090: 9090,
+			26656: 26656,
+			1234: 1234,
+			26777: 26777,
+		},*/
 	}
 
 	return &interchaintest.ChainSpec{

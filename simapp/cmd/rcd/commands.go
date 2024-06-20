@@ -42,6 +42,7 @@ import (
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	tiablobcli "github.com/rollchains/tiablob/client/cli"
 	"github.com/rollchains/tiablob/relayer"
+	"github.com/rollchains/tiablob/tiasync"
 )
 
 // initCometBFTConfig helps to override default CometBFT Config values.
@@ -65,6 +66,7 @@ func initAppConfig() (string, interface{}) {
 		serverconfig.Config
 
 		Celestia *relayer.CelestiaConfig `mapstructure:"celestia"`
+		Tiasync  *tiasync.TiasyncConfig `mapstructure:"tiasync"`
 	}
 
 	// Optionally allow the chain developer to overwrite the SDK's default
@@ -88,9 +90,10 @@ func initAppConfig() (string, interface{}) {
 	customAppConfig := CustomAppConfig{
 		Config:   *srvCfg,
 		Celestia: &relayer.DefaultCelestiaConfig,
+		Tiasync:  &tiasync.DefaultTiasyncConfig,
 	}
 
-	customAppTemplate := serverconfig.DefaultConfigTemplate + relayer.DefaultConfigTemplate
+	customAppTemplate := serverconfig.DefaultConfigTemplate + relayer.DefaultConfigTemplate + tiasync.DefaultConfigTemplate
 
 	return customAppTemplate, customAppConfig
 }
@@ -174,6 +177,8 @@ func AddCommands(rootCmd *cobra.Command, defaultNodeHome string, appCreator type
 
 	startCmd := server.StartCmdWithOptions(appCreator, defaultNodeHome, server.StartCmdOptions{
 		PostSetup: func(svrCtx *server.Context, clientCtx client.Context, ctx context.Context, g *errgroup.Group) error {
+			go tiasync.TiasyncRoutine(svrCtx, clientCtx, app.CelestiaNamespace)
+			
 			// TODO Start relayer here instead of in NewChainApp
 			// cannot access app here until v0.51
 
