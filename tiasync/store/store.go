@@ -36,22 +36,22 @@ type BlockStore struct {
 	// The only reason for keeping these fields in the struct is that the data
 	// can't efficiently be queried from the database since the key encoding we use is not
 	// lexicographically ordered (see https://github.com/tendermint/tendermint/issues/4567).
-	mtx    cmtsync.RWMutex
-	base   int64
-	height int64
+	mtx                       cmtsync.RWMutex
+	base                      int64
+	height                    int64
 	lastCelestiaHeightQueried int64
 }
 
 // TODO: make proto, low priority
 type BlockStoreState struct {
-	Base int64 `json:"base"`
-	Height int64 `json:"height"`
+	Base                      int64 `json:"base"`
+	Height                    int64 `json:"height"`
 	LastCelestiaHeightQueried int64 `json:"last_celestia_height_queried"`
 }
 
 // TODO: make proto, low priority
 type BlockMeta struct {
-	Count int
+	Count        int
 	PartSetSizes []int
 }
 
@@ -60,10 +60,10 @@ type BlockMeta struct {
 func NewBlockStore(db dbm.DB) *BlockStore {
 	bs := LoadBlockStoreState(db)
 	return &BlockStore{
-		lastCelestiaHeightQueried:   bs.LastCelestiaHeightQueried,
-		base: bs.Base,
-		height: bs.Height,
-		db:     db,
+		lastCelestiaHeightQueried: bs.LastCelestiaHeightQueried,
+		base:                      bs.Base,
+		height:                    bs.Height,
+		db:                        db,
 	}
 }
 
@@ -74,10 +74,10 @@ func (bs *BlockStore) SetInitialState(height int64) {
 	bs.base = height + 1
 	bs.height = height
 	bs.lastCelestiaHeightQueried = 0
-	
+
 	bss := BlockStoreState{
-		Base: bs.base,
-		Height: bs.height,
+		Base:                      bs.base,
+		Height:                    bs.height,
 		LastCelestiaHeightQueried: bs.lastCelestiaHeightQueried,
 	}
 	saveBlockStoreStateBatchInternal(&bss, bs.db, nil)
@@ -87,7 +87,7 @@ func (bs *BlockStore) SetInitialState(height int64) {
 func (bs *BlockStore) IsEmpty() bool {
 	bs.mtx.RLock()
 	defer bs.mtx.RUnlock()
-	return bs.base > bs.height || 
+	return bs.base > bs.height ||
 		(bs.base == bs.height && bs.base == 0)
 }
 
@@ -189,8 +189,8 @@ func (bs *BlockStore) PruneBlocks(height int64, startup bool) (uint64, error) {
 	}
 	bs.mtx.RLock()
 	if !startup && height > bs.height {
-	 	bs.mtx.RUnlock()
-	 	return 0, fmt.Errorf("cannot prune beyond the latest height %v", bs.height)
+		bs.mtx.RUnlock()
+		return 0, fmt.Errorf("cannot prune beyond the latest height %v", bs.height)
 	}
 	base := bs.base
 	bs.mtx.RUnlock()
@@ -279,15 +279,15 @@ func (bs *BlockStore) SaveBlock(celestiaHeight int64, height int64, block []byte
 	if bs.base == 0 {
 		bs.base = height
 	}
-	
-	if bs.height + 1 == height {
+
+	if bs.height+1 == height {
 		bs.height = height
 		nextHeight := height + 1
 		hasNextBlock, _ := bs.db.Has(calcBlockMetaKey(nextHeight))
-		for ; hasNextBlock ; {
+		for hasNextBlock {
 			bs.height = nextHeight
 			nextHeight++
-			hasNextBlock, _ = bs.db.Has(calcBlockMetaKey(nextHeight)) 
+			hasNextBlock, _ = bs.db.Has(calcBlockMetaKey(nextHeight))
 		}
 	}
 
@@ -324,9 +324,9 @@ func (bs *BlockStore) saveBlockToBatch(
 		blockMeta.PartSetSizes = append(partSetSizes, partSet.total)
 	} else {
 		blockMeta = &BlockMeta{
-			Count: 1,
+			Count:        1,
 			PartSetSizes: []int{partSet.total},
-//			IndexVerified: -1,
+			//			IndexVerified: -1,
 		}
 	}
 
@@ -367,8 +367,8 @@ func (bs *BlockStore) saveBlockPart(height int64, blockIndex int, partIndex int,
 // Contract: the caller MUST have, at least, a read lock on `bs`.
 func (bs *BlockStore) saveStateAndWriteDB(batch dbm.Batch, errMsg string) error {
 	bss := BlockStoreState{
-		Base: bs.base,
-		Height: bs.height,
+		Base:                      bs.base,
+		Height:                    bs.height,
 		LastCelestiaHeightQueried: bs.lastCelestiaHeightQueried,
 	}
 	SaveBlockStoreStateBatch(&bss, batch)
@@ -433,9 +433,9 @@ func LoadBlockStoreState(db dbm.DB) BlockStoreState {
 
 	if len(bytes) == 0 {
 		return BlockStoreState{
-			Base: 0,
-			Height: 0,
-			LastCelestiaHeightQueried:   0,
+			Base:                      0,
+			Height:                    0,
+			LastCelestiaHeightQueried: 0,
 		}
 	}
 

@@ -57,13 +57,13 @@ var (
 )
 
 var DefaultTiasyncConfig = TiasyncConfig{
-	AddrBookPath: defaultAddrBookPath,
-	ChainID: "",
-	Enable:   false,
-	ListenAddress: "",
-	NodeKeyPath: defaultNodeKeyPath,
+	AddrBookPath:    defaultAddrBookPath,
+	ChainID:         "",
+	Enable:          false,
+	ListenAddress:   "",
+	NodeKeyPath:     defaultNodeKeyPath,
 	TiaPollInterval: time.Second * 5,
-	UpstreamPeers:      "",
+	UpstreamPeers:   "",
 }
 
 // TiasyncConfig defines the configuration for the in-process tiasync.

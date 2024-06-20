@@ -19,14 +19,14 @@ const (
 type Reactor struct {
 	p2p.BaseReactor
 
-	cfg       config.StateSyncConfig
+	cfg         config.StateSyncConfig
 	localPeerID p2p.ID
-	localPeer p2p.Peer
-	remotePeer p2p.Peer
+	localPeer   p2p.Peer
+	remotePeer  p2p.Peer
 
 	// This will only be set when a state sync is in progress. It is used to feed received
 	// snapshots and chunks into the sync.
-	mtx    cmtsync.RWMutex
+	mtx cmtsync.RWMutex
 }
 
 // NewReactor creates a new state sync reactor.
@@ -44,7 +44,7 @@ func NewReactor(
 	localPeerID p2p.ID,
 ) *Reactor {
 	r := &Reactor{
-		cfg:       cfg,
+		cfg:         cfg,
 		localPeerID: localPeerID,
 	}
 	r.BaseReactor = *p2p.NewBaseReactor("StateSync", r)
@@ -129,7 +129,7 @@ func (r *Reactor) Receive(e p2p.Envelope) {
 			if r.localPeer != nil {
 				r.localPeer.Send(p2p.Envelope{
 					ChannelID: e.ChannelID,
-					Message: msg,
+					Message:   msg,
 				})
 			}
 
@@ -150,7 +150,7 @@ func (r *Reactor) Receive(e p2p.Envelope) {
 			if r.localPeer != nil {
 				r.localPeer.Send(p2p.Envelope{
 					ChannelID: e.ChannelID,
-					Message: msg,
+					Message:   msg,
 				})
 			}
 

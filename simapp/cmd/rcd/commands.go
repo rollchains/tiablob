@@ -66,7 +66,7 @@ func initAppConfig() (string, interface{}) {
 		serverconfig.Config
 
 		Celestia *relayer.CelestiaConfig `mapstructure:"celestia"`
-		Tiasync  *tiasync.TiasyncConfig `mapstructure:"tiasync"`
+		Tiasync  *tiasync.TiasyncConfig  `mapstructure:"tiasync"`
 	}
 
 	// Optionally allow the chain developer to overwrite the SDK's default
@@ -178,7 +178,7 @@ func AddCommands(rootCmd *cobra.Command, defaultNodeHome string, appCreator type
 	startCmd := server.StartCmdWithOptions(appCreator, defaultNodeHome, server.StartCmdOptions{
 		PostSetup: func(svrCtx *server.Context, clientCtx client.Context, ctx context.Context, g *errgroup.Group) error {
 			go tiasync.TiasyncRoutine(svrCtx, clientCtx, app.CelestiaNamespace)
-			
+
 			// TODO Start relayer here instead of in NewChainApp
 			// cannot access app here until v0.51
 

@@ -25,11 +25,10 @@ import (
 	"github.com/rollchains/tiablob/tiasync/store"
 )
 
-
 type Tiasync struct {
 
 	// config
-	cmtConfig        *cfg.Config
+	cmtConfig     *cfg.Config
 	celestiaCfg   *relayer.CelestiaConfig
 	tiasyncCfg    *TiasyncConfig
 	genesisDoc    *types.GenesisDoc   // initial validator set
@@ -43,25 +42,25 @@ type Tiasync struct {
 	nodeKey     *p2p.NodeKey // our node privkey
 	isListening bool
 
-	cometNodeKey     *p2p.NodeKey // our node privkey
+	cometNodeKey *p2p.NodeKey // our node privkey
 
 	// services
-	blockStore        *store.BlockStore // store the blockchain to disk
-	bcReactor         p2p.Reactor       // for block-syncing
-	mempoolReactor    p2p.Reactor       // for gossipping transactions
-	stateSync         bool                    // whether the node should state sync on startup
-	stateSyncReactor  *statesync.Reactor      // for hosting and restoring state sync snapshots
-	stateSyncGenesis  sm.State                // provides the genesis state for state sync
-	consensusReactor  *consensus.Reactor             // for participating in the consensus
-	pexReactor        *pex.Reactor            // for exchanging peer addresses
-	rpcListeners      []net.Listener          // rpc servers
+	blockStore       *store.BlockStore  // store the blockchain to disk
+	bcReactor        p2p.Reactor        // for block-syncing
+	mempoolReactor   p2p.Reactor        // for gossipping transactions
+	stateSync        bool               // whether the node should state sync on startup
+	stateSyncReactor *statesync.Reactor // for hosting and restoring state sync snapshots
+	stateSyncGenesis sm.State           // provides the genesis state for state sync
+	consensusReactor *consensus.Reactor // for participating in the consensus
+	pexReactor       *pex.Reactor       // for exchanging peer addresses
+	rpcListeners     []net.Listener     // rpc servers
 
 	Logger log.Logger
 }
 
 func TiasyncRoutine(svrCtx *server.Context, clientCtx client.Context, celestiaNamespace string) {
 	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
-	
+
 	cometCfg := svrCtx.Config
 	tiasyncCfg := TiasyncConfigFromAppOpts(svrCtx.Viper)
 	celestiaCfg := relayer.CelestiaConfigFromAppOpts(svrCtx.Viper)
@@ -112,18 +111,18 @@ func NewTiasync(
 		}
 		return genDoc, nil
 	}
-	metricsProvider := func(chainID string) (*p2p.Metrics) {
+	metricsProvider := func(chainID string) *p2p.Metrics {
 		if cmtConfig.Instrumentation.Prometheus {
 			return p2p.PrometheusMetrics(cmtConfig.Instrumentation.Namespace, "chain_id", chainID)
 		}
 		return p2p.NopMetrics()
 	}
-	
+
 	nodeKey, err := p2p.LoadOrGenNodeKey(tiasyncCfg.NodeKeyFile(cmtConfig.BaseConfig))
 	if err != nil {
 		panic(err)
 	}
-	
+
 	cometNodeKey, err := p2p.LoadOrGenNodeKey(cmtConfig.NodeKeyFile())
 	if err != nil {
 		panic(err)
@@ -139,7 +138,7 @@ func NewTiasync(
 		return nil, err
 	}
 	p2pMetrics := metricsProvider(genDoc.ChainID)
-	
+
 	bcReactor := blocksync.NewReactor(state, blockStore, cometNodeKey.ID(), celestiaCfg, genDoc, clientCtx, cmtConfig, tiasyncCfg.TiaPollInterval, celestiaNamespace, tiasyncCfg.ChainID)
 	bcReactor.SetLogger(logger.With("tsmodule", "tsblocksync"))
 
@@ -157,7 +156,7 @@ func NewTiasync(
 	transport, peerFilters := createTransport(cmtConfig, nodeInfo, nodeKey)
 
 	p2pLogger := logger.With("tsmodule", "tsp2p")
-	
+
 	mempoolReactor := mempool.NewReactor(cmtConfig.Mempool, cometNodeKey.ID())
 	mempoolLogger := logger.With("tsmodule", "tsmempool")
 	mempoolReactor.SetLogger(mempoolLogger)
@@ -183,9 +182,9 @@ func NewTiasync(
 	pexReactor := createPEXReactorAndAddToSwitch(addrBook, cmtConfig, sw, logger)
 
 	tiasync := &Tiasync{
-		cmtConfig:        cmtConfig,
-		tiasyncCfg:    tiasyncCfg,
-		genesisDoc:    genDoc,
+		cmtConfig:  cmtConfig,
+		tiasyncCfg: tiasyncCfg,
+		genesisDoc: genDoc,
 
 		transport: transport,
 		sw:        sw,
@@ -201,7 +200,7 @@ func NewTiasync(
 		consensusReactor: consensusReactor,
 		stateSyncReactor: stateSyncReactor,
 		pexReactor:       pexReactor,
-		Logger: logger,
+		Logger:           logger,
 	}
 
 	return tiasync, nil
