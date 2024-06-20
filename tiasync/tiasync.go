@@ -26,10 +26,10 @@ import (
 type Tiasync struct {
 
 	// config
-	cmtConfig     *cfg.Config
-	celestiaCfg   *relayer.CelestiaConfig
-	tiasyncCfg    *TiasyncConfig
-	genesisDoc    *types.GenesisDoc   // initial validator set
+	cmtConfig   *cfg.Config
+	celestiaCfg *relayer.CelestiaConfig
+	tiasyncCfg  *TiasyncConfig
+	genesisDoc  *types.GenesisDoc // initial validator set
 
 	// network
 	transport   *p2p.MultiplexTransport
