@@ -134,7 +134,7 @@ func (memR *Reactor) sendTxToPeer(peer p2p.Peer, txs [][]byte) {
 		}
 
 		if peerSemaphore != nil {
-			for peer.IsRunning() {
+			if peer.IsRunning() {
 				// Block on the semaphore until a slot is available to start gossiping with this peer.
 				// Do not block indefinitely, in case the peer is disconnected before gossiping starts.
 				ctxTimeout, cancel := context.WithTimeout(context.TODO(), 30*time.Second)
@@ -149,7 +149,6 @@ func (memR *Reactor) sendTxToPeer(peer p2p.Peer, txs [][]byte) {
 
 				// Release semaphore to allow other peer to start sending transactions.
 				defer peerSemaphore.Release(1)
-				break
 			}
 		}
 	}

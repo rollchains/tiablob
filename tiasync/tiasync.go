@@ -2,7 +2,6 @@ package tiasync
 
 import (
 	"fmt"
-	"net"
 	"os"
 	"strings"
 
@@ -12,7 +11,6 @@ import (
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/p2p/pex"
 
-	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/server"
@@ -32,7 +30,6 @@ type Tiasync struct {
 	celestiaCfg   *relayer.CelestiaConfig
 	tiasyncCfg    *TiasyncConfig
 	genesisDoc    *types.GenesisDoc   // initial validator set
-	privValidator types.PrivValidator // local node's validator key
 
 	// network
 	transport   *p2p.MultiplexTransport
@@ -48,12 +45,9 @@ type Tiasync struct {
 	blockStore       *store.BlockStore  // store the blockchain to disk
 	bcReactor        p2p.Reactor        // for block-syncing
 	mempoolReactor   p2p.Reactor        // for gossipping transactions
-	stateSync        bool               // whether the node should state sync on startup
 	stateSyncReactor *statesync.Reactor // for hosting and restoring state sync snapshots
-	stateSyncGenesis sm.State           // provides the genesis state for state sync
 	consensusReactor *consensus.Reactor // for participating in the consensus
 	pexReactor       *pex.Reactor       // for exchanging peer addresses
-	rpcListeners     []net.Listener     // rpc servers
 
 	Logger log.Logger
 }
@@ -182,9 +176,10 @@ func NewTiasync(
 	pexReactor := createPEXReactorAndAddToSwitch(addrBook, cmtConfig, sw, logger)
 
 	tiasync := &Tiasync{
-		cmtConfig:  cmtConfig,
-		tiasyncCfg: tiasyncCfg,
-		genesisDoc: genDoc,
+		celestiaCfg: celestiaCfg,
+		cmtConfig:   cmtConfig,
+		tiasyncCfg:  tiasyncCfg,
+		genesisDoc:  genDoc,
 
 		transport: transport,
 		sw:        sw,
