@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion7
 
 const (
 	Msg_SetCelestiaAddress_FullMethodName = "/rollchains.tiablob.v1.Msg/SetCelestiaAddress"
+	Msg_InjectedData_FullMethodName       = "/rollchains.tiablob.v1.Msg/InjectedData"
 )
 
 // MsgClient is the client API for Msg service.
@@ -28,6 +29,7 @@ const (
 type MsgClient interface {
 	// SetCelestiaAddress allows a validator to configure their Celestia address for feegranting
 	SetCelestiaAddress(ctx context.Context, in *MsgSetCelestiaAddress, opts ...grpc.CallOption) (*MsgSetCelestiaAddressResponse, error)
+	InjectedData(ctx context.Context, in *MsgInjectedData, opts ...grpc.CallOption) (*MsgInjectedDataResponse, error)
 }
 
 type msgClient struct {
@@ -47,12 +49,22 @@ func (c *msgClient) SetCelestiaAddress(ctx context.Context, in *MsgSetCelestiaAd
 	return out, nil
 }
 
+func (c *msgClient) InjectedData(ctx context.Context, in *MsgInjectedData, opts ...grpc.CallOption) (*MsgInjectedDataResponse, error) {
+	out := new(MsgInjectedDataResponse)
+	err := c.cc.Invoke(ctx, Msg_InjectedData_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MsgServer is the server API for Msg service.
 // All implementations must embed UnimplementedMsgServer
 // for forward compatibility
 type MsgServer interface {
 	// SetCelestiaAddress allows a validator to configure their Celestia address for feegranting
 	SetCelestiaAddress(context.Context, *MsgSetCelestiaAddress) (*MsgSetCelestiaAddressResponse, error)
+	InjectedData(context.Context, *MsgInjectedData) (*MsgInjectedDataResponse, error)
 	mustEmbedUnimplementedMsgServer()
 }
 
@@ -62,6 +74,9 @@ type UnimplementedMsgServer struct {
 
 func (UnimplementedMsgServer) SetCelestiaAddress(context.Context, *MsgSetCelestiaAddress) (*MsgSetCelestiaAddressResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetCelestiaAddress not implemented")
+}
+func (UnimplementedMsgServer) InjectedData(context.Context, *MsgInjectedData) (*MsgInjectedDataResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method InjectedData not implemented")
 }
 func (UnimplementedMsgServer) mustEmbedUnimplementedMsgServer() {}
 
@@ -94,6 +109,24 @@ func _Msg_SetCelestiaAddress_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Msg_InjectedData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgInjectedData)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MsgServer).InjectedData(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Msg_InjectedData_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MsgServer).InjectedData(ctx, req.(*MsgInjectedData))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Msg_ServiceDesc is the grpc.ServiceDesc for Msg service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -104,6 +137,10 @@ var Msg_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SetCelestiaAddress",
 			Handler:    _Msg_SetCelestiaAddress_Handler,
+		},
+		{
+			MethodName: "InjectedData",
+			Handler:    _Msg_InjectedData_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

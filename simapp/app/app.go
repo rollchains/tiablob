@@ -335,7 +335,7 @@ func NewChainApp(
 	// }
 	// baseAppOptions = append(baseAppOptions, voteExtOp)
 
-	bApp := baseapp.NewBaseApp(appName, logger, db, txConfig.TxDecoder(), baseAppOptions...)
+	bApp := baseapp.NewBaseApp(appName, logger, db, tiablob.TxDecoder(appCodec, txConfig.TxDecoder()), baseAppOptions...)
 	bApp.SetCommitMultiStoreTracer(traceStore)
 	bApp.SetVersion(version.Version)
 	bApp.SetInterfaceRegistry(interfaceRegistry)
@@ -1078,10 +1078,10 @@ func (app *ChainApp) Name() string { return app.BaseApp.Name() }
 
 // PreBlocker application updates every pre block
 func (app *ChainApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
-	err := app.TiaBlobKeeper.PreBlocker(ctx, req)
+/*	err := app.TiaBlobKeeper.PreBlocker(ctx, req)
 	if err != nil {
 		return nil, err
-	}
+	}*/
 	return app.ModuleManager.PreBlock(ctx)
 }
 

@@ -6,6 +6,8 @@ import "google/protobuf/any.proto";
 import "gogoproto/gogo.proto";
 import "cosmos/msg/v1/msg.proto";
 import "amino/amino.proto";
+import "rollchains/tiablob/lightclients/celestia/v1/celestia.proto";
+import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/rollchains/tiablob";
 
@@ -15,6 +17,7 @@ service Msg {
 
   // SetCelestiaAddress allows a validator to configure their Celestia address for feegranting
   rpc SetCelestiaAddress(MsgSetCelestiaAddress) returns (MsgSetCelestiaAddressResponse);
+  rpc InjectedData(MsgInjectedData) returns (MsgInjectedDataResponse);
 }
 
 // MsgSetCelestiaAddress defines a SDK message for validators to set their Celestia address
@@ -34,3 +37,23 @@ message MsgSetCelestiaAddress {
   
   // MsgSetCelestiaAddressResponse is the response type for the Msg/SetCelestiaAddress RPC method.
   message MsgSetCelestiaAddressResponse {}
+  
+  message MsgInjectedData {
+    .rollchains.tiablob.lightclients.celestia.v1.CreateClient create_client = 1;
+    repeated rollchains.tiablob.lightclients.celestia.v1.Header headers = 2;
+    repeated rollchains.tiablob.lightclients.celestia.v1.BlobProof proofs = 3;
+    PendingBlocks pending_blocks = 4 [ (gogoproto.nullable) = false ];
+    bytes proposer_address = 5;
+    google.protobuf.Timestamp block_time = 6 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+}
+
+message MsgInjectedDataResponse {}
+
+message PendingBlocks {
+    repeated int64 block_heights = 1;
+}
+
+message InjectTx {
+    repeated google.protobuf.Any messages = 1;
+}

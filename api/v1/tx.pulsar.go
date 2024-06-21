@@ -8,10 +8,12 @@ import (
 	_ "github.com/cosmos/cosmos-sdk/types/msgservice"
 	_ "github.com/cosmos/cosmos-sdk/types/tx/amino"
 	_ "github.com/cosmos/gogoproto/gogoproto"
+	v1 "github.com/rollchains/tiablob/api/lightclients/celestia/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoiface "google.golang.org/protobuf/runtime/protoiface"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	_ "google.golang.org/protobuf/types/known/anypb"
+	anypb "google.golang.org/protobuf/types/known/anypb"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	io "io"
 	reflect "reflect"
 	sync "sync"
@@ -857,6 +859,2328 @@ func (x *fastReflection_MsgSetCelestiaAddressResponse) ProtoMethods() *protoifac
 	}
 }
 
+var _ protoreflect.List = (*_MsgInjectedData_2_list)(nil)
+
+type _MsgInjectedData_2_list struct {
+	list *[]*v1.Header
+}
+
+func (x *_MsgInjectedData_2_list) Len() int {
+	if x.list == nil {
+		return 0
+	}
+	return len(*x.list)
+}
+
+func (x *_MsgInjectedData_2_list) Get(i int) protoreflect.Value {
+	return protoreflect.ValueOfMessage((*x.list)[i].ProtoReflect())
+}
+
+func (x *_MsgInjectedData_2_list) Set(i int, value protoreflect.Value) {
+	valueUnwrapped := value.Message()
+	concreteValue := valueUnwrapped.Interface().(*v1.Header)
+	(*x.list)[i] = concreteValue
+}
+
+func (x *_MsgInjectedData_2_list) Append(value protoreflect.Value) {
+	valueUnwrapped := value.Message()
+	concreteValue := valueUnwrapped.Interface().(*v1.Header)
+	*x.list = append(*x.list, concreteValue)
+}
+
+func (x *_MsgInjectedData_2_list) AppendMutable() protoreflect.Value {
+	v := new(v1.Header)
+	*x.list = append(*x.list, v)
+	return protoreflect.ValueOfMessage(v.ProtoReflect())
+}
+
+func (x *_MsgInjectedData_2_list) Truncate(n int) {
+	for i := n; i < len(*x.list); i++ {
+		(*x.list)[i] = nil
+	}
+	*x.list = (*x.list)[:n]
+}
+
+func (x *_MsgInjectedData_2_list) NewElement() protoreflect.Value {
+	v := new(v1.Header)
+	return protoreflect.ValueOfMessage(v.ProtoReflect())
+}
+
+func (x *_MsgInjectedData_2_list) IsValid() bool {
+	return x.list != nil
+}
+
+var _ protoreflect.List = (*_MsgInjectedData_3_list)(nil)
+
+type _MsgInjectedData_3_list struct {
+	list *[]*v1.BlobProof
+}
+
+func (x *_MsgInjectedData_3_list) Len() int {
+	if x.list == nil {
+		return 0
+	}
+	return len(*x.list)
+}
+
+func (x *_MsgInjectedData_3_list) Get(i int) protoreflect.Value {
+	return protoreflect.ValueOfMessage((*x.list)[i].ProtoReflect())
+}
+
+func (x *_MsgInjectedData_3_list) Set(i int, value protoreflect.Value) {
+	valueUnwrapped := value.Message()
+	concreteValue := valueUnwrapped.Interface().(*v1.BlobProof)
+	(*x.list)[i] = concreteValue
+}
+
+func (x *_MsgInjectedData_3_list) Append(value protoreflect.Value) {
+	valueUnwrapped := value.Message()
+	concreteValue := valueUnwrapped.Interface().(*v1.BlobProof)
+	*x.list = append(*x.list, concreteValue)
+}
+
+func (x *_MsgInjectedData_3_list) AppendMutable() protoreflect.Value {
+	v := new(v1.BlobProof)
+	*x.list = append(*x.list, v)
+	return protoreflect.ValueOfMessage(v.ProtoReflect())
+}
+
+func (x *_MsgInjectedData_3_list) Truncate(n int) {
+	for i := n; i < len(*x.list); i++ {
+		(*x.list)[i] = nil
+	}
+	*x.list = (*x.list)[:n]
+}
+
+func (x *_MsgInjectedData_3_list) NewElement() protoreflect.Value {
+	v := new(v1.BlobProof)
+	return protoreflect.ValueOfMessage(v.ProtoReflect())
+}
+
+func (x *_MsgInjectedData_3_list) IsValid() bool {
+	return x.list != nil
+}
+
+var (
+	md_MsgInjectedData                  protoreflect.MessageDescriptor
+	fd_MsgInjectedData_create_client    protoreflect.FieldDescriptor
+	fd_MsgInjectedData_headers          protoreflect.FieldDescriptor
+	fd_MsgInjectedData_proofs           protoreflect.FieldDescriptor
+	fd_MsgInjectedData_pending_blocks   protoreflect.FieldDescriptor
+	fd_MsgInjectedData_proposer_address protoreflect.FieldDescriptor
+	fd_MsgInjectedData_block_time       protoreflect.FieldDescriptor
+)
+
+func init() {
+	file_rollchains_tiablob_v1_tx_proto_init()
+	md_MsgInjectedData = File_rollchains_tiablob_v1_tx_proto.Messages().ByName("MsgInjectedData")
+	fd_MsgInjectedData_create_client = md_MsgInjectedData.Fields().ByName("create_client")
+	fd_MsgInjectedData_headers = md_MsgInjectedData.Fields().ByName("headers")
+	fd_MsgInjectedData_proofs = md_MsgInjectedData.Fields().ByName("proofs")
+	fd_MsgInjectedData_pending_blocks = md_MsgInjectedData.Fields().ByName("pending_blocks")
+	fd_MsgInjectedData_proposer_address = md_MsgInjectedData.Fields().ByName("proposer_address")
+	fd_MsgInjectedData_block_time = md_MsgInjectedData.Fields().ByName("block_time")
+}
+
+var _ protoreflect.Message = (*fastReflection_MsgInjectedData)(nil)
+
+type fastReflection_MsgInjectedData MsgInjectedData
+
+func (x *MsgInjectedData) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_MsgInjectedData)(x)
+}
+
+func (x *MsgInjectedData) slowProtoReflect() protoreflect.Message {
+	mi := &file_rollchains_tiablob_v1_tx_proto_msgTypes[2]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+var _fastReflection_MsgInjectedData_messageType fastReflection_MsgInjectedData_messageType
+var _ protoreflect.MessageType = fastReflection_MsgInjectedData_messageType{}
+
+type fastReflection_MsgInjectedData_messageType struct{}
+
+func (x fastReflection_MsgInjectedData_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_MsgInjectedData)(nil)
+}
+func (x fastReflection_MsgInjectedData_messageType) New() protoreflect.Message {
+	return new(fastReflection_MsgInjectedData)
+}
+func (x fastReflection_MsgInjectedData_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_MsgInjectedData
+}
+
+// Descriptor returns message descriptor, which contains only the protobuf
+// type information for the message.
+func (x *fastReflection_MsgInjectedData) Descriptor() protoreflect.MessageDescriptor {
+	return md_MsgInjectedData
+}
+
+// Type returns the message type, which encapsulates both Go and protobuf
+// type information. If the Go type information is not needed,
+// it is recommended that the message descriptor be used instead.
+func (x *fastReflection_MsgInjectedData) Type() protoreflect.MessageType {
+	return _fastReflection_MsgInjectedData_messageType
+}
+
+// New returns a newly allocated and mutable empty message.
+func (x *fastReflection_MsgInjectedData) New() protoreflect.Message {
+	return new(fastReflection_MsgInjectedData)
+}
+
+// Interface unwraps the message reflection interface and
+// returns the underlying ProtoMessage interface.
+func (x *fastReflection_MsgInjectedData) Interface() protoreflect.ProtoMessage {
+	return (*MsgInjectedData)(x)
+}
+
+// Range iterates over every populated field in an undefined order,
+// calling f for each field descriptor and value encountered.
+// Range returns immediately if f returns false.
+// While iterating, mutating operations may only be performed
+// on the current field descriptor.
+func (x *fastReflection_MsgInjectedData) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+	if x.CreateClient != nil {
+		value := protoreflect.ValueOfMessage(x.CreateClient.ProtoReflect())
+		if !f(fd_MsgInjectedData_create_client, value) {
+			return
+		}
+	}
+	if len(x.Headers) != 0 {
+		value := protoreflect.ValueOfList(&_MsgInjectedData_2_list{list: &x.Headers})
+		if !f(fd_MsgInjectedData_headers, value) {
+			return
+		}
+	}
+	if len(x.Proofs) != 0 {
+		value := protoreflect.ValueOfList(&_MsgInjectedData_3_list{list: &x.Proofs})
+		if !f(fd_MsgInjectedData_proofs, value) {
+			return
+		}
+	}
+	if x.PendingBlocks != nil {
+		value := protoreflect.ValueOfMessage(x.PendingBlocks.ProtoReflect())
+		if !f(fd_MsgInjectedData_pending_blocks, value) {
+			return
+		}
+	}
+	if len(x.ProposerAddress) != 0 {
+		value := protoreflect.ValueOfBytes(x.ProposerAddress)
+		if !f(fd_MsgInjectedData_proposer_address, value) {
+			return
+		}
+	}
+	if x.BlockTime != nil {
+		value := protoreflect.ValueOfMessage(x.BlockTime.ProtoReflect())
+		if !f(fd_MsgInjectedData_block_time, value) {
+			return
+		}
+	}
+}
+
+// Has reports whether a field is populated.
+//
+// Some fields have the property of nullability where it is possible to
+// distinguish between the default value of a field and whether the field
+// was explicitly populated with the default value. Singular message fields,
+// member fields of a oneof, and proto2 scalar fields are nullable. Such
+// fields are populated only if explicitly set.
+//
+// In other cases (aside from the nullable cases above),
+// a proto3 scalar field is populated if it contains a non-zero value, and
+// a repeated field is populated if it is non-empty.
+func (x *fastReflection_MsgInjectedData) Has(fd protoreflect.FieldDescriptor) bool {
+	switch fd.FullName() {
+	case "rollchains.tiablob.v1.MsgInjectedData.create_client":
+		return x.CreateClient != nil
+	case "rollchains.tiablob.v1.MsgInjectedData.headers":
+		return len(x.Headers) != 0
+	case "rollchains.tiablob.v1.MsgInjectedData.proofs":
+		return len(x.Proofs) != 0
+	case "rollchains.tiablob.v1.MsgInjectedData.pending_blocks":
+		return x.PendingBlocks != nil
+	case "rollchains.tiablob.v1.MsgInjectedData.proposer_address":
+		return len(x.ProposerAddress) != 0
+	case "rollchains.tiablob.v1.MsgInjectedData.block_time":
+		return x.BlockTime != nil
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: rollchains.tiablob.v1.MsgInjectedData"))
+		}
+		panic(fmt.Errorf("message rollchains.tiablob.v1.MsgInjectedData does not contain field %s", fd.FullName()))
+	}
+}
+
+// Clear clears the field such that a subsequent Has call reports false.
+//
+// Clearing an extension field clears both the extension type and value
+// associated with the given field number.
+//
+// Clear is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_MsgInjectedData) Clear(fd protoreflect.FieldDescriptor) {
+	switch fd.FullName() {
+	case "rollchains.tiablob.v1.MsgInjectedData.create_client":
+		x.CreateClient = nil
+	case "rollchains.tiablob.v1.MsgInjectedData.headers":
+		x.Headers = nil
+	case "rollchains.tiablob.v1.MsgInjectedData.proofs":
+		x.Proofs = nil
+	case "rollchains.tiablob.v1.MsgInjectedData.pending_blocks":
+		x.PendingBlocks = nil
+	case "rollchains.tiablob.v1.MsgInjectedData.proposer_address":
+		x.ProposerAddress = nil
+	case "rollchains.tiablob.v1.MsgInjectedData.block_time":
+		x.BlockTime = nil
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: rollchains.tiablob.v1.MsgInjectedData"))
+		}
+		panic(fmt.Errorf("message rollchains.tiablob.v1.MsgInjectedData does not contain field %s", fd.FullName()))
+	}
+}
+
+// Get retrieves the value for a field.
+//
+// For unpopulated scalars, it returns the default value, where
+// the default value of a bytes scalar is guaranteed to be a copy.
+// For unpopulated composite types, it returns an empty, read-only view
+// of the value; to obtain a mutable reference, use Mutable.
+func (x *fastReflection_MsgInjectedData) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+	switch descriptor.FullName() {
+	case "rollchains.tiablob.v1.MsgInjectedData.create_client":
+		value := x.CreateClient
+		return protoreflect.ValueOfMessage(value.ProtoReflect())
+	case "rollchains.tiablob.v1.MsgInjectedData.headers":
+		if len(x.Headers) == 0 {
+			return protoreflect.ValueOfList(&_MsgInjectedData_2_list{})
+		}
+		listValue := &_MsgInjectedData_2_list{list: &x.Headers}
+		return protoreflect.ValueOfList(listValue)
+	case "rollchains.tiablob.v1.MsgInjectedData.proofs":
+		if len(x.Proofs) == 0 {
+			return protoreflect.ValueOfList(&_MsgInjectedData_3_list{})
+		}
+		listValue := &_MsgInjectedData_3_list{list: &x.Proofs}
+		return protoreflect.ValueOfList(listValue)
+	case "rollchains.tiablob.v1.MsgInjectedData.pending_blocks":
+		value := x.PendingBlocks
+		return protoreflect.ValueOfMessage(value.ProtoReflect())
+	case "rollchains.tiablob.v1.MsgInjectedData.proposer_address":
+		value := x.ProposerAddress
+		return protoreflect.ValueOfBytes(value)
+	case "rollchains.tiablob.v1.MsgInjectedData.block_time":
+		value := x.BlockTime
+		return protoreflect.ValueOfMessage(value.ProtoReflect())
+	default:
+		if descriptor.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: rollchains.tiablob.v1.MsgInjectedData"))
+		}
+		panic(fmt.Errorf("message rollchains.tiablob.v1.MsgInjectedData does not contain field %s", descriptor.FullName()))
+	}
+}
+
+// Set stores the value for a field.
+//
+// For a field belonging to a oneof, it implicitly clears any other field
+// that may be currently set within the same oneof.
+// For extension fields, it implicitly stores the provided ExtensionType.
+// When setting a composite type, it is unspecified whether the stored value
+// aliases the source's memory in any way. If the composite value is an
+// empty, read-only value, then it panics.
+//
+// Set is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_MsgInjectedData) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+	switch fd.FullName() {
+	case "rollchains.tiablob.v1.MsgInjectedData.create_client":
+		x.CreateClient = value.Message().Interface().(*v1.CreateClient)
+	case "rollchains.tiablob.v1.MsgInjectedData.headers":
+		lv := value.List()
+		clv := lv.(*_MsgInjectedData_2_list)
+		x.Headers = *clv.list
+	case "rollchains.tiablob.v1.MsgInjectedData.proofs":
+		lv := value.List()
+		clv := lv.(*_MsgInjectedData_3_list)
+		x.Proofs = *clv.list
+	case "rollchains.tiablob.v1.MsgInjectedData.pending_blocks":
+		x.PendingBlocks = value.Message().Interface().(*PendingBlocks)
+	case "rollchains.tiablob.v1.MsgInjectedData.proposer_address":
+		x.ProposerAddress = value.Bytes()
+	case "rollchains.tiablob.v1.MsgInjectedData.block_time":
+		x.BlockTime = value.Message().Interface().(*timestamppb.Timestamp)
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: rollchains.tiablob.v1.MsgInjectedData"))
+		}
+		panic(fmt.Errorf("message rollchains.tiablob.v1.MsgInjectedData does not contain field %s", fd.FullName()))
+	}
+}
+
+// Mutable returns a mutable reference to a composite type.
+//
+// If the field is unpopulated, it may allocate a composite value.
+// For a field belonging to a oneof, it implicitly clears any other field
+// that may be currently set within the same oneof.
+// For extension fields, it implicitly stores the provided ExtensionType
+// if not already stored.
+// It panics if the field does not contain a composite type.
+//
+// Mutable is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_MsgInjectedData) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+	switch fd.FullName() {
+	case "rollchains.tiablob.v1.MsgInjectedData.create_client":
+		if x.CreateClient == nil {
+			x.CreateClient = new(v1.CreateClient)
+		}
+		return protoreflect.ValueOfMessage(x.CreateClient.ProtoReflect())
+	case "rollchains.tiablob.v1.MsgInjectedData.headers":
+		if x.Headers == nil {
+			x.Headers = []*v1.Header{}
+		}
+		value := &_MsgInjectedData_2_list{list: &x.Headers}
+		return protoreflect.ValueOfList(value)
+	case "rollchains.tiablob.v1.MsgInjectedData.proofs":
+		if x.Proofs == nil {
+			x.Proofs = []*v1.BlobProof{}
+		}
+		value := &_MsgInjectedData_3_list{list: &x.Proofs}
+		return protoreflect.ValueOfList(value)
+	case "rollchains.tiablob.v1.MsgInjectedData.pending_blocks":
+		if x.PendingBlocks == nil {
+			x.PendingBlocks = new(PendingBlocks)
+		}
+		return protoreflect.ValueOfMessage(x.PendingBlocks.ProtoReflect())
+	case "rollchains.tiablob.v1.MsgInjectedData.block_time":
+		if x.BlockTime == nil {
+			x.BlockTime = new(timestamppb.Timestamp)
+		}
+		return protoreflect.ValueOfMessage(x.BlockTime.ProtoReflect())
+	case "rollchains.tiablob.v1.MsgInjectedData.proposer_address":
+		panic(fmt.Errorf("field proposer_address of message rollchains.tiablob.v1.MsgInjectedData is not mutable"))
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: rollchains.tiablob.v1.MsgInjectedData"))
+		}
+		panic(fmt.Errorf("message rollchains.tiablob.v1.MsgInjectedData does not contain field %s", fd.FullName()))
+	}
+}
+
+// NewField returns a new value that is assignable to the field
+// for the given descriptor. For scalars, this returns the default value.
+// For lists, maps, and messages, this returns a new, empty, mutable value.
+func (x *fastReflection_MsgInjectedData) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+	switch fd.FullName() {
+	case "rollchains.tiablob.v1.MsgInjectedData.create_client":
+		m := new(v1.CreateClient)
+		return protoreflect.ValueOfMessage(m.ProtoReflect())
+	case "rollchains.tiablob.v1.MsgInjectedData.headers":
+		list := []*v1.Header{}
+		return protoreflect.ValueOfList(&_MsgInjectedData_2_list{list: &list})
+	case "rollchains.tiablob.v1.MsgInjectedData.proofs":
+		list := []*v1.BlobProof{}
+		return protoreflect.ValueOfList(&_MsgInjectedData_3_list{list: &list})
+	case "rollchains.tiablob.v1.MsgInjectedData.pending_blocks":
+		m := new(PendingBlocks)
+		return protoreflect.ValueOfMessage(m.ProtoReflect())
+	case "rollchains.tiablob.v1.MsgInjectedData.proposer_address":
+		return protoreflect.ValueOfBytes(nil)
+	case "rollchains.tiablob.v1.MsgInjectedData.block_time":
+		m := new(timestamppb.Timestamp)
+		return protoreflect.ValueOfMessage(m.ProtoReflect())
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: rollchains.tiablob.v1.MsgInjectedData"))
+		}
+		panic(fmt.Errorf("message rollchains.tiablob.v1.MsgInjectedData does not contain field %s", fd.FullName()))
+	}
+}
+
+// WhichOneof reports which field within the oneof is populated,
+// returning nil if none are populated.
+// It panics if the oneof descriptor does not belong to this message.
+func (x *fastReflection_MsgInjectedData) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+	switch d.FullName() {
+	default:
+		panic(fmt.Errorf("%s is not a oneof field in rollchains.tiablob.v1.MsgInjectedData", d.FullName()))
+	}
+	panic("unreachable")
+}
+
+// GetUnknown retrieves the entire list of unknown fields.
+// The caller may only mutate the contents of the RawFields
+// if the mutated bytes are stored back into the message with SetUnknown.
+func (x *fastReflection_MsgInjectedData) GetUnknown() protoreflect.RawFields {
+	return x.unknownFields
+}
+
+// SetUnknown stores an entire list of unknown fields.
+// The raw fields must be syntactically valid according to the wire format.
+// An implementation may panic if this is not the case.
+// Once stored, the caller must not mutate the content of the RawFields.
+// An empty RawFields may be passed to clear the fields.
+//
+// SetUnknown is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_MsgInjectedData) SetUnknown(fields protoreflect.RawFields) {
+	x.unknownFields = fields
+}
+
+// IsValid reports whether the message is valid.
+//
+// An invalid message is an empty, read-only value.
+//
+// An invalid message often corresponds to a nil pointer of the concrete
+// message type, but the details are implementation dependent.
+// Validity is not part of the protobuf data model, and may not
+// be preserved in marshaling or other operations.
+func (x *fastReflection_MsgInjectedData) IsValid() bool {
+	return x != nil
+}
+
+// ProtoMethods returns optional fastReflectionFeature-path implementations of various operations.
+// This method may return nil.
+//
+// The returned methods type is identical to
+// "google.golang.org/protobuf/runtime/protoiface".Methods.
+// Consult the protoiface package documentation for details.
+func (x *fastReflection_MsgInjectedData) ProtoMethods() *protoiface.Methods {
+	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
+		x := input.Message.Interface().(*MsgInjectedData)
+		if x == nil {
+			return protoiface.SizeOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Size:              0,
+			}
+		}
+		options := runtime.SizeInputToOptions(input)
+		_ = options
+		var n int
+		var l int
+		_ = l
+		if x.CreateClient != nil {
+			l = options.Size(x.CreateClient)
+			n += 1 + l + runtime.Sov(uint64(l))
+		}
+		if len(x.Headers) > 0 {
+			for _, e := range x.Headers {
+				l = options.Size(e)
+				n += 1 + l + runtime.Sov(uint64(l))
+			}
+		}
+		if len(x.Proofs) > 0 {
+			for _, e := range x.Proofs {
+				l = options.Size(e)
+				n += 1 + l + runtime.Sov(uint64(l))
+			}
+		}
+		if x.PendingBlocks != nil {
+			l = options.Size(x.PendingBlocks)
+			n += 1 + l + runtime.Sov(uint64(l))
+		}
+		l = len(x.ProposerAddress)
+		if l > 0 {
+			n += 1 + l + runtime.Sov(uint64(l))
+		}
+		if x.BlockTime != nil {
+			l = options.Size(x.BlockTime)
+			n += 1 + l + runtime.Sov(uint64(l))
+		}
+		if x.unknownFields != nil {
+			n += len(x.unknownFields)
+		}
+		return protoiface.SizeOutput{
+			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+			Size:              n,
+		}
+	}
+
+	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
+		x := input.Message.Interface().(*MsgInjectedData)
+		if x == nil {
+			return protoiface.MarshalOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Buf:               input.Buf,
+			}, nil
+		}
+		options := runtime.MarshalInputToOptions(input)
+		_ = options
+		size := options.Size(x)
+		dAtA := make([]byte, size)
+		i := len(dAtA)
+		_ = i
+		var l int
+		_ = l
+		if x.unknownFields != nil {
+			i -= len(x.unknownFields)
+			copy(dAtA[i:], x.unknownFields)
+		}
+		if x.BlockTime != nil {
+			encoded, err := options.Marshal(x.BlockTime)
+			if err != nil {
+				return protoiface.MarshalOutput{
+					NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+					Buf:               input.Buf,
+				}, err
+			}
+			i -= len(encoded)
+			copy(dAtA[i:], encoded)
+			i = runtime.EncodeVarint(dAtA, i, uint64(len(encoded)))
+			i--
+			dAtA[i] = 0x32
+		}
+		if len(x.ProposerAddress) > 0 {
+			i -= len(x.ProposerAddress)
+			copy(dAtA[i:], x.ProposerAddress)
+			i = runtime.EncodeVarint(dAtA, i, uint64(len(x.ProposerAddress)))
+			i--
+			dAtA[i] = 0x2a
+		}
+		if x.PendingBlocks != nil {
+			encoded, err := options.Marshal(x.PendingBlocks)
+			if err != nil {
+				return protoiface.MarshalOutput{
+					NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+					Buf:               input.Buf,
+				}, err
+			}
+			i -= len(encoded)
+			copy(dAtA[i:], encoded)
+			i = runtime.EncodeVarint(dAtA, i, uint64(len(encoded)))
+			i--
+			dAtA[i] = 0x22
+		}
+		if len(x.Proofs) > 0 {
+			for iNdEx := len(x.Proofs) - 1; iNdEx >= 0; iNdEx-- {
+				encoded, err := options.Marshal(x.Proofs[iNdEx])
+				if err != nil {
+					return protoiface.MarshalOutput{
+						NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+						Buf:               input.Buf,
+					}, err
+				}
+				i -= len(encoded)
+				copy(dAtA[i:], encoded)
+				i = runtime.EncodeVarint(dAtA, i, uint64(len(encoded)))
+				i--
+				dAtA[i] = 0x1a
+			}
+		}
+		if len(x.Headers) > 0 {
+			for iNdEx := len(x.Headers) - 1; iNdEx >= 0; iNdEx-- {
+				encoded, err := options.Marshal(x.Headers[iNdEx])
+				if err != nil {
+					return protoiface.MarshalOutput{
+						NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+						Buf:               input.Buf,
+					}, err
+				}
+				i -= len(encoded)
+				copy(dAtA[i:], encoded)
+				i = runtime.EncodeVarint(dAtA, i, uint64(len(encoded)))
+				i--
+				dAtA[i] = 0x12
+			}
+		}
+		if x.CreateClient != nil {
+			encoded, err := options.Marshal(x.CreateClient)
+			if err != nil {
+				return protoiface.MarshalOutput{
+					NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+					Buf:               input.Buf,
+				}, err
+			}
+			i -= len(encoded)
+			copy(dAtA[i:], encoded)
+			i = runtime.EncodeVarint(dAtA, i, uint64(len(encoded)))
+			i--
+			dAtA[i] = 0xa
+		}
+		if input.Buf != nil {
+			input.Buf = append(input.Buf, dAtA...)
+		} else {
+			input.Buf = dAtA
+		}
+		return protoiface.MarshalOutput{
+			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+			Buf:               input.Buf,
+		}, nil
+	}
+	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
+		x := input.Message.Interface().(*MsgInjectedData)
+		if x == nil {
+			return protoiface.UnmarshalOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Flags:             input.Flags,
+			}, nil
+		}
+		options := runtime.UnmarshalInputToOptions(input)
+		_ = options
+		dAtA := input.Buf
+		l := len(dAtA)
+		iNdEx := 0
+		for iNdEx < l {
+			preIndex := iNdEx
+			var wire uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				wire |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			fieldNum := int32(wire >> 3)
+			wireType := int(wire & 0x7)
+			if wireType == 4 {
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: MsgInjectedData: wiretype end group for non-group")
+			}
+			if fieldNum <= 0 {
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: MsgInjectedData: illegal tag %d (wire type %d)", fieldNum, wire)
+			}
+			switch fieldNum {
+			case 1:
+				if wireType != 2 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field CreateClient", wireType)
+				}
+				var msglen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					msglen |= int(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if msglen < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				postIndex := iNdEx + msglen
+				if postIndex < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if postIndex > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				if x.CreateClient == nil {
+					x.CreateClient = &v1.CreateClient{}
+				}
+				if err := options.Unmarshal(dAtA[iNdEx:postIndex], x.CreateClient); err != nil {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+				}
+				iNdEx = postIndex
+			case 2:
+				if wireType != 2 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field Headers", wireType)
+				}
+				var msglen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					msglen |= int(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if msglen < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				postIndex := iNdEx + msglen
+				if postIndex < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if postIndex > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				x.Headers = append(x.Headers, &v1.Header{})
+				if err := options.Unmarshal(dAtA[iNdEx:postIndex], x.Headers[len(x.Headers)-1]); err != nil {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+				}
+				iNdEx = postIndex
+			case 3:
+				if wireType != 2 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field Proofs", wireType)
+				}
+				var msglen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					msglen |= int(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if msglen < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				postIndex := iNdEx + msglen
+				if postIndex < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if postIndex > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				x.Proofs = append(x.Proofs, &v1.BlobProof{})
+				if err := options.Unmarshal(dAtA[iNdEx:postIndex], x.Proofs[len(x.Proofs)-1]); err != nil {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+				}
+				iNdEx = postIndex
+			case 4:
+				if wireType != 2 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field PendingBlocks", wireType)
+				}
+				var msglen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					msglen |= int(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if msglen < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				postIndex := iNdEx + msglen
+				if postIndex < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if postIndex > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				if x.PendingBlocks == nil {
+					x.PendingBlocks = &PendingBlocks{}
+				}
+				if err := options.Unmarshal(dAtA[iNdEx:postIndex], x.PendingBlocks); err != nil {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+				}
+				iNdEx = postIndex
+			case 5:
+				if wireType != 2 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field ProposerAddress", wireType)
+				}
+				var byteLen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					byteLen |= int(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if byteLen < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				postIndex := iNdEx + byteLen
+				if postIndex < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if postIndex > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				x.ProposerAddress = append(x.ProposerAddress[:0], dAtA[iNdEx:postIndex]...)
+				if x.ProposerAddress == nil {
+					x.ProposerAddress = []byte{}
+				}
+				iNdEx = postIndex
+			case 6:
+				if wireType != 2 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field BlockTime", wireType)
+				}
+				var msglen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					msglen |= int(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if msglen < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				postIndex := iNdEx + msglen
+				if postIndex < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if postIndex > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				if x.BlockTime == nil {
+					x.BlockTime = &timestamppb.Timestamp{}
+				}
+				if err := options.Unmarshal(dAtA[iNdEx:postIndex], x.BlockTime); err != nil {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+				}
+				iNdEx = postIndex
+			default:
+				iNdEx = preIndex
+				skippy, err := runtime.Skip(dAtA[iNdEx:])
+				if err != nil {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+				}
+				if (skippy < 0) || (iNdEx+skippy) < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if (iNdEx + skippy) > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				if !options.DiscardUnknown {
+					x.unknownFields = append(x.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+				}
+				iNdEx += skippy
+			}
+		}
+
+		if iNdEx > l {
+			return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+		}
+		return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, nil
+	}
+	return &protoiface.Methods{
+		NoUnkeyedLiterals: struct{}{},
+		Flags:             protoiface.SupportMarshalDeterministic | protoiface.SupportUnmarshalDiscardUnknown,
+		Size:              size,
+		Marshal:           marshal,
+		Unmarshal:         unmarshal,
+		Merge:             nil,
+		CheckInitialized:  nil,
+	}
+}
+
+var (
+	md_MsgInjectedDataResponse protoreflect.MessageDescriptor
+)
+
+func init() {
+	file_rollchains_tiablob_v1_tx_proto_init()
+	md_MsgInjectedDataResponse = File_rollchains_tiablob_v1_tx_proto.Messages().ByName("MsgInjectedDataResponse")
+}
+
+var _ protoreflect.Message = (*fastReflection_MsgInjectedDataResponse)(nil)
+
+type fastReflection_MsgInjectedDataResponse MsgInjectedDataResponse
+
+func (x *MsgInjectedDataResponse) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_MsgInjectedDataResponse)(x)
+}
+
+func (x *MsgInjectedDataResponse) slowProtoReflect() protoreflect.Message {
+	mi := &file_rollchains_tiablob_v1_tx_proto_msgTypes[3]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+var _fastReflection_MsgInjectedDataResponse_messageType fastReflection_MsgInjectedDataResponse_messageType
+var _ protoreflect.MessageType = fastReflection_MsgInjectedDataResponse_messageType{}
+
+type fastReflection_MsgInjectedDataResponse_messageType struct{}
+
+func (x fastReflection_MsgInjectedDataResponse_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_MsgInjectedDataResponse)(nil)
+}
+func (x fastReflection_MsgInjectedDataResponse_messageType) New() protoreflect.Message {
+	return new(fastReflection_MsgInjectedDataResponse)
+}
+func (x fastReflection_MsgInjectedDataResponse_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_MsgInjectedDataResponse
+}
+
+// Descriptor returns message descriptor, which contains only the protobuf
+// type information for the message.
+func (x *fastReflection_MsgInjectedDataResponse) Descriptor() protoreflect.MessageDescriptor {
+	return md_MsgInjectedDataResponse
+}
+
+// Type returns the message type, which encapsulates both Go and protobuf
+// type information. If the Go type information is not needed,
+// it is recommended that the message descriptor be used instead.
+func (x *fastReflection_MsgInjectedDataResponse) Type() protoreflect.MessageType {
+	return _fastReflection_MsgInjectedDataResponse_messageType
+}
+
+// New returns a newly allocated and mutable empty message.
+func (x *fastReflection_MsgInjectedDataResponse) New() protoreflect.Message {
+	return new(fastReflection_MsgInjectedDataResponse)
+}
+
+// Interface unwraps the message reflection interface and
+// returns the underlying ProtoMessage interface.
+func (x *fastReflection_MsgInjectedDataResponse) Interface() protoreflect.ProtoMessage {
+	return (*MsgInjectedDataResponse)(x)
+}
+
+// Range iterates over every populated field in an undefined order,
+// calling f for each field descriptor and value encountered.
+// Range returns immediately if f returns false.
+// While iterating, mutating operations may only be performed
+// on the current field descriptor.
+func (x *fastReflection_MsgInjectedDataResponse) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+}
+
+// Has reports whether a field is populated.
+//
+// Some fields have the property of nullability where it is possible to
+// distinguish between the default value of a field and whether the field
+// was explicitly populated with the default value. Singular message fields,
+// member fields of a oneof, and proto2 scalar fields are nullable. Such
+// fields are populated only if explicitly set.
+//
+// In other cases (aside from the nullable cases above),
+// a proto3 scalar field is populated if it contains a non-zero value, and
+// a repeated field is populated if it is non-empty.
+func (x *fastReflection_MsgInjectedDataResponse) Has(fd protoreflect.FieldDescriptor) bool {
+	switch fd.FullName() {
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: rollchains.tiablob.v1.MsgInjectedDataResponse"))
+		}
+		panic(fmt.Errorf("message rollchains.tiablob.v1.MsgInjectedDataResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// Clear clears the field such that a subsequent Has call reports false.
+//
+// Clearing an extension field clears both the extension type and value
+// associated with the given field number.
+//
+// Clear is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_MsgInjectedDataResponse) Clear(fd protoreflect.FieldDescriptor) {
+	switch fd.FullName() {
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: rollchains.tiablob.v1.MsgInjectedDataResponse"))
+		}
+		panic(fmt.Errorf("message rollchains.tiablob.v1.MsgInjectedDataResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// Get retrieves the value for a field.
+//
+// For unpopulated scalars, it returns the default value, where
+// the default value of a bytes scalar is guaranteed to be a copy.
+// For unpopulated composite types, it returns an empty, read-only view
+// of the value; to obtain a mutable reference, use Mutable.
+func (x *fastReflection_MsgInjectedDataResponse) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+	switch descriptor.FullName() {
+	default:
+		if descriptor.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: rollchains.tiablob.v1.MsgInjectedDataResponse"))
+		}
+		panic(fmt.Errorf("message rollchains.tiablob.v1.MsgInjectedDataResponse does not contain field %s", descriptor.FullName()))
+	}
+}
+
+// Set stores the value for a field.
+//
+// For a field belonging to a oneof, it implicitly clears any other field
+// that may be currently set within the same oneof.
+// For extension fields, it implicitly stores the provided ExtensionType.
+// When setting a composite type, it is unspecified whether the stored value
+// aliases the source's memory in any way. If the composite value is an
+// empty, read-only value, then it panics.
+//
+// Set is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_MsgInjectedDataResponse) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+	switch fd.FullName() {
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: rollchains.tiablob.v1.MsgInjectedDataResponse"))
+		}
+		panic(fmt.Errorf("message rollchains.tiablob.v1.MsgInjectedDataResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// Mutable returns a mutable reference to a composite type.
+//
+// If the field is unpopulated, it may allocate a composite value.
+// For a field belonging to a oneof, it implicitly clears any other field
+// that may be currently set within the same oneof.
+// For extension fields, it implicitly stores the provided ExtensionType
+// if not already stored.
+// It panics if the field does not contain a composite type.
+//
+// Mutable is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_MsgInjectedDataResponse) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+	switch fd.FullName() {
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: rollchains.tiablob.v1.MsgInjectedDataResponse"))
+		}
+		panic(fmt.Errorf("message rollchains.tiablob.v1.MsgInjectedDataResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// NewField returns a new value that is assignable to the field
+// for the given descriptor. For scalars, this returns the default value.
+// For lists, maps, and messages, this returns a new, empty, mutable value.
+func (x *fastReflection_MsgInjectedDataResponse) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+	switch fd.FullName() {
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: rollchains.tiablob.v1.MsgInjectedDataResponse"))
+		}
+		panic(fmt.Errorf("message rollchains.tiablob.v1.MsgInjectedDataResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// WhichOneof reports which field within the oneof is populated,
+// returning nil if none are populated.
+// It panics if the oneof descriptor does not belong to this message.
+func (x *fastReflection_MsgInjectedDataResponse) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+	switch d.FullName() {
+	default:
+		panic(fmt.Errorf("%s is not a oneof field in rollchains.tiablob.v1.MsgInjectedDataResponse", d.FullName()))
+	}
+	panic("unreachable")
+}
+
+// GetUnknown retrieves the entire list of unknown fields.
+// The caller may only mutate the contents of the RawFields
+// if the mutated bytes are stored back into the message with SetUnknown.
+func (x *fastReflection_MsgInjectedDataResponse) GetUnknown() protoreflect.RawFields {
+	return x.unknownFields
+}
+
+// SetUnknown stores an entire list of unknown fields.
+// The raw fields must be syntactically valid according to the wire format.
+// An implementation may panic if this is not the case.
+// Once stored, the caller must not mutate the content of the RawFields.
+// An empty RawFields may be passed to clear the fields.
+//
+// SetUnknown is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_MsgInjectedDataResponse) SetUnknown(fields protoreflect.RawFields) {
+	x.unknownFields = fields
+}
+
+// IsValid reports whether the message is valid.
+//
+// An invalid message is an empty, read-only value.
+//
+// An invalid message often corresponds to a nil pointer of the concrete
+// message type, but the details are implementation dependent.
+// Validity is not part of the protobuf data model, and may not
+// be preserved in marshaling or other operations.
+func (x *fastReflection_MsgInjectedDataResponse) IsValid() bool {
+	return x != nil
+}
+
+// ProtoMethods returns optional fastReflectionFeature-path implementations of various operations.
+// This method may return nil.
+//
+// The returned methods type is identical to
+// "google.golang.org/protobuf/runtime/protoiface".Methods.
+// Consult the protoiface package documentation for details.
+func (x *fastReflection_MsgInjectedDataResponse) ProtoMethods() *protoiface.Methods {
+	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
+		x := input.Message.Interface().(*MsgInjectedDataResponse)
+		if x == nil {
+			return protoiface.SizeOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Size:              0,
+			}
+		}
+		options := runtime.SizeInputToOptions(input)
+		_ = options
+		var n int
+		var l int
+		_ = l
+		if x.unknownFields != nil {
+			n += len(x.unknownFields)
+		}
+		return protoiface.SizeOutput{
+			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+			Size:              n,
+		}
+	}
+
+	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
+		x := input.Message.Interface().(*MsgInjectedDataResponse)
+		if x == nil {
+			return protoiface.MarshalOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Buf:               input.Buf,
+			}, nil
+		}
+		options := runtime.MarshalInputToOptions(input)
+		_ = options
+		size := options.Size(x)
+		dAtA := make([]byte, size)
+		i := len(dAtA)
+		_ = i
+		var l int
+		_ = l
+		if x.unknownFields != nil {
+			i -= len(x.unknownFields)
+			copy(dAtA[i:], x.unknownFields)
+		}
+		if input.Buf != nil {
+			input.Buf = append(input.Buf, dAtA...)
+		} else {
+			input.Buf = dAtA
+		}
+		return protoiface.MarshalOutput{
+			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+			Buf:               input.Buf,
+		}, nil
+	}
+	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
+		x := input.Message.Interface().(*MsgInjectedDataResponse)
+		if x == nil {
+			return protoiface.UnmarshalOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Flags:             input.Flags,
+			}, nil
+		}
+		options := runtime.UnmarshalInputToOptions(input)
+		_ = options
+		dAtA := input.Buf
+		l := len(dAtA)
+		iNdEx := 0
+		for iNdEx < l {
+			preIndex := iNdEx
+			var wire uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				wire |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			fieldNum := int32(wire >> 3)
+			wireType := int(wire & 0x7)
+			if wireType == 4 {
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: MsgInjectedDataResponse: wiretype end group for non-group")
+			}
+			if fieldNum <= 0 {
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: MsgInjectedDataResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			}
+			switch fieldNum {
+			default:
+				iNdEx = preIndex
+				skippy, err := runtime.Skip(dAtA[iNdEx:])
+				if err != nil {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+				}
+				if (skippy < 0) || (iNdEx+skippy) < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if (iNdEx + skippy) > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				if !options.DiscardUnknown {
+					x.unknownFields = append(x.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+				}
+				iNdEx += skippy
+			}
+		}
+
+		if iNdEx > l {
+			return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+		}
+		return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, nil
+	}
+	return &protoiface.Methods{
+		NoUnkeyedLiterals: struct{}{},
+		Flags:             protoiface.SupportMarshalDeterministic | protoiface.SupportUnmarshalDiscardUnknown,
+		Size:              size,
+		Marshal:           marshal,
+		Unmarshal:         unmarshal,
+		Merge:             nil,
+		CheckInitialized:  nil,
+	}
+}
+
+var _ protoreflect.List = (*_PendingBlocks_1_list)(nil)
+
+type _PendingBlocks_1_list struct {
+	list *[]int64
+}
+
+func (x *_PendingBlocks_1_list) Len() int {
+	if x.list == nil {
+		return 0
+	}
+	return len(*x.list)
+}
+
+func (x *_PendingBlocks_1_list) Get(i int) protoreflect.Value {
+	return protoreflect.ValueOfInt64((*x.list)[i])
+}
+
+func (x *_PendingBlocks_1_list) Set(i int, value protoreflect.Value) {
+	valueUnwrapped := value.Int()
+	concreteValue := valueUnwrapped
+	(*x.list)[i] = concreteValue
+}
+
+func (x *_PendingBlocks_1_list) Append(value protoreflect.Value) {
+	valueUnwrapped := value.Int()
+	concreteValue := valueUnwrapped
+	*x.list = append(*x.list, concreteValue)
+}
+
+func (x *_PendingBlocks_1_list) AppendMutable() protoreflect.Value {
+	panic(fmt.Errorf("AppendMutable can not be called on message PendingBlocks at list field BlockHeights as it is not of Message kind"))
+}
+
+func (x *_PendingBlocks_1_list) Truncate(n int) {
+	*x.list = (*x.list)[:n]
+}
+
+func (x *_PendingBlocks_1_list) NewElement() protoreflect.Value {
+	v := int64(0)
+	return protoreflect.ValueOfInt64(v)
+}
+
+func (x *_PendingBlocks_1_list) IsValid() bool {
+	return x.list != nil
+}
+
+var (
+	md_PendingBlocks               protoreflect.MessageDescriptor
+	fd_PendingBlocks_block_heights protoreflect.FieldDescriptor
+)
+
+func init() {
+	file_rollchains_tiablob_v1_tx_proto_init()
+	md_PendingBlocks = File_rollchains_tiablob_v1_tx_proto.Messages().ByName("PendingBlocks")
+	fd_PendingBlocks_block_heights = md_PendingBlocks.Fields().ByName("block_heights")
+}
+
+var _ protoreflect.Message = (*fastReflection_PendingBlocks)(nil)
+
+type fastReflection_PendingBlocks PendingBlocks
+
+func (x *PendingBlocks) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_PendingBlocks)(x)
+}
+
+func (x *PendingBlocks) slowProtoReflect() protoreflect.Message {
+	mi := &file_rollchains_tiablob_v1_tx_proto_msgTypes[4]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+var _fastReflection_PendingBlocks_messageType fastReflection_PendingBlocks_messageType
+var _ protoreflect.MessageType = fastReflection_PendingBlocks_messageType{}
+
+type fastReflection_PendingBlocks_messageType struct{}
+
+func (x fastReflection_PendingBlocks_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_PendingBlocks)(nil)
+}
+func (x fastReflection_PendingBlocks_messageType) New() protoreflect.Message {
+	return new(fastReflection_PendingBlocks)
+}
+func (x fastReflection_PendingBlocks_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_PendingBlocks
+}
+
+// Descriptor returns message descriptor, which contains only the protobuf
+// type information for the message.
+func (x *fastReflection_PendingBlocks) Descriptor() protoreflect.MessageDescriptor {
+	return md_PendingBlocks
+}
+
+// Type returns the message type, which encapsulates both Go and protobuf
+// type information. If the Go type information is not needed,
+// it is recommended that the message descriptor be used instead.
+func (x *fastReflection_PendingBlocks) Type() protoreflect.MessageType {
+	return _fastReflection_PendingBlocks_messageType
+}
+
+// New returns a newly allocated and mutable empty message.
+func (x *fastReflection_PendingBlocks) New() protoreflect.Message {
+	return new(fastReflection_PendingBlocks)
+}
+
+// Interface unwraps the message reflection interface and
+// returns the underlying ProtoMessage interface.
+func (x *fastReflection_PendingBlocks) Interface() protoreflect.ProtoMessage {
+	return (*PendingBlocks)(x)
+}
+
+// Range iterates over every populated field in an undefined order,
+// calling f for each field descriptor and value encountered.
+// Range returns immediately if f returns false.
+// While iterating, mutating operations may only be performed
+// on the current field descriptor.
+func (x *fastReflection_PendingBlocks) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+	if len(x.BlockHeights) != 0 {
+		value := protoreflect.ValueOfList(&_PendingBlocks_1_list{list: &x.BlockHeights})
+		if !f(fd_PendingBlocks_block_heights, value) {
+			return
+		}
+	}
+}
+
+// Has reports whether a field is populated.
+//
+// Some fields have the property of nullability where it is possible to
+// distinguish between the default value of a field and whether the field
+// was explicitly populated with the default value. Singular message fields,
+// member fields of a oneof, and proto2 scalar fields are nullable. Such
+// fields are populated only if explicitly set.
+//
+// In other cases (aside from the nullable cases above),
+// a proto3 scalar field is populated if it contains a non-zero value, and
+// a repeated field is populated if it is non-empty.
+func (x *fastReflection_PendingBlocks) Has(fd protoreflect.FieldDescriptor) bool {
+	switch fd.FullName() {
+	case "rollchains.tiablob.v1.PendingBlocks.block_heights":
+		return len(x.BlockHeights) != 0
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: rollchains.tiablob.v1.PendingBlocks"))
+		}
+		panic(fmt.Errorf("message rollchains.tiablob.v1.PendingBlocks does not contain field %s", fd.FullName()))
+	}
+}
+
+// Clear clears the field such that a subsequent Has call reports false.
+//
+// Clearing an extension field clears both the extension type and value
+// associated with the given field number.
+//
+// Clear is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_PendingBlocks) Clear(fd protoreflect.FieldDescriptor) {
+	switch fd.FullName() {
+	case "rollchains.tiablob.v1.PendingBlocks.block_heights":
+		x.BlockHeights = nil
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: rollchains.tiablob.v1.PendingBlocks"))
+		}
+		panic(fmt.Errorf("message rollchains.tiablob.v1.PendingBlocks does not contain field %s", fd.FullName()))
+	}
+}
+
+// Get retrieves the value for a field.
+//
+// For unpopulated scalars, it returns the default value, where
+// the default value of a bytes scalar is guaranteed to be a copy.
+// For unpopulated composite types, it returns an empty, read-only view
+// of the value; to obtain a mutable reference, use Mutable.
+func (x *fastReflection_PendingBlocks) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+	switch descriptor.FullName() {
+	case "rollchains.tiablob.v1.PendingBlocks.block_heights":
+		if len(x.BlockHeights) == 0 {
+			return protoreflect.ValueOfList(&_PendingBlocks_1_list{})
+		}
+		listValue := &_PendingBlocks_1_list{list: &x.BlockHeights}
+		return protoreflect.ValueOfList(listValue)
+	default:
+		if descriptor.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: rollchains.tiablob.v1.PendingBlocks"))
+		}
+		panic(fmt.Errorf("message rollchains.tiablob.v1.PendingBlocks does not contain field %s", descriptor.FullName()))
+	}
+}
+
+// Set stores the value for a field.
+//
+// For a field belonging to a oneof, it implicitly clears any other field
+// that may be currently set within the same oneof.
+// For extension fields, it implicitly stores the provided ExtensionType.
+// When setting a composite type, it is unspecified whether the stored value
+// aliases the source's memory in any way. If the composite value is an
+// empty, read-only value, then it panics.
+//
+// Set is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_PendingBlocks) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+	switch fd.FullName() {
+	case "rollchains.tiablob.v1.PendingBlocks.block_heights":
+		lv := value.List()
+		clv := lv.(*_PendingBlocks_1_list)
+		x.BlockHeights = *clv.list
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: rollchains.tiablob.v1.PendingBlocks"))
+		}
+		panic(fmt.Errorf("message rollchains.tiablob.v1.PendingBlocks does not contain field %s", fd.FullName()))
+	}
+}
+
+// Mutable returns a mutable reference to a composite type.
+//
+// If the field is unpopulated, it may allocate a composite value.
+// For a field belonging to a oneof, it implicitly clears any other field
+// that may be currently set within the same oneof.
+// For extension fields, it implicitly stores the provided ExtensionType
+// if not already stored.
+// It panics if the field does not contain a composite type.
+//
+// Mutable is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_PendingBlocks) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+	switch fd.FullName() {
+	case "rollchains.tiablob.v1.PendingBlocks.block_heights":
+		if x.BlockHeights == nil {
+			x.BlockHeights = []int64{}
+		}
+		value := &_PendingBlocks_1_list{list: &x.BlockHeights}
+		return protoreflect.ValueOfList(value)
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: rollchains.tiablob.v1.PendingBlocks"))
+		}
+		panic(fmt.Errorf("message rollchains.tiablob.v1.PendingBlocks does not contain field %s", fd.FullName()))
+	}
+}
+
+// NewField returns a new value that is assignable to the field
+// for the given descriptor. For scalars, this returns the default value.
+// For lists, maps, and messages, this returns a new, empty, mutable value.
+func (x *fastReflection_PendingBlocks) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+	switch fd.FullName() {
+	case "rollchains.tiablob.v1.PendingBlocks.block_heights":
+		list := []int64{}
+		return protoreflect.ValueOfList(&_PendingBlocks_1_list{list: &list})
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: rollchains.tiablob.v1.PendingBlocks"))
+		}
+		panic(fmt.Errorf("message rollchains.tiablob.v1.PendingBlocks does not contain field %s", fd.FullName()))
+	}
+}
+
+// WhichOneof reports which field within the oneof is populated,
+// returning nil if none are populated.
+// It panics if the oneof descriptor does not belong to this message.
+func (x *fastReflection_PendingBlocks) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+	switch d.FullName() {
+	default:
+		panic(fmt.Errorf("%s is not a oneof field in rollchains.tiablob.v1.PendingBlocks", d.FullName()))
+	}
+	panic("unreachable")
+}
+
+// GetUnknown retrieves the entire list of unknown fields.
+// The caller may only mutate the contents of the RawFields
+// if the mutated bytes are stored back into the message with SetUnknown.
+func (x *fastReflection_PendingBlocks) GetUnknown() protoreflect.RawFields {
+	return x.unknownFields
+}
+
+// SetUnknown stores an entire list of unknown fields.
+// The raw fields must be syntactically valid according to the wire format.
+// An implementation may panic if this is not the case.
+// Once stored, the caller must not mutate the content of the RawFields.
+// An empty RawFields may be passed to clear the fields.
+//
+// SetUnknown is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_PendingBlocks) SetUnknown(fields protoreflect.RawFields) {
+	x.unknownFields = fields
+}
+
+// IsValid reports whether the message is valid.
+//
+// An invalid message is an empty, read-only value.
+//
+// An invalid message often corresponds to a nil pointer of the concrete
+// message type, but the details are implementation dependent.
+// Validity is not part of the protobuf data model, and may not
+// be preserved in marshaling or other operations.
+func (x *fastReflection_PendingBlocks) IsValid() bool {
+	return x != nil
+}
+
+// ProtoMethods returns optional fastReflectionFeature-path implementations of various operations.
+// This method may return nil.
+//
+// The returned methods type is identical to
+// "google.golang.org/protobuf/runtime/protoiface".Methods.
+// Consult the protoiface package documentation for details.
+func (x *fastReflection_PendingBlocks) ProtoMethods() *protoiface.Methods {
+	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
+		x := input.Message.Interface().(*PendingBlocks)
+		if x == nil {
+			return protoiface.SizeOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Size:              0,
+			}
+		}
+		options := runtime.SizeInputToOptions(input)
+		_ = options
+		var n int
+		var l int
+		_ = l
+		if len(x.BlockHeights) > 0 {
+			l = 0
+			for _, e := range x.BlockHeights {
+				l += runtime.Sov(uint64(e))
+			}
+			n += 1 + runtime.Sov(uint64(l)) + l
+		}
+		if x.unknownFields != nil {
+			n += len(x.unknownFields)
+		}
+		return protoiface.SizeOutput{
+			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+			Size:              n,
+		}
+	}
+
+	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
+		x := input.Message.Interface().(*PendingBlocks)
+		if x == nil {
+			return protoiface.MarshalOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Buf:               input.Buf,
+			}, nil
+		}
+		options := runtime.MarshalInputToOptions(input)
+		_ = options
+		size := options.Size(x)
+		dAtA := make([]byte, size)
+		i := len(dAtA)
+		_ = i
+		var l int
+		_ = l
+		if x.unknownFields != nil {
+			i -= len(x.unknownFields)
+			copy(dAtA[i:], x.unknownFields)
+		}
+		if len(x.BlockHeights) > 0 {
+			var pksize2 int
+			for _, num := range x.BlockHeights {
+				pksize2 += runtime.Sov(uint64(num))
+			}
+			i -= pksize2
+			j1 := i
+			for _, num1 := range x.BlockHeights {
+				num := uint64(num1)
+				for num >= 1<<7 {
+					dAtA[j1] = uint8(uint64(num)&0x7f | 0x80)
+					num >>= 7
+					j1++
+				}
+				dAtA[j1] = uint8(num)
+				j1++
+			}
+			i = runtime.EncodeVarint(dAtA, i, uint64(pksize2))
+			i--
+			dAtA[i] = 0xa
+		}
+		if input.Buf != nil {
+			input.Buf = append(input.Buf, dAtA...)
+		} else {
+			input.Buf = dAtA
+		}
+		return protoiface.MarshalOutput{
+			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+			Buf:               input.Buf,
+		}, nil
+	}
+	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
+		x := input.Message.Interface().(*PendingBlocks)
+		if x == nil {
+			return protoiface.UnmarshalOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Flags:             input.Flags,
+			}, nil
+		}
+		options := runtime.UnmarshalInputToOptions(input)
+		_ = options
+		dAtA := input.Buf
+		l := len(dAtA)
+		iNdEx := 0
+		for iNdEx < l {
+			preIndex := iNdEx
+			var wire uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				wire |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			fieldNum := int32(wire >> 3)
+			wireType := int(wire & 0x7)
+			if wireType == 4 {
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: PendingBlocks: wiretype end group for non-group")
+			}
+			if fieldNum <= 0 {
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: PendingBlocks: illegal tag %d (wire type %d)", fieldNum, wire)
+			}
+			switch fieldNum {
+			case 1:
+				if wireType == 0 {
+					var v int64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+						}
+						if iNdEx >= l {
+							return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						v |= int64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					x.BlockHeights = append(x.BlockHeights, v)
+				} else if wireType == 2 {
+					var packedLen int
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+						}
+						if iNdEx >= l {
+							return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						packedLen |= int(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					if packedLen < 0 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+					}
+					postIndex := iNdEx + packedLen
+					if postIndex < 0 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+					}
+					if postIndex > l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					var elementCount int
+					var count int
+					for _, integer := range dAtA[iNdEx:postIndex] {
+						if integer < 128 {
+							count++
+						}
+					}
+					elementCount = count
+					if elementCount != 0 && len(x.BlockHeights) == 0 {
+						x.BlockHeights = make([]int64, 0, elementCount)
+					}
+					for iNdEx < postIndex {
+						var v int64
+						for shift := uint(0); ; shift += 7 {
+							if shift >= 64 {
+								return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+							}
+							if iNdEx >= l {
+								return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+							}
+							b := dAtA[iNdEx]
+							iNdEx++
+							v |= int64(b&0x7F) << shift
+							if b < 0x80 {
+								break
+							}
+						}
+						x.BlockHeights = append(x.BlockHeights, v)
+					}
+				} else {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field BlockHeights", wireType)
+				}
+			default:
+				iNdEx = preIndex
+				skippy, err := runtime.Skip(dAtA[iNdEx:])
+				if err != nil {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+				}
+				if (skippy < 0) || (iNdEx+skippy) < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if (iNdEx + skippy) > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				if !options.DiscardUnknown {
+					x.unknownFields = append(x.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+				}
+				iNdEx += skippy
+			}
+		}
+
+		if iNdEx > l {
+			return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+		}
+		return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, nil
+	}
+	return &protoiface.Methods{
+		NoUnkeyedLiterals: struct{}{},
+		Flags:             protoiface.SupportMarshalDeterministic | protoiface.SupportUnmarshalDiscardUnknown,
+		Size:              size,
+		Marshal:           marshal,
+		Unmarshal:         unmarshal,
+		Merge:             nil,
+		CheckInitialized:  nil,
+	}
+}
+
+var _ protoreflect.List = (*_InjectTx_1_list)(nil)
+
+type _InjectTx_1_list struct {
+	list *[]*anypb.Any
+}
+
+func (x *_InjectTx_1_list) Len() int {
+	if x.list == nil {
+		return 0
+	}
+	return len(*x.list)
+}
+
+func (x *_InjectTx_1_list) Get(i int) protoreflect.Value {
+	return protoreflect.ValueOfMessage((*x.list)[i].ProtoReflect())
+}
+
+func (x *_InjectTx_1_list) Set(i int, value protoreflect.Value) {
+	valueUnwrapped := value.Message()
+	concreteValue := valueUnwrapped.Interface().(*anypb.Any)
+	(*x.list)[i] = concreteValue
+}
+
+func (x *_InjectTx_1_list) Append(value protoreflect.Value) {
+	valueUnwrapped := value.Message()
+	concreteValue := valueUnwrapped.Interface().(*anypb.Any)
+	*x.list = append(*x.list, concreteValue)
+}
+
+func (x *_InjectTx_1_list) AppendMutable() protoreflect.Value {
+	v := new(anypb.Any)
+	*x.list = append(*x.list, v)
+	return protoreflect.ValueOfMessage(v.ProtoReflect())
+}
+
+func (x *_InjectTx_1_list) Truncate(n int) {
+	for i := n; i < len(*x.list); i++ {
+		(*x.list)[i] = nil
+	}
+	*x.list = (*x.list)[:n]
+}
+
+func (x *_InjectTx_1_list) NewElement() protoreflect.Value {
+	v := new(anypb.Any)
+	return protoreflect.ValueOfMessage(v.ProtoReflect())
+}
+
+func (x *_InjectTx_1_list) IsValid() bool {
+	return x.list != nil
+}
+
+var (
+	md_InjectTx          protoreflect.MessageDescriptor
+	fd_InjectTx_messages protoreflect.FieldDescriptor
+)
+
+func init() {
+	file_rollchains_tiablob_v1_tx_proto_init()
+	md_InjectTx = File_rollchains_tiablob_v1_tx_proto.Messages().ByName("InjectTx")
+	fd_InjectTx_messages = md_InjectTx.Fields().ByName("messages")
+}
+
+var _ protoreflect.Message = (*fastReflection_InjectTx)(nil)
+
+type fastReflection_InjectTx InjectTx
+
+func (x *InjectTx) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_InjectTx)(x)
+}
+
+func (x *InjectTx) slowProtoReflect() protoreflect.Message {
+	mi := &file_rollchains_tiablob_v1_tx_proto_msgTypes[5]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+var _fastReflection_InjectTx_messageType fastReflection_InjectTx_messageType
+var _ protoreflect.MessageType = fastReflection_InjectTx_messageType{}
+
+type fastReflection_InjectTx_messageType struct{}
+
+func (x fastReflection_InjectTx_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_InjectTx)(nil)
+}
+func (x fastReflection_InjectTx_messageType) New() protoreflect.Message {
+	return new(fastReflection_InjectTx)
+}
+func (x fastReflection_InjectTx_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_InjectTx
+}
+
+// Descriptor returns message descriptor, which contains only the protobuf
+// type information for the message.
+func (x *fastReflection_InjectTx) Descriptor() protoreflect.MessageDescriptor {
+	return md_InjectTx
+}
+
+// Type returns the message type, which encapsulates both Go and protobuf
+// type information. If the Go type information is not needed,
+// it is recommended that the message descriptor be used instead.
+func (x *fastReflection_InjectTx) Type() protoreflect.MessageType {
+	return _fastReflection_InjectTx_messageType
+}
+
+// New returns a newly allocated and mutable empty message.
+func (x *fastReflection_InjectTx) New() protoreflect.Message {
+	return new(fastReflection_InjectTx)
+}
+
+// Interface unwraps the message reflection interface and
+// returns the underlying ProtoMessage interface.
+func (x *fastReflection_InjectTx) Interface() protoreflect.ProtoMessage {
+	return (*InjectTx)(x)
+}
+
+// Range iterates over every populated field in an undefined order,
+// calling f for each field descriptor and value encountered.
+// Range returns immediately if f returns false.
+// While iterating, mutating operations may only be performed
+// on the current field descriptor.
+func (x *fastReflection_InjectTx) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+	if len(x.Messages) != 0 {
+		value := protoreflect.ValueOfList(&_InjectTx_1_list{list: &x.Messages})
+		if !f(fd_InjectTx_messages, value) {
+			return
+		}
+	}
+}
+
+// Has reports whether a field is populated.
+//
+// Some fields have the property of nullability where it is possible to
+// distinguish between the default value of a field and whether the field
+// was explicitly populated with the default value. Singular message fields,
+// member fields of a oneof, and proto2 scalar fields are nullable. Such
+// fields are populated only if explicitly set.
+//
+// In other cases (aside from the nullable cases above),
+// a proto3 scalar field is populated if it contains a non-zero value, and
+// a repeated field is populated if it is non-empty.
+func (x *fastReflection_InjectTx) Has(fd protoreflect.FieldDescriptor) bool {
+	switch fd.FullName() {
+	case "rollchains.tiablob.v1.InjectTx.messages":
+		return len(x.Messages) != 0
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: rollchains.tiablob.v1.InjectTx"))
+		}
+		panic(fmt.Errorf("message rollchains.tiablob.v1.InjectTx does not contain field %s", fd.FullName()))
+	}
+}
+
+// Clear clears the field such that a subsequent Has call reports false.
+//
+// Clearing an extension field clears both the extension type and value
+// associated with the given field number.
+//
+// Clear is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_InjectTx) Clear(fd protoreflect.FieldDescriptor) {
+	switch fd.FullName() {
+	case "rollchains.tiablob.v1.InjectTx.messages":
+		x.Messages = nil
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: rollchains.tiablob.v1.InjectTx"))
+		}
+		panic(fmt.Errorf("message rollchains.tiablob.v1.InjectTx does not contain field %s", fd.FullName()))
+	}
+}
+
+// Get retrieves the value for a field.
+//
+// For unpopulated scalars, it returns the default value, where
+// the default value of a bytes scalar is guaranteed to be a copy.
+// For unpopulated composite types, it returns an empty, read-only view
+// of the value; to obtain a mutable reference, use Mutable.
+func (x *fastReflection_InjectTx) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+	switch descriptor.FullName() {
+	case "rollchains.tiablob.v1.InjectTx.messages":
+		if len(x.Messages) == 0 {
+			return protoreflect.ValueOfList(&_InjectTx_1_list{})
+		}
+		listValue := &_InjectTx_1_list{list: &x.Messages}
+		return protoreflect.ValueOfList(listValue)
+	default:
+		if descriptor.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: rollchains.tiablob.v1.InjectTx"))
+		}
+		panic(fmt.Errorf("message rollchains.tiablob.v1.InjectTx does not contain field %s", descriptor.FullName()))
+	}
+}
+
+// Set stores the value for a field.
+//
+// For a field belonging to a oneof, it implicitly clears any other field
+// that may be currently set within the same oneof.
+// For extension fields, it implicitly stores the provided ExtensionType.
+// When setting a composite type, it is unspecified whether the stored value
+// aliases the source's memory in any way. If the composite value is an
+// empty, read-only value, then it panics.
+//
+// Set is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_InjectTx) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+	switch fd.FullName() {
+	case "rollchains.tiablob.v1.InjectTx.messages":
+		lv := value.List()
+		clv := lv.(*_InjectTx_1_list)
+		x.Messages = *clv.list
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: rollchains.tiablob.v1.InjectTx"))
+		}
+		panic(fmt.Errorf("message rollchains.tiablob.v1.InjectTx does not contain field %s", fd.FullName()))
+	}
+}
+
+// Mutable returns a mutable reference to a composite type.
+//
+// If the field is unpopulated, it may allocate a composite value.
+// For a field belonging to a oneof, it implicitly clears any other field
+// that may be currently set within the same oneof.
+// For extension fields, it implicitly stores the provided ExtensionType
+// if not already stored.
+// It panics if the field does not contain a composite type.
+//
+// Mutable is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_InjectTx) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+	switch fd.FullName() {
+	case "rollchains.tiablob.v1.InjectTx.messages":
+		if x.Messages == nil {
+			x.Messages = []*anypb.Any{}
+		}
+		value := &_InjectTx_1_list{list: &x.Messages}
+		return protoreflect.ValueOfList(value)
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: rollchains.tiablob.v1.InjectTx"))
+		}
+		panic(fmt.Errorf("message rollchains.tiablob.v1.InjectTx does not contain field %s", fd.FullName()))
+	}
+}
+
+// NewField returns a new value that is assignable to the field
+// for the given descriptor. For scalars, this returns the default value.
+// For lists, maps, and messages, this returns a new, empty, mutable value.
+func (x *fastReflection_InjectTx) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+	switch fd.FullName() {
+	case "rollchains.tiablob.v1.InjectTx.messages":
+		list := []*anypb.Any{}
+		return protoreflect.ValueOfList(&_InjectTx_1_list{list: &list})
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: rollchains.tiablob.v1.InjectTx"))
+		}
+		panic(fmt.Errorf("message rollchains.tiablob.v1.InjectTx does not contain field %s", fd.FullName()))
+	}
+}
+
+// WhichOneof reports which field within the oneof is populated,
+// returning nil if none are populated.
+// It panics if the oneof descriptor does not belong to this message.
+func (x *fastReflection_InjectTx) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+	switch d.FullName() {
+	default:
+		panic(fmt.Errorf("%s is not a oneof field in rollchains.tiablob.v1.InjectTx", d.FullName()))
+	}
+	panic("unreachable")
+}
+
+// GetUnknown retrieves the entire list of unknown fields.
+// The caller may only mutate the contents of the RawFields
+// if the mutated bytes are stored back into the message with SetUnknown.
+func (x *fastReflection_InjectTx) GetUnknown() protoreflect.RawFields {
+	return x.unknownFields
+}
+
+// SetUnknown stores an entire list of unknown fields.
+// The raw fields must be syntactically valid according to the wire format.
+// An implementation may panic if this is not the case.
+// Once stored, the caller must not mutate the content of the RawFields.
+// An empty RawFields may be passed to clear the fields.
+//
+// SetUnknown is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_InjectTx) SetUnknown(fields protoreflect.RawFields) {
+	x.unknownFields = fields
+}
+
+// IsValid reports whether the message is valid.
+//
+// An invalid message is an empty, read-only value.
+//
+// An invalid message often corresponds to a nil pointer of the concrete
+// message type, but the details are implementation dependent.
+// Validity is not part of the protobuf data model, and may not
+// be preserved in marshaling or other operations.
+func (x *fastReflection_InjectTx) IsValid() bool {
+	return x != nil
+}
+
+// ProtoMethods returns optional fastReflectionFeature-path implementations of various operations.
+// This method may return nil.
+//
+// The returned methods type is identical to
+// "google.golang.org/protobuf/runtime/protoiface".Methods.
+// Consult the protoiface package documentation for details.
+func (x *fastReflection_InjectTx) ProtoMethods() *protoiface.Methods {
+	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
+		x := input.Message.Interface().(*InjectTx)
+		if x == nil {
+			return protoiface.SizeOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Size:              0,
+			}
+		}
+		options := runtime.SizeInputToOptions(input)
+		_ = options
+		var n int
+		var l int
+		_ = l
+		if len(x.Messages) > 0 {
+			for _, e := range x.Messages {
+				l = options.Size(e)
+				n += 1 + l + runtime.Sov(uint64(l))
+			}
+		}
+		if x.unknownFields != nil {
+			n += len(x.unknownFields)
+		}
+		return protoiface.SizeOutput{
+			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+			Size:              n,
+		}
+	}
+
+	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
+		x := input.Message.Interface().(*InjectTx)
+		if x == nil {
+			return protoiface.MarshalOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Buf:               input.Buf,
+			}, nil
+		}
+		options := runtime.MarshalInputToOptions(input)
+		_ = options
+		size := options.Size(x)
+		dAtA := make([]byte, size)
+		i := len(dAtA)
+		_ = i
+		var l int
+		_ = l
+		if x.unknownFields != nil {
+			i -= len(x.unknownFields)
+			copy(dAtA[i:], x.unknownFields)
+		}
+		if len(x.Messages) > 0 {
+			for iNdEx := len(x.Messages) - 1; iNdEx >= 0; iNdEx-- {
+				encoded, err := options.Marshal(x.Messages[iNdEx])
+				if err != nil {
+					return protoiface.MarshalOutput{
+						NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+						Buf:               input.Buf,
+					}, err
+				}
+				i -= len(encoded)
+				copy(dAtA[i:], encoded)
+				i = runtime.EncodeVarint(dAtA, i, uint64(len(encoded)))
+				i--
+				dAtA[i] = 0xa
+			}
+		}
+		if input.Buf != nil {
+			input.Buf = append(input.Buf, dAtA...)
+		} else {
+			input.Buf = dAtA
+		}
+		return protoiface.MarshalOutput{
+			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+			Buf:               input.Buf,
+		}, nil
+	}
+	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
+		x := input.Message.Interface().(*InjectTx)
+		if x == nil {
+			return protoiface.UnmarshalOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Flags:             input.Flags,
+			}, nil
+		}
+		options := runtime.UnmarshalInputToOptions(input)
+		_ = options
+		dAtA := input.Buf
+		l := len(dAtA)
+		iNdEx := 0
+		for iNdEx < l {
+			preIndex := iNdEx
+			var wire uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				wire |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			fieldNum := int32(wire >> 3)
+			wireType := int(wire & 0x7)
+			if wireType == 4 {
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: InjectTx: wiretype end group for non-group")
+			}
+			if fieldNum <= 0 {
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: InjectTx: illegal tag %d (wire type %d)", fieldNum, wire)
+			}
+			switch fieldNum {
+			case 1:
+				if wireType != 2 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field Messages", wireType)
+				}
+				var msglen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					msglen |= int(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if msglen < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				postIndex := iNdEx + msglen
+				if postIndex < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if postIndex > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				x.Messages = append(x.Messages, &anypb.Any{})
+				if err := options.Unmarshal(dAtA[iNdEx:postIndex], x.Messages[len(x.Messages)-1]); err != nil {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+				}
+				iNdEx = postIndex
+			default:
+				iNdEx = preIndex
+				skippy, err := runtime.Skip(dAtA[iNdEx:])
+				if err != nil {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+				}
+				if (skippy < 0) || (iNdEx+skippy) < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if (iNdEx + skippy) > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				if !options.DiscardUnknown {
+					x.unknownFields = append(x.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+				}
+				iNdEx += skippy
+			}
+		}
+
+		if iNdEx > l {
+			return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+		}
+		return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, nil
+	}
+	return &protoiface.Methods{
+		NoUnkeyedLiterals: struct{}{},
+		Flags:             protoiface.SupportMarshalDeterministic | protoiface.SupportUnmarshalDiscardUnknown,
+		Size:              size,
+		Marshal:           marshal,
+		Unmarshal:         unmarshal,
+		Merge:             nil,
+		CheckInitialized:  nil,
+	}
+}
+
 // Code generated by protoc-gen-go. DO NOT EDIT.
 // versions:
 // 	protoc-gen-go v1.27.0
@@ -941,6 +3265,177 @@ func (*MsgSetCelestiaAddressResponse) Descriptor() ([]byte, []int) {
 	return file_rollchains_tiablob_v1_tx_proto_rawDescGZIP(), []int{1}
 }
 
+type MsgInjectedData struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	CreateClient    *v1.CreateClient       `protobuf:"bytes,1,opt,name=create_client,json=createClient,proto3" json:"create_client,omitempty"`
+	Headers         []*v1.Header           `protobuf:"bytes,2,rep,name=headers,proto3" json:"headers,omitempty"`
+	Proofs          []*v1.BlobProof        `protobuf:"bytes,3,rep,name=proofs,proto3" json:"proofs,omitempty"`
+	PendingBlocks   *PendingBlocks         `protobuf:"bytes,4,opt,name=pending_blocks,json=pendingBlocks,proto3" json:"pending_blocks,omitempty"`
+	ProposerAddress []byte                 `protobuf:"bytes,5,opt,name=proposer_address,json=proposerAddress,proto3" json:"proposer_address,omitempty"`
+	BlockTime       *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=block_time,json=blockTime,proto3" json:"block_time,omitempty"`
+}
+
+func (x *MsgInjectedData) Reset() {
+	*x = MsgInjectedData{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_rollchains_tiablob_v1_tx_proto_msgTypes[2]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *MsgInjectedData) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MsgInjectedData) ProtoMessage() {}
+
+// Deprecated: Use MsgInjectedData.ProtoReflect.Descriptor instead.
+func (*MsgInjectedData) Descriptor() ([]byte, []int) {
+	return file_rollchains_tiablob_v1_tx_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *MsgInjectedData) GetCreateClient() *v1.CreateClient {
+	if x != nil {
+		return x.CreateClient
+	}
+	return nil
+}
+
+func (x *MsgInjectedData) GetHeaders() []*v1.Header {
+	if x != nil {
+		return x.Headers
+	}
+	return nil
+}
+
+func (x *MsgInjectedData) GetProofs() []*v1.BlobProof {
+	if x != nil {
+		return x.Proofs
+	}
+	return nil
+}
+
+func (x *MsgInjectedData) GetPendingBlocks() *PendingBlocks {
+	if x != nil {
+		return x.PendingBlocks
+	}
+	return nil
+}
+
+func (x *MsgInjectedData) GetProposerAddress() []byte {
+	if x != nil {
+		return x.ProposerAddress
+	}
+	return nil
+}
+
+func (x *MsgInjectedData) GetBlockTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.BlockTime
+	}
+	return nil
+}
+
+type MsgInjectedDataResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *MsgInjectedDataResponse) Reset() {
+	*x = MsgInjectedDataResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_rollchains_tiablob_v1_tx_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *MsgInjectedDataResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MsgInjectedDataResponse) ProtoMessage() {}
+
+// Deprecated: Use MsgInjectedDataResponse.ProtoReflect.Descriptor instead.
+func (*MsgInjectedDataResponse) Descriptor() ([]byte, []int) {
+	return file_rollchains_tiablob_v1_tx_proto_rawDescGZIP(), []int{3}
+}
+
+type PendingBlocks struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	BlockHeights []int64 `protobuf:"varint,1,rep,packed,name=block_heights,json=blockHeights,proto3" json:"block_heights,omitempty"`
+}
+
+func (x *PendingBlocks) Reset() {
+	*x = PendingBlocks{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_rollchains_tiablob_v1_tx_proto_msgTypes[4]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *PendingBlocks) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PendingBlocks) ProtoMessage() {}
+
+// Deprecated: Use PendingBlocks.ProtoReflect.Descriptor instead.
+func (*PendingBlocks) Descriptor() ([]byte, []int) {
+	return file_rollchains_tiablob_v1_tx_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *PendingBlocks) GetBlockHeights() []int64 {
+	if x != nil {
+		return x.BlockHeights
+	}
+	return nil
+}
+
+type InjectTx struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Messages []*anypb.Any `protobuf:"bytes,1,rep,name=messages,proto3" json:"messages,omitempty"`
+}
+
+func (x *InjectTx) Reset() {
+	*x = InjectTx{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_rollchains_tiablob_v1_tx_proto_msgTypes[5]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *InjectTx) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InjectTx) ProtoMessage() {}
+
+// Deprecated: Use InjectTx.ProtoReflect.Descriptor instead.
+func (*InjectTx) Descriptor() ([]byte, []int) {
+	return file_rollchains_tiablob_v1_tx_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *InjectTx) GetMessages() []*anypb.Any {
+	if x != nil {
+		return x.Messages
+	}
+	return nil
+}
+
 var File_rollchains_tiablob_v1_tx_proto protoreflect.FileDescriptor
 
 var file_rollchains_tiablob_v1_tx_proto_rawDesc = []byte{
@@ -954,47 +3449,98 @@ var file_rollchains_tiablob_v1_tx_proto_rawDesc = []byte{
 	0x6f, 0x67, 0x6f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x67, 0x6f, 0x67, 0x6f, 0x2e, 0x70, 0x72,
 	0x6f, 0x74, 0x6f, 0x1a, 0x17, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2f, 0x6d, 0x73, 0x67, 0x2f,
 	0x76, 0x31, 0x2f, 0x6d, 0x73, 0x67, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x11, 0x61, 0x6d,
-	0x69, 0x6e, 0x6f, 0x2f, 0x61, 0x6d, 0x69, 0x6e, 0x6f, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22,
-	0xee, 0x01, 0x0a, 0x15, 0x4d, 0x73, 0x67, 0x53, 0x65, 0x74, 0x43, 0x65, 0x6c, 0x65, 0x73, 0x74,
-	0x69, 0x61, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x12, 0x4e, 0x0a, 0x11, 0x76, 0x61, 0x6c,
-	0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x5f, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x18, 0x01,
-	0x20, 0x01, 0x28, 0x09, 0x42, 0x21, 0xd2, 0xb4, 0x2d, 0x1d, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73,
-	0x2e, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73,
-	0x73, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x52, 0x10, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74,
-	0x6f, 0x72, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x12, 0x43, 0x0a, 0x10, 0x63, 0x65, 0x6c,
-	0x65, 0x73, 0x74, 0x69, 0x61, 0x5f, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x18, 0x02, 0x20,
-	0x01, 0x28, 0x09, 0x42, 0x18, 0xd2, 0xb4, 0x2d, 0x14, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e,
-	0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x52, 0x0f, 0x63,
-	0x65, 0x6c, 0x65, 0x73, 0x74, 0x69, 0x61, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x3a, 0x40,
-	0x88, 0xa0, 0x1f, 0x00, 0xe8, 0xa0, 0x1f, 0x00, 0x82, 0xe7, 0xb0, 0x2a, 0x11, 0x76, 0x61, 0x6c,
-	0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x5f, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x8a, 0xe7,
-	0xb0, 0x2a, 0x1d, 0x74, 0x69, 0x61, 0x62, 0x6c, 0x6f, 0x62, 0x2f, 0x4d, 0x73, 0x67, 0x53, 0x65,
-	0x74, 0x43, 0x65, 0x6c, 0x65, 0x73, 0x74, 0x69, 0x61, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73,
-	0x22, 0x1f, 0x0a, 0x1d, 0x4d, 0x73, 0x67, 0x53, 0x65, 0x74, 0x43, 0x65, 0x6c, 0x65, 0x73, 0x74,
-	0x69, 0x61, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
-	0x65, 0x32, 0x86, 0x01, 0x0a, 0x03, 0x4d, 0x73, 0x67, 0x12, 0x78, 0x0a, 0x12, 0x53, 0x65, 0x74,
-	0x43, 0x65, 0x6c, 0x65, 0x73, 0x74, 0x69, 0x61, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x12,
-	0x2c, 0x2e, 0x72, 0x6f, 0x6c, 0x6c, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x73, 0x2e, 0x74, 0x69, 0x61,
+	0x69, 0x6e, 0x6f, 0x2f, 0x61, 0x6d, 0x69, 0x6e, 0x6f, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a,
+	0x3a, 0x72, 0x6f, 0x6c, 0x6c, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x73, 0x2f, 0x74, 0x69, 0x61, 0x62,
+	0x6c, 0x6f, 0x62, 0x2f, 0x6c, 0x69, 0x67, 0x68, 0x74, 0x63, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x73,
+	0x2f, 0x63, 0x65, 0x6c, 0x65, 0x73, 0x74, 0x69, 0x61, 0x2f, 0x76, 0x31, 0x2f, 0x63, 0x65, 0x6c,
+	0x65, 0x73, 0x74, 0x69, 0x61, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x1f, 0x67, 0x6f, 0x6f,
+	0x67, 0x6c, 0x65, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2f, 0x74, 0x69, 0x6d,
+	0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0xee, 0x01, 0x0a,
+	0x15, 0x4d, 0x73, 0x67, 0x53, 0x65, 0x74, 0x43, 0x65, 0x6c, 0x65, 0x73, 0x74, 0x69, 0x61, 0x41,
+	0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x12, 0x4e, 0x0a, 0x11, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61,
+	0x74, 0x6f, 0x72, 0x5f, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28,
+	0x09, 0x42, 0x21, 0xd2, 0xb4, 0x2d, 0x1d, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x56, 0x61,
+	0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x53, 0x74,
+	0x72, 0x69, 0x6e, 0x67, 0x52, 0x10, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x41,
+	0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x12, 0x43, 0x0a, 0x10, 0x63, 0x65, 0x6c, 0x65, 0x73, 0x74,
+	0x69, 0x61, 0x5f, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09,
+	0x42, 0x18, 0xd2, 0xb4, 0x2d, 0x14, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x41, 0x64, 0x64,
+	0x72, 0x65, 0x73, 0x73, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x52, 0x0f, 0x63, 0x65, 0x6c, 0x65,
+	0x73, 0x74, 0x69, 0x61, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x3a, 0x40, 0x88, 0xa0, 0x1f,
+	0x00, 0xe8, 0xa0, 0x1f, 0x00, 0x82, 0xe7, 0xb0, 0x2a, 0x11, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61,
+	0x74, 0x6f, 0x72, 0x5f, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x8a, 0xe7, 0xb0, 0x2a, 0x1d,
+	0x74, 0x69, 0x61, 0x62, 0x6c, 0x6f, 0x62, 0x2f, 0x4d, 0x73, 0x67, 0x53, 0x65, 0x74, 0x43, 0x65,
+	0x6c, 0x65, 0x73, 0x74, 0x69, 0x61, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x22, 0x1f, 0x0a,
+	0x1d, 0x4d, 0x73, 0x67, 0x53, 0x65, 0x74, 0x43, 0x65, 0x6c, 0x65, 0x73, 0x74, 0x69, 0x61, 0x41,
+	0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0xd3,
+	0x03, 0x0a, 0x0f, 0x4d, 0x73, 0x67, 0x49, 0x6e, 0x6a, 0x65, 0x63, 0x74, 0x65, 0x64, 0x44, 0x61,
+	0x74, 0x61, 0x12, 0x5e, 0x0a, 0x0d, 0x63, 0x72, 0x65, 0x61, 0x74, 0x65, 0x5f, 0x63, 0x6c, 0x69,
+	0x65, 0x6e, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x39, 0x2e, 0x72, 0x6f, 0x6c, 0x6c,
+	0x63, 0x68, 0x61, 0x69, 0x6e, 0x73, 0x2e, 0x74, 0x69, 0x61, 0x62, 0x6c, 0x6f, 0x62, 0x2e, 0x6c,
+	0x69, 0x67, 0x68, 0x74, 0x63, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x73, 0x2e, 0x63, 0x65, 0x6c, 0x65,
+	0x73, 0x74, 0x69, 0x61, 0x2e, 0x76, 0x31, 0x2e, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x43, 0x6c,
+	0x69, 0x65, 0x6e, 0x74, 0x52, 0x0c, 0x63, 0x72, 0x65, 0x61, 0x74, 0x65, 0x43, 0x6c, 0x69, 0x65,
+	0x6e, 0x74, 0x12, 0x4d, 0x0a, 0x07, 0x68, 0x65, 0x61, 0x64, 0x65, 0x72, 0x73, 0x18, 0x02, 0x20,
+	0x03, 0x28, 0x0b, 0x32, 0x33, 0x2e, 0x72, 0x6f, 0x6c, 0x6c, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x73,
+	0x2e, 0x74, 0x69, 0x61, 0x62, 0x6c, 0x6f, 0x62, 0x2e, 0x6c, 0x69, 0x67, 0x68, 0x74, 0x63, 0x6c,
+	0x69, 0x65, 0x6e, 0x74, 0x73, 0x2e, 0x63, 0x65, 0x6c, 0x65, 0x73, 0x74, 0x69, 0x61, 0x2e, 0x76,
+	0x31, 0x2e, 0x48, 0x65, 0x61, 0x64, 0x65, 0x72, 0x52, 0x07, 0x68, 0x65, 0x61, 0x64, 0x65, 0x72,
+	0x73, 0x12, 0x4e, 0x0a, 0x06, 0x70, 0x72, 0x6f, 0x6f, 0x66, 0x73, 0x18, 0x03, 0x20, 0x03, 0x28,
+	0x0b, 0x32, 0x36, 0x2e, 0x72, 0x6f, 0x6c, 0x6c, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x73, 0x2e, 0x74,
+	0x69, 0x61, 0x62, 0x6c, 0x6f, 0x62, 0x2e, 0x6c, 0x69, 0x67, 0x68, 0x74, 0x63, 0x6c, 0x69, 0x65,
+	0x6e, 0x74, 0x73, 0x2e, 0x63, 0x65, 0x6c, 0x65, 0x73, 0x74, 0x69, 0x61, 0x2e, 0x76, 0x31, 0x2e,
+	0x42, 0x6c, 0x6f, 0x62, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0x52, 0x06, 0x70, 0x72, 0x6f, 0x6f, 0x66,
+	0x73, 0x12, 0x51, 0x0a, 0x0e, 0x70, 0x65, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x5f, 0x62, 0x6c, 0x6f,
+	0x63, 0x6b, 0x73, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x24, 0x2e, 0x72, 0x6f, 0x6c, 0x6c,
+	0x63, 0x68, 0x61, 0x69, 0x6e, 0x73, 0x2e, 0x74, 0x69, 0x61, 0x62, 0x6c, 0x6f, 0x62, 0x2e, 0x76,
+	0x31, 0x2e, 0x50, 0x65, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x73, 0x42,
+	0x04, 0xc8, 0xde, 0x1f, 0x00, 0x52, 0x0d, 0x70, 0x65, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x42, 0x6c,
+	0x6f, 0x63, 0x6b, 0x73, 0x12, 0x29, 0x0a, 0x10, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x65, 0x72,
+	0x5f, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x18, 0x05, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x0f,
+	0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x65, 0x72, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x12,
+	0x43, 0x0a, 0x0a, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x5f, 0x74, 0x69, 0x6d, 0x65, 0x18, 0x06, 0x20,
+	0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f,
+	0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x42,
+	0x08, 0xc8, 0xde, 0x1f, 0x00, 0x90, 0xdf, 0x1f, 0x01, 0x52, 0x09, 0x62, 0x6c, 0x6f, 0x63, 0x6b,
+	0x54, 0x69, 0x6d, 0x65, 0x22, 0x19, 0x0a, 0x17, 0x4d, 0x73, 0x67, 0x49, 0x6e, 0x6a, 0x65, 0x63,
+	0x74, 0x65, 0x64, 0x44, 0x61, 0x74, 0x61, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22,
+	0x34, 0x0a, 0x0d, 0x50, 0x65, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x73,
+	0x12, 0x23, 0x0a, 0x0d, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x5f, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74,
+	0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x03, 0x52, 0x0c, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x48, 0x65,
+	0x69, 0x67, 0x68, 0x74, 0x73, 0x22, 0x3c, 0x0a, 0x08, 0x49, 0x6e, 0x6a, 0x65, 0x63, 0x74, 0x54,
+	0x78, 0x12, 0x30, 0x0a, 0x08, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x73, 0x18, 0x01, 0x20,
+	0x03, 0x28, 0x0b, 0x32, 0x14, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f,
+	0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x41, 0x6e, 0x79, 0x52, 0x08, 0x6d, 0x65, 0x73, 0x73, 0x61,
+	0x67, 0x65, 0x73, 0x32, 0xee, 0x01, 0x0a, 0x03, 0x4d, 0x73, 0x67, 0x12, 0x78, 0x0a, 0x12, 0x53,
+	0x65, 0x74, 0x43, 0x65, 0x6c, 0x65, 0x73, 0x74, 0x69, 0x61, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73,
+	0x73, 0x12, 0x2c, 0x2e, 0x72, 0x6f, 0x6c, 0x6c, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x73, 0x2e, 0x74,
+	0x69, 0x61, 0x62, 0x6c, 0x6f, 0x62, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x73, 0x67, 0x53, 0x65, 0x74,
+	0x43, 0x65, 0x6c, 0x65, 0x73, 0x74, 0x69, 0x61, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x1a,
+	0x34, 0x2e, 0x72, 0x6f, 0x6c, 0x6c, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x73, 0x2e, 0x74, 0x69, 0x61,
 	0x62, 0x6c, 0x6f, 0x62, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x73, 0x67, 0x53, 0x65, 0x74, 0x43, 0x65,
-	0x6c, 0x65, 0x73, 0x74, 0x69, 0x61, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x1a, 0x34, 0x2e,
+	0x6c, 0x65, 0x73, 0x74, 0x69, 0x61, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x52, 0x65, 0x73,
+	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x66, 0x0a, 0x0c, 0x49, 0x6e, 0x6a, 0x65, 0x63, 0x74, 0x65,
+	0x64, 0x44, 0x61, 0x74, 0x61, 0x12, 0x26, 0x2e, 0x72, 0x6f, 0x6c, 0x6c, 0x63, 0x68, 0x61, 0x69,
+	0x6e, 0x73, 0x2e, 0x74, 0x69, 0x61, 0x62, 0x6c, 0x6f, 0x62, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x73,
+	0x67, 0x49, 0x6e, 0x6a, 0x65, 0x63, 0x74, 0x65, 0x64, 0x44, 0x61, 0x74, 0x61, 0x1a, 0x2e, 0x2e,
 	0x72, 0x6f, 0x6c, 0x6c, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x73, 0x2e, 0x74, 0x69, 0x61, 0x62, 0x6c,
-	0x6f, 0x62, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x73, 0x67, 0x53, 0x65, 0x74, 0x43, 0x65, 0x6c, 0x65,
-	0x73, 0x74, 0x69, 0x61, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f,
-	0x6e, 0x73, 0x65, 0x1a, 0x05, 0x80, 0xe7, 0xb0, 0x2a, 0x01, 0x42, 0xd9, 0x01, 0x0a, 0x19, 0x63,
-	0x6f, 0x6d, 0x2e, 0x72, 0x6f, 0x6c, 0x6c, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x73, 0x2e, 0x74, 0x69,
-	0x61, 0x62, 0x6c, 0x6f, 0x62, 0x2e, 0x76, 0x31, 0x42, 0x07, 0x54, 0x78, 0x50, 0x72, 0x6f, 0x74,
-	0x6f, 0x50, 0x01, 0x5a, 0x3d, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f,
-	0x72, 0x6f, 0x6c, 0x6c, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x73, 0x2f, 0x74, 0x69, 0x61, 0x62, 0x6c,
-	0x6f, 0x62, 0x2f, 0x72, 0x6f, 0x6c, 0x6c, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x73, 0x2f, 0x74, 0x69,
-	0x61, 0x62, 0x6c, 0x6f, 0x62, 0x2f, 0x76, 0x31, 0x3b, 0x74, 0x69, 0x61, 0x62, 0x6c, 0x6f, 0x62,
-	0x76, 0x31, 0xa2, 0x02, 0x03, 0x52, 0x54, 0x58, 0xaa, 0x02, 0x15, 0x52, 0x6f, 0x6c, 0x6c, 0x63,
-	0x68, 0x61, 0x69, 0x6e, 0x73, 0x2e, 0x54, 0x69, 0x61, 0x62, 0x6c, 0x6f, 0x62, 0x2e, 0x56, 0x31,
-	0xca, 0x02, 0x15, 0x52, 0x6f, 0x6c, 0x6c, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x73, 0x5c, 0x54, 0x69,
-	0x61, 0x62, 0x6c, 0x6f, 0x62, 0x5c, 0x56, 0x31, 0xe2, 0x02, 0x21, 0x52, 0x6f, 0x6c, 0x6c, 0x63,
-	0x68, 0x61, 0x69, 0x6e, 0x73, 0x5c, 0x54, 0x69, 0x61, 0x62, 0x6c, 0x6f, 0x62, 0x5c, 0x56, 0x31,
-	0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x17, 0x52,
-	0x6f, 0x6c, 0x6c, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x73, 0x3a, 0x3a, 0x54, 0x69, 0x61, 0x62, 0x6c,
-	0x6f, 0x62, 0x3a, 0x3a, 0x56, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x6f, 0x62, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x73, 0x67, 0x49, 0x6e, 0x6a, 0x65, 0x63, 0x74, 0x65,
+	0x64, 0x44, 0x61, 0x74, 0x61, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x1a, 0x05, 0x80,
+	0xe7, 0xb0, 0x2a, 0x01, 0x42, 0xd9, 0x01, 0x0a, 0x19, 0x63, 0x6f, 0x6d, 0x2e, 0x72, 0x6f, 0x6c,
+	0x6c, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x73, 0x2e, 0x74, 0x69, 0x61, 0x62, 0x6c, 0x6f, 0x62, 0x2e,
+	0x76, 0x31, 0x42, 0x07, 0x54, 0x78, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x3d, 0x67,
+	0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x72, 0x6f, 0x6c, 0x6c, 0x63, 0x68,
+	0x61, 0x69, 0x6e, 0x73, 0x2f, 0x74, 0x69, 0x61, 0x62, 0x6c, 0x6f, 0x62, 0x2f, 0x72, 0x6f, 0x6c,
+	0x6c, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x73, 0x2f, 0x74, 0x69, 0x61, 0x62, 0x6c, 0x6f, 0x62, 0x2f,
+	0x76, 0x31, 0x3b, 0x74, 0x69, 0x61, 0x62, 0x6c, 0x6f, 0x62, 0x76, 0x31, 0xa2, 0x02, 0x03, 0x52,
+	0x54, 0x58, 0xaa, 0x02, 0x15, 0x52, 0x6f, 0x6c, 0x6c, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x73, 0x2e,
+	0x54, 0x69, 0x61, 0x62, 0x6c, 0x6f, 0x62, 0x2e, 0x56, 0x31, 0xca, 0x02, 0x15, 0x52, 0x6f, 0x6c,
+	0x6c, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x73, 0x5c, 0x54, 0x69, 0x61, 0x62, 0x6c, 0x6f, 0x62, 0x5c,
+	0x56, 0x31, 0xe2, 0x02, 0x21, 0x52, 0x6f, 0x6c, 0x6c, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x73, 0x5c,
+	0x54, 0x69, 0x61, 0x62, 0x6c, 0x6f, 0x62, 0x5c, 0x56, 0x31, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65,
+	0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x17, 0x52, 0x6f, 0x6c, 0x6c, 0x63, 0x68, 0x61,
+	0x69, 0x6e, 0x73, 0x3a, 0x3a, 0x54, 0x69, 0x61, 0x62, 0x6c, 0x6f, 0x62, 0x3a, 0x3a, 0x56, 0x31,
+	0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -1009,19 +3555,36 @@ func file_rollchains_tiablob_v1_tx_proto_rawDescGZIP() []byte {
 	return file_rollchains_tiablob_v1_tx_proto_rawDescData
 }
 
-var file_rollchains_tiablob_v1_tx_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_rollchains_tiablob_v1_tx_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_rollchains_tiablob_v1_tx_proto_goTypes = []interface{}{
 	(*MsgSetCelestiaAddress)(nil),         // 0: rollchains.tiablob.v1.MsgSetCelestiaAddress
 	(*MsgSetCelestiaAddressResponse)(nil), // 1: rollchains.tiablob.v1.MsgSetCelestiaAddressResponse
+	(*MsgInjectedData)(nil),               // 2: rollchains.tiablob.v1.MsgInjectedData
+	(*MsgInjectedDataResponse)(nil),       // 3: rollchains.tiablob.v1.MsgInjectedDataResponse
+	(*PendingBlocks)(nil),                 // 4: rollchains.tiablob.v1.PendingBlocks
+	(*InjectTx)(nil),                      // 5: rollchains.tiablob.v1.InjectTx
+	(*v1.CreateClient)(nil),               // 6: rollchains.tiablob.lightclients.celestia.v1.CreateClient
+	(*v1.Header)(nil),                     // 7: rollchains.tiablob.lightclients.celestia.v1.Header
+	(*v1.BlobProof)(nil),                  // 8: rollchains.tiablob.lightclients.celestia.v1.BlobProof
+	(*timestamppb.Timestamp)(nil),         // 9: google.protobuf.Timestamp
+	(*anypb.Any)(nil),                     // 10: google.protobuf.Any
 }
 var file_rollchains_tiablob_v1_tx_proto_depIdxs = []int32{
-	0, // 0: rollchains.tiablob.v1.Msg.SetCelestiaAddress:input_type -> rollchains.tiablob.v1.MsgSetCelestiaAddress
-	1, // 1: rollchains.tiablob.v1.Msg.SetCelestiaAddress:output_type -> rollchains.tiablob.v1.MsgSetCelestiaAddressResponse
-	1, // [1:2] is the sub-list for method output_type
-	0, // [0:1] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	6,  // 0: rollchains.tiablob.v1.MsgInjectedData.create_client:type_name -> rollchains.tiablob.lightclients.celestia.v1.CreateClient
+	7,  // 1: rollchains.tiablob.v1.MsgInjectedData.headers:type_name -> rollchains.tiablob.lightclients.celestia.v1.Header
+	8,  // 2: rollchains.tiablob.v1.MsgInjectedData.proofs:type_name -> rollchains.tiablob.lightclients.celestia.v1.BlobProof
+	4,  // 3: rollchains.tiablob.v1.MsgInjectedData.pending_blocks:type_name -> rollchains.tiablob.v1.PendingBlocks
+	9,  // 4: rollchains.tiablob.v1.MsgInjectedData.block_time:type_name -> google.protobuf.Timestamp
+	10, // 5: rollchains.tiablob.v1.InjectTx.messages:type_name -> google.protobuf.Any
+	0,  // 6: rollchains.tiablob.v1.Msg.SetCelestiaAddress:input_type -> rollchains.tiablob.v1.MsgSetCelestiaAddress
+	2,  // 7: rollchains.tiablob.v1.Msg.InjectedData:input_type -> rollchains.tiablob.v1.MsgInjectedData
+	1,  // 8: rollchains.tiablob.v1.Msg.SetCelestiaAddress:output_type -> rollchains.tiablob.v1.MsgSetCelestiaAddressResponse
+	3,  // 9: rollchains.tiablob.v1.Msg.InjectedData:output_type -> rollchains.tiablob.v1.MsgInjectedDataResponse
+	8,  // [8:10] is the sub-list for method output_type
+	6,  // [6:8] is the sub-list for method input_type
+	6,  // [6:6] is the sub-list for extension type_name
+	6,  // [6:6] is the sub-list for extension extendee
+	0,  // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_rollchains_tiablob_v1_tx_proto_init() }
@@ -1054,6 +3617,54 @@ func file_rollchains_tiablob_v1_tx_proto_init() {
 				return nil
 			}
 		}
+		file_rollchains_tiablob_v1_tx_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*MsgInjectedData); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_rollchains_tiablob_v1_tx_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*MsgInjectedDataResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_rollchains_tiablob_v1_tx_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*PendingBlocks); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_rollchains_tiablob_v1_tx_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*InjectTx); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -1061,7 +3672,7 @@ func file_rollchains_tiablob_v1_tx_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_rollchains_tiablob_v1_tx_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

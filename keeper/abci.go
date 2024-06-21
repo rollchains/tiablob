@@ -1,8 +1,12 @@
 package keeper
 
 import (
+	"fmt"
+	"reflect"
+
 	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
 
 	"github.com/rollchains/tiablob"
 )
@@ -39,7 +43,7 @@ func (h *ProofOfBlobProposalHandler) PrepareProposal(ctx sdk.Context, req *abci.
 		return nil, err
 	}
 
-	injectData := h.keeper.prepareInjectData(ctx, req.Time, latestProvenHeight)
+	injectData := h.keeper.prepareInjectData(ctx, req.Time, latestProvenHeight, req.ProposerAddress)
 	injectDataBz := h.keeper.marshalMaxBytes(&injectData, req.MaxTxBytes, latestProvenHeight)
 	resp.Txs = h.keeper.addTiablobDataToTxs(injectDataBz, req.MaxTxBytes, resp.Txs)
 
@@ -49,6 +53,7 @@ func (h *ProofOfBlobProposalHandler) PrepareProposal(ctx sdk.Context, req *abci.
 func (h *ProofOfBlobProposalHandler) ProcessProposal(ctx sdk.Context, req *abci.RequestProcessProposal) (*abci.ResponseProcessProposal, error) {
 	injectedData := h.keeper.getInjectedData(req.Txs)
 	if injectedData != nil {
+		fmt.Println("In process proposal")
 		req.Txs = req.Txs[1:] // Pop the injected data for the default handler
 		if err := h.keeper.processCreateClient(ctx, injectedData.CreateClient); err != nil {
 			return nil, err
@@ -62,11 +67,18 @@ func (h *ProofOfBlobProposalHandler) ProcessProposal(ctx sdk.Context, req *abci.
 		if err := h.keeper.processPendingBlocks(ctx, req.Time, &injectedData.PendingBlocks); err != nil {
 			return nil, err
 		}
+		if !injectedData.BlockTime.Equal(req.Time) {
+			return nil, fmt.Errorf("process proposal, expected time: %s, actual time: %s", req.Time, injectedData.BlockTime)
+		}
+		if !reflect.DeepEqual(injectedData.ProposerAddress, req.ProposerAddress) {
+			return nil, fmt.Errorf("process proposal, expected proposer: %s, actual proposer: %s", req.ProposerAddress, injectedData.ProposerAddress)
+		}
+		fmt.Println("Done processing proposal")
 	}
 	return h.processProposalHandler(ctx, req)
 }
 
-func (k *Keeper) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlock) error {
+/*func (k *Keeper) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlock) error {
 	injectedData := k.getInjectedData(req.Txs)
 	if injectedData != nil {
 		if err := k.preblockerCreateClient(ctx, injectedData.CreateClient); err != nil {
@@ -83,14 +95,20 @@ func (k *Keeper) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlock) err
 		}
 	}
 	return nil
-}
+}*/
 
-func (k *Keeper) getInjectedData(txs [][]byte) *tiablob.InjectedData {
+func (k *Keeper) getInjectedData(txs [][]byte) *tiablob.MsgInjectedData {
 	if len(txs) != 0 {
-		var injectedData tiablob.InjectedData
-		err := k.cdc.Unmarshal(txs[0], &injectedData)
+		var injectedTx tiablob.InjectTx
+		err := k.cdc.Unmarshal(txs[0], &injectedTx)
 		if err == nil {
-			return &injectedData
+			err = sdktx.UnpackInterfaces(k.cdc.InterfaceRegistry(), injectedTx.Messages)
+			if err == nil {
+				msgs, err := sdktx.GetMsgs(injectedTx.Messages, "tiablob.InjectTx")
+				if err == nil {
+					return msgs[0].(*tiablob.MsgInjectedData)
+				}
+			}
 		}
 	}
 	return nil

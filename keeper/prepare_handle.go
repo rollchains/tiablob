@@ -12,12 +12,14 @@ import (
 
 const DelayAfterUpgrade = int64(10)
 
-func (k *Keeper) prepareInjectData(ctx sdk.Context, currentBlockTime time.Time, latestProvenHeight int64) tiablob.InjectedData {
-	return tiablob.InjectedData{
+func (k *Keeper) prepareInjectData(ctx sdk.Context, currentBlockTime time.Time, latestProvenHeight int64, proposerAddr []byte) tiablob.MsgInjectedData {
+	return tiablob.MsgInjectedData{
 		CreateClient:  k.prepareCreateClient(ctx),
 		PendingBlocks: k.preparePostBlocks(ctx, currentBlockTime),
 		Proofs:        k.relayer.GetCachedProofs(k.injectedProofsLimit, latestProvenHeight),
 		Headers:       k.relayer.GetCachedHeaders(k.injectedProofsLimit, latestProvenHeight),
+		ProposerAddress: proposerAddr,
+		BlockTime: currentBlockTime,
 	}
 }
 
@@ -90,12 +92,14 @@ func (k *Keeper) shouldGetExpiredBlock(ctx sdk.Context) bool {
 // This new configuration will persist until the node is restarted. If a decrement is required,
 // there was most likely a misconfiguration for block proof cache limit.
 // Injected data is roughly 1KB/proof
-func (k *Keeper) marshalMaxBytes(injectData *tiablob.InjectedData, maxBytes int64, latestProvenHeight int64) []byte {
+func (k *Keeper) marshalMaxBytes(injectData *tiablob.MsgInjectedData, maxBytes int64, latestProvenHeight int64) []byte {
 	if injectData.IsEmpty() {
 		return nil
 	}
 
-	injectDataBz, err := k.cdc.Marshal(injectData)
+	tx := tiablob.NewInjectTx(k.cdc, []sdk.Msg{injectData})
+
+	injectDataBz, err := k.cdc.Marshal(tx.Tx)
 	if err != nil {
 		return nil
 	}
@@ -108,7 +112,9 @@ func (k *Keeper) marshalMaxBytes(injectData *tiablob.InjectedData, maxBytes int6
 		if len(injectData.Proofs) == 0 {
 			return nil
 		}
-		injectDataBz, err = k.cdc.Marshal(injectData)
+		tx := tiablob.NewInjectTx(k.cdc, []sdk.Msg{injectData})
+
+		injectDataBz, err = k.cdc.Marshal(tx.Tx)
 		if err != nil {
 			return nil
 		}

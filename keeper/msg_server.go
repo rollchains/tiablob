@@ -2,7 +2,10 @@ package keeper
 
 import (
 	"context"
+	"fmt"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	
 	"github.com/rollchains/tiablob"
 )
 
@@ -11,6 +14,7 @@ type msgServer struct {
 }
 
 var _ tiablob.MsgServer = msgServer{}
+//var _ tiablob.InjectMsgServer = msgServer{}
 
 // NewMsgServerImpl returns an implementation of the module MsgServer interface.
 func NewMsgServerImpl(keeper *Keeper) tiablob.MsgServer {
@@ -36,4 +40,24 @@ func (s msgServer) SetCelestiaAddress(ctx context.Context, msg *tiablob.MsgSetCe
 	}
 
 	return new(tiablob.MsgSetCelestiaAddressResponse), nil
+}
+
+func (s msgServer) InjectedData(goCtx context.Context, msg *tiablob.MsgInjectedData) (*tiablob.MsgInjectedDataResponse, error) {
+	fmt.Println("In ExecuteInjectedData")
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	if err := s.k.preblockerCreateClient(ctx, msg.CreateClient); err != nil {
+		return nil, err
+	}
+	if err := s.k.preblockerHeaders(ctx, msg.Headers); err != nil {
+		return nil, err
+	}
+	if err := s.k.preblockerProofs(ctx, msg.Proofs); err != nil {
+		return nil, err
+	}
+	if err := s.k.preblockerPendingBlocks(ctx, msg.BlockTime, msg.ProposerAddress, &msg.PendingBlocks); err != nil {
+		return nil, err
+	}
+
+	return &tiablob.MsgInjectedDataResponse{}, nil
 }

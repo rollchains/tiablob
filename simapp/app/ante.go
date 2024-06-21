@@ -5,6 +5,7 @@ import (
 
 	ibcante "github.com/cosmos/ibc-go/v8/modules/core/ante"
 	"github.com/cosmos/ibc-go/v8/modules/core/keeper"
+	"github.com/rollchains/tiablob"
 
 	circuitante "cosmossdk.io/x/circuit/ante"
 	circuitkeeper "cosmossdk.io/x/circuit/keeper"
@@ -53,6 +54,7 @@ func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
 	poaRateCeil := sdkmath.LegacyMustNewDecFromStr("0.50")
 
 	anteDecorators := []sdk.AnteDecorator{
+		tiablob.NewInjectedTxDecorator(),
 		ante.NewSetUpContextDecorator(), // outermost AnteDecorator. SetUpContext must be called first
 		circuitante.NewCircuitBreakerDecorator(options.CircuitKeeper),
 		ante.NewExtensionOptionsDecorator(options.ExtensionOptionChecker),

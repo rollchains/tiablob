@@ -20,3 +20,8 @@ message GenesisState {
 
     repeated BlockWithExpiration pending_blocks = 4;
 }
+
+message UnprovenBlock {
+    int64 height = 1;
+    bytes block = 2;
+}

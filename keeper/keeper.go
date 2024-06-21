@@ -28,7 +28,7 @@ type Keeper struct {
 
 	storeKey storetypes2.StoreKey
 
-	cdc codec.BinaryCodec
+	cdc codec.Codec
 
 	publishToCelestiaBlockInterval int
 	injectedProofsLimit            int
@@ -40,7 +40,7 @@ type Keeper struct {
 }
 
 func NewKeeper(
-	cdc codec.BinaryCodec,
+	cdc codec.Codec,
 	appOpts servertypes.AppOptions,
 	storeService storetypes.KVStoreService,
 	sk *stakingkeeper.Keeper,

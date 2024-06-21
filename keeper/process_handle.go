@@ -13,6 +13,7 @@ import (
 
 func (k Keeper) processCreateClient(ctx sdk.Context, createClient *celestia.CreateClient) error {
 	if createClient != nil {
+		fmt.Println("Process proposal, create client not nil")
 		if err := k.relayer.ValidateNewClient(ctx, createClient); err != nil {
 			return fmt.Errorf("invalid new client, %v", err)
 		}

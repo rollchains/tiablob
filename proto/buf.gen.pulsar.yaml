@@ -9,7 +9,7 @@ managed:
       - buf.build/cosmos/cosmos-proto
       - buf.build/cosmos/cosmos-sdk
     override:
-      buf.build/tendermint/tendermint: buf.build/gen/go/tendermint/tendermint/protocolbuffers/go
+      buf.build/tendermint/tendermint: cosmossdk.io/api
 plugins:
   - name: go-pulsar
     out: ..

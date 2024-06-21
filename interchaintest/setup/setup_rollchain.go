@@ -98,6 +98,9 @@ func RollchainChainSpec(testName string, numVals int, index int, namespace strin
 					"snapshot-interval":    100,
 					"snapshot-keep-recent": 2,
 				},
+				"mempool": testutil.Toml{
+					"max-txs": -1,
+				},
 			},
 		},
 		/*HostPortOverride: map[int]int{
