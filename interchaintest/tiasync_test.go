@@ -39,20 +39,20 @@ func TestTiasyncFromGenesis(t *testing.T) {
 				"override-namespace": "rc_demo0",
 			},
 			"tiasync": testutil.Toml{
-				"chain-id": chains.RollchainChain.Config().ChainID,
-				"enable": true,
-				"laddr": "tcp://0.0.0.0:26656",
+				"chain-id":       chains.RollchainChain.Config().ChainID,
+				"enable":         true,
+				"laddr":          "tcp://0.0.0.0:26656",
 				"upstream-peers": chains.RollchainChain.Nodes().PeerString(ctx),
 			},
 		},
 		"config/config.toml": testutil.Toml{
 			//"log_level": "debug",
 			"p2p": testutil.Toml{
-				"laddr": "tcp://127.0.0.1:26777",
-				"persistent_peers": "",
-				"addr_book_strict": false,
+				"laddr":              "tcp://127.0.0.1:26777",
+				"persistent_peers":   "",
+				"addr_book_strict":   false,
 				"allow_duplicate_ip": true,
-				"pex": false,
+				"pex":                false,
 			},
 		},
 	}, 1)
@@ -100,19 +100,19 @@ func TestTiasyncResubmission(t *testing.T) {
 				"override-namespace": "rc_demo0",
 			},
 			"tiasync": testutil.Toml{
-				"enable": true,
-				"laddr": "tcp://0.0.0.0:26656",
+				"enable":         true,
+				"laddr":          "tcp://0.0.0.0:26656",
 				"upstream-peers": chains.RollchainChain.Nodes().PeerString(ctx),
 			},
 		},
 		"config/config.toml": testutil.Toml{
 			//"log_level": "debug",
 			"p2p": testutil.Toml{
-				"laddr": "tcp://127.0.0.1:26777",
-				"persistent_peers": "",
-				"addr_book_strict": false,
+				"laddr":              "tcp://127.0.0.1:26777",
+				"persistent_peers":   "",
+				"addr_book_strict":   false,
 				"allow_duplicate_ip": true,
-				"pex": false,
+				"pex":                false,
 			},
 		},
 	}, 1)
@@ -142,7 +142,6 @@ func TestTiasyncResubmission(t *testing.T) {
 		require.Greater(t, latestHeight, previousHeight, "a node has not increased height enough")
 	}
 }
-
 
 // TestStateSync produces >210 blocks (2 snapshots), gets trusted height/hash for fullnode, starts/syncs fullnode with statesync
 // verifies all nodes are producing blocks and the state sync'd fullnode does not have blocks earlier than the snapshot height
@@ -182,8 +181,8 @@ func TestTiasyncStateSync(t *testing.T) {
 				"override-namespace": "rc_demo0",
 			},
 			"tiasync": testutil.Toml{
-				"enable": true,
-				"laddr": "tcp://0.0.0.0:26656",
+				"enable":         true,
+				"laddr":          "tcp://0.0.0.0:26656",
 				"upstream-peers": chains.RollchainChain.Nodes().PeerString(ctx),
 			},
 		},
@@ -197,11 +196,11 @@ func TestTiasyncStateSync(t *testing.T) {
 				"trust_period": "1h",
 			},
 			"p2p": testutil.Toml{
-				"laddr": "tcp://127.0.0.1:26777",
-				"persistent_peers": "",
-				"addr_book_strict": false,
+				"laddr":              "tcp://127.0.0.1:26777",
+				"persistent_peers":   "",
+				"addr_book_strict":   false,
 				"allow_duplicate_ip": true,
-				"pex": false,
+				"pex":                false,
 			},
 		},
 	}, 1)
@@ -261,19 +260,19 @@ func TestTiasyncTxPropagation(t *testing.T) {
 				"override-namespace": "rc_demo0",
 			},
 			"tiasync": testutil.Toml{
-				"enable": true,
-				"laddr": "tcp://0.0.0.0:26656",
+				"enable":         true,
+				"laddr":          "tcp://0.0.0.0:26656",
 				"upstream-peers": chains.RollchainChain.Nodes().PeerString(ctx),
 			},
 		},
 		"config/config.toml": testutil.Toml{
 			//"log_level": "debug",
 			"p2p": testutil.Toml{
-				"laddr": "tcp://127.0.0.1:26777",
-				"persistent_peers": "",
-				"addr_book_strict": false,
+				"laddr":              "tcp://127.0.0.1:26777",
+				"persistent_peers":   "",
+				"addr_book_strict":   false,
 				"allow_duplicate_ip": true,
-				"pex": false,
+				"pex":                false,
 			},
 		},
 	}, 1)
@@ -311,8 +310,8 @@ func TestTiasyncTxPropagation(t *testing.T) {
 	require.NoError(t, err)
 	err = fn.BankSend(ctx, user2.KeyName(), ibc.WalletAmount{
 		Address: user1.FormattedAddress(),
-		Denom: chains.RollchainChain.Config().Denom,
-		Amount: math.NewInt(1_000_000),
+		Denom:   chains.RollchainChain.Config().Denom,
+		Amount:  math.NewInt(1_000_000),
 	})
 	fmt.Println("Banksend error:", err)
 
@@ -349,19 +348,19 @@ func TestTiasyncRestartFullnode(t *testing.T) {
 				"override-namespace": "rc_demo0",
 			},
 			"tiasync": testutil.Toml{
-				"enable": true,
-				"laddr": "tcp://0.0.0.0:26656",
+				"enable":         true,
+				"laddr":          "tcp://0.0.0.0:26656",
 				"upstream-peers": chains.RollchainChain.Nodes().PeerString(ctx),
 			},
 		},
 		"config/config.toml": testutil.Toml{
 			//"log_level": "debug",
 			"p2p": testutil.Toml{
-				"laddr": "tcp://127.0.0.1:26777",
-				"persistent_peers": "",
-				"addr_book_strict": false,
+				"laddr":              "tcp://127.0.0.1:26777",
+				"persistent_peers":   "",
+				"addr_book_strict":   false,
 				"allow_duplicate_ip": true,
-				"pex": false,
+				"pex":                false,
 			},
 		},
 	}, 1)
@@ -377,7 +376,6 @@ func TestTiasyncRestartFullnode(t *testing.T) {
 	defer timeoutCtxCancel()
 	err = testutil.WaitForBlocks(timeoutCtx, 2, chains.RollchainChain)
 	require.NoError(t, err, "chain did not produce blocks after adding fullnode")
-
 
 	err = chains.RollchainChain.FullNodes[0].CreateNodeContainer(ctx)
 	require.NoError(t, err)

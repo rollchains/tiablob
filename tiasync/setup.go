@@ -6,21 +6,21 @@ import (
 	"strings"
 	"time"
 
-	cfg "github.com/cometbft/cometbft/config"
-	sm "github.com/cometbft/cometbft/state"
 	dbm "github.com/cometbft/cometbft-db"
-	"github.com/cometbft/cometbft/types"
+	bc "github.com/cometbft/cometbft/blocksync"
+	cfg "github.com/cometbft/cometbft/config"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/p2p/pex"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/types"
 	"github.com/cometbft/cometbft/version"
-	bc "github.com/cometbft/cometbft/blocksync"
 
+	cs "github.com/rollchains/tiablob/tiasync/consensus"
+	"github.com/rollchains/tiablob/tiasync/mempool"
 	"github.com/rollchains/tiablob/tiasync/statesync"
 	"github.com/rollchains/tiablob/tiasync/store"
-	"github.com/rollchains/tiablob/tiasync/mempool"
-	cs "github.com/rollchains/tiablob/tiasync/consensus"
 )
 
 func createPEXReactorAndAddToSwitch(addrBook pex.AddrBook, config *cfg.Config,
@@ -142,7 +142,7 @@ func makeNodeInfo(
 		Channels: []byte{
 			bc.BlocksyncChannel,
 			pex.PexChannel,
-			cs.StateChannel,// cs.DataChannel, cs.VoteChannel, cs.VoteSetBitsChannel,
+			cs.StateChannel, // cs.DataChannel, cs.VoteChannel, cs.VoteSetBitsChannel,
 			mempool.MempoolChannel,
 			//evidence.EvidenceChannel,
 			statesync.SnapshotChannel, statesync.ChunkChannel,
@@ -175,7 +175,6 @@ func initDBs(config *cfg.Config, dbProvider cfg.DBProvider) (blockStore *store.B
 
 	return
 }
-
 
 // GenesisDocProvider returns a GenesisDoc.
 // It allows the GenesisDoc to be pulled from sources other than the

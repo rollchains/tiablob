@@ -3,13 +3,14 @@ package celestia
 import (
 	"context"
 	"time"
-	
+
 	celestiarpc "github.com/tendermint/tendermint/rpc/client/http"
 )
 
 type CosmosProvider struct {
-	rpcClient     *celestiarpc.HTTP
+	rpcClient *celestiarpc.HTTP
 }
+
 // NewProvider validates the CosmosProviderConfig, instantiates a ChainClient and then instantiates a CosmosProvider
 func NewProvider(rpcURL string, timeout time.Duration) (*CosmosProvider, error) {
 	rpcClient, err := celestiarpc.NewWithTimeout(rpcURL, "/websocket", uint(timeout.Seconds()))
@@ -18,7 +19,7 @@ func NewProvider(rpcURL string, timeout time.Duration) (*CosmosProvider, error) 
 	}
 
 	cp := &CosmosProvider{
-		rpcClient:      rpcClient,
+		rpcClient: rpcClient,
 	}
 
 	return cp, nil
@@ -41,7 +42,7 @@ func (cp *CosmosProvider) GetStartingCelestiaHeight(ctx context.Context, genTime
 	estimatedCount := 0
 	estimatedAt1Count := 0
 	secondsFromFirstPossibleBlock := float64(600) // try to get within 10 minutes of the necessary celestia block (increases as needed)
-	for ; genTime.Sub(timeAtEstimatedCelestiaHeight).Seconds() < 0 || genTime.Sub(timeAtEstimatedCelestiaHeight).Seconds() > secondsFromFirstPossibleBlock; {
+	for genTime.Sub(timeAtEstimatedCelestiaHeight).Seconds() < 0 || genTime.Sub(timeAtEstimatedCelestiaHeight).Seconds() > secondsFromFirstPossibleBlock {
 		estimatedCelestiaHeight, timeAtEstimatedCelestiaHeight, err = cp.getEstimatedCelestiaHeight(ctx, genTime, estimatedCelestiaHeight)
 		if err != nil {
 			return 0, err
@@ -71,20 +72,20 @@ func (cp *CosmosProvider) getEstimatedCelestiaHeight(ctx context.Context, genTim
 	if err != nil {
 		return 0, time.Time{}, err
 	}
-	
+
 	celestiaHeightm10 := celestiaHeight - 10
 	timeAtCelestiaHeightm10, err := cp.QueryTimeAtHeight(ctx, &celestiaHeightm10)
 	if err != nil {
 		return 0, time.Time{}, err
 	}
-	
+
 	celestiaBlockTimeMs := timeAtCelestiaHeight.Sub(timeAtCelestiaHeightm10).Milliseconds() / 10
-	estimatedCelestiaHeight := celestiaHeight - timeAtCelestiaHeight.Sub(genTime).Milliseconds() / celestiaBlockTimeMs - 1
+	estimatedCelestiaHeight := celestiaHeight - timeAtCelestiaHeight.Sub(genTime).Milliseconds()/celestiaBlockTimeMs - 1
 
 	if estimatedCelestiaHeight <= 0 {
 		estimatedCelestiaHeight = 1
 	}
-	
+
 	timeAtEstimatedCelestiaHeight, err := cp.QueryTimeAtHeight(ctx, &estimatedCelestiaHeight)
 	if err != nil {
 		return 0, time.Time{}, err

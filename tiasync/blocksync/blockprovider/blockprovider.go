@@ -10,11 +10,11 @@ import (
 
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/log"
+	cmtmath "github.com/cometbft/cometbft/libs/math"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	protoblocktypes "github.com/cometbft/cometbft/proto/tendermint/types"
 	sm "github.com/cometbft/cometbft/state"
 	cmttypes "github.com/cometbft/cometbft/types"
-	cmtmath "github.com/cometbft/cometbft/libs/math"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -23,10 +23,10 @@ import (
 	gutypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	"github.com/rollchains/tiablob/celestia-node/share"
 	"github.com/rollchains/tiablob"
-	lc "github.com/rollchains/tiablob/lightclients/celestia"
+	"github.com/rollchains/tiablob/celestia-node/share"
 	appns "github.com/rollchains/tiablob/celestia/namespace"
+	lc "github.com/rollchains/tiablob/lightclients/celestia"
 	"github.com/rollchains/tiablob/relayer"
 	cn "github.com/rollchains/tiablob/relayer/celestia-node"
 	"github.com/rollchains/tiablob/tiasync/blocksync/blockprovider/celestia"
@@ -36,23 +36,23 @@ import (
 
 type BlockProvider struct {
 	celestiaHeight int64
-	logger log.Logger
+	logger         log.Logger
 
-	nodeRpcUrl string
-	nodeAuthToken string
-	celestiaNamespace            appns.Namespace
-	chainID string
+	nodeRpcUrl        string
+	nodeAuthToken     string
+	celestiaNamespace appns.Namespace
+	chainID           string
 
 	celestiaProvider *celestia.CosmosProvider
-	genDoc *cmttypes.GenesisDoc
-	cmtConfig *cfg.Config
+	genDoc           *cmttypes.GenesisDoc
+	cmtConfig        *cfg.Config
 
-	genState sm.State
+	genState  sm.State
 	clientCtx client.Context
-	store *store.BlockStore
-	
+	store     *store.BlockStore
+
 	valSet *cmttypes.ValidatorSet
-	mtx cmtsync.Mutex
+	mtx    cmtsync.Mutex
 }
 
 func NewBlockProvider(
@@ -76,17 +76,17 @@ func NewBlockProvider(
 
 	return &BlockProvider{
 		celestiaProvider: celestiaProvider,
-		genDoc: genDoc,
-		clientCtx: clientCtx,
-		cmtConfig: cmtConfig,
+		genDoc:           genDoc,
+		clientCtx:        clientCtx,
+		cmtConfig:        cmtConfig,
 
 		nodeRpcUrl:        celestiaCfg.NodeRpcURL,
 		nodeAuthToken:     celestiaCfg.NodeAuthToken,
 		celestiaNamespace: appns.MustNewV0([]byte(celestiaNamespaceStr)),
-		chainID: chainID,
+		chainID:           chainID,
 
 		genState: state,
-		store: store,
+		store:    store,
 	}
 }
 
@@ -100,7 +100,7 @@ func (bp *BlockProvider) Start(celestiaPollInterval time.Duration) {
 
 	// Get the last height queried and if available, redo that query to ensure we got everything
 	// Only perform this on Start() since we could have cleared it if the store was emptied
-	bp.celestiaHeight = bp.store.LastCelestiaHeightQueried()-1
+	bp.celestiaHeight = bp.store.LastCelestiaHeightQueried() - 1
 
 	// first query for a celestia DA light client, use that height (i.e. coming from state sync)
 	if bp.celestiaHeight <= 0 {
@@ -150,7 +150,7 @@ func (bp *BlockProvider) GetVerifiedBlock(height int64) *protoblocktypes.Block {
 	}
 
 	block1Meta := bp.store.LoadBlockMeta(height)
-	block2Meta := bp.store.LoadBlockMeta(height+1)
+	block2Meta := bp.store.LoadBlockMeta(height + 1)
 	if block1Meta == nil || block2Meta == nil {
 		return nil
 	}
@@ -167,7 +167,7 @@ func (bp *BlockProvider) GetVerifiedBlock(height int64) *protoblocktypes.Block {
 		}
 		block1PartSetHeader := block1Parts.Header()
 		block1ID := cmttypes.BlockID{Hash: block1.Hash(), PartSetHeader: block1PartSetHeader}
-		for block2Count := block2Meta.Count; block2Count > 0; block2Count--  {
+		for block2Count := block2Meta.Count; block2Count > 0; block2Count-- {
 			block2Proto := bp.store.LoadBlock(height+1, block2Count-1)
 			block2, err := cmttypes.BlockFromProto(block2Proto)
 			if err != nil {
@@ -181,7 +181,7 @@ func (bp *BlockProvider) GetVerifiedBlock(height int64) *protoblocktypes.Block {
 			if bp.valSet == nil && height <= bp.genState.InitialHeight+20 {
 				bp.valSet = bp.getGenesisValidatorSet()
 			}
-			
+
 			// if valSet is nil, we have blocks, states sync is enabled, and we are w/in 1 block of the base, get val set from trusted rpc
 			if bp.valSet == nil && bp.cmtConfig.StateSync.Enable && height <= bp.store.Base()+2 {
 				bp.getValSetFromTrustedRpc(height)
@@ -283,7 +283,7 @@ func (bp *BlockProvider) queryCelestia(ctx context.Context) {
 			bp.logger.Info("bp adding block", "height", rollchainBlockHeight)
 			bp.store.SaveBlock(queryHeight, rollchainBlockHeight, mBlob.GetData())
 		}
-		
+
 		bp.celestiaHeight = queryHeight
 	}
 }
@@ -330,8 +330,8 @@ func (bp *BlockProvider) getGenesisValidatorSet() *cmttypes.ValidatorSet {
 					continue
 				}
 				valSet.Validators = append(valSet.Validators, &cmttypes.Validator{
-					Address: tmPubKey.Address(),
-					PubKey: tmPubKey,
+					Address:     tmPubKey.Address(),
+					PubKey:      tmPubKey,
 					VotingPower: createValMsg.Value.Amount.Int64(),
 				})
 			}
@@ -378,7 +378,7 @@ func (bp *BlockProvider) getValSetFromTrustedRpc(height int64) {
 		}
 		bp.valSet = &cmttypes.ValidatorSet{
 			Validators: valSet.Validators,
-		} 
+		}
 		return
 	}
 }

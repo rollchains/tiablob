@@ -29,14 +29,14 @@ const (
 type Reactor struct {
 	p2p.BaseReactor
 
-	store         *store.BlockStore
+	store *store.BlockStore
 
 	localPeerInBlockSync bool // Local peer is in block sync mode
-	clientCtx client.Context
+	clientCtx            client.Context
 
 	localPeerID p2p.ID
 
-	blockProvider *blockprovider.BlockProvider
+	blockProvider        *blockprovider.BlockProvider
 	celestiaPollInterval time.Duration
 }
 
@@ -48,11 +48,11 @@ func NewReactor(state sm.State, store *store.BlockStore, localPeerID p2p.ID,
 ) *Reactor {
 
 	bcR := &Reactor{
-		localPeerID:  localPeerID,
-		store:        store,
+		localPeerID:          localPeerID,
+		store:                store,
 		localPeerInBlockSync: false,
-		clientCtx: clientCtx,
-		blockProvider:    blockprovider.NewBlockProvider(state, store, celestiaCfg, genDoc, clientCtx, cmtConfig, celestiaNamespace, chainID),
+		clientCtx:            clientCtx,
+		blockProvider:        blockprovider.NewBlockProvider(state, store, celestiaCfg, genDoc, clientCtx, cmtConfig, celestiaNamespace, chainID),
 		celestiaPollInterval: celestiaPollInterval,
 	}
 	bcR.BaseReactor = *p2p.NewBaseReactor("Reactor", bcR)
@@ -94,11 +94,11 @@ func (bcR *Reactor) AddPeer(peer p2p.Peer) {
 		peer.Send(p2p.Envelope{
 			ChannelID: BlocksyncChannel,
 			Message: &bcproto.StatusResponse{
-				Base:  int64(0), 
-				Height: math.MaxInt64-1, // Send max to keep int block sync mode, peer won't request >20 blocks at the same time
+				Base:   int64(0),
+				Height: math.MaxInt64 - 1, // Send max to keep int block sync mode, peer won't request >20 blocks at the same time
 			},
 		})
-	}	
+	}
 }
 
 // RemovePeer implements Reactor by removing peer from the pool.
@@ -117,7 +117,7 @@ func (bcR *Reactor) respondToPeer(msg *bcproto.BlockRequest, src p2p.Peer) (queu
 	}
 
 	// Ask local peer for their height for pruning (every 10 blocks sent)
-	if msg.Height % 10 == 0 {
+	if msg.Height%10 == 0 {
 		src.TrySend(p2p.Envelope{
 			ChannelID: BlocksyncChannel,
 			Message:   &bcproto.StatusRequest{},
@@ -148,7 +148,7 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 	case *bcproto.BlockRequest:
 		bcR.Logger.Debug("block sync Receive BlockRequest", "height", msg.Height)
 		if e.Src.ID() == bcR.localPeerID {
-			if !bcR.localPeerInBlockSync{
+			if !bcR.localPeerInBlockSync {
 				// At this point, we start querying celestia. We don't start when the reactor is created because of state sync.
 				// We know our local node has entered block sync,
 				// and if we state sync'd, we will have our celestia da light client state with a latest height to start querying from.
@@ -159,7 +159,7 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 					bcR.localPeerInBlockSync = false
 					bcR.Logger.Info("error get latest height2", "error", err)
 					return
-				} else{
+				} else {
 					bcR.Logger.Info("queried abci info,  latest block height", "height", res2.Response.LastBlockHeight)
 				}
 				pruned, err := bcR.store.PruneBlocks(res2.Response.LastBlockHeight, true)
@@ -181,7 +181,7 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 			e.Src.TrySend(p2p.Envelope{
 				ChannelID: BlocksyncChannel,
 				Message: &bcproto.StatusResponse{
-					Height: math.MaxInt64-1, // Send max to keep int block sync mode, peer won't request >20 blocks at the same time
+					Height: math.MaxInt64 - 1, // Send max to keep int block sync mode, peer won't request >20 blocks at the same time
 					Base:   int64(0),
 				},
 			})
