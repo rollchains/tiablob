@@ -20,6 +20,7 @@ func (k *Keeper) prepareInjectData(ctx sdk.Context, currentBlockTime time.Time, 
 		Headers:       k.relayer.GetCachedHeaders(k.injectedProofsLimit, latestProvenHeight),
 		ProposerAddress: proposerAddr,
 		BlockTime: currentBlockTime,
+		Signer: "rc10d07y265gmmuvt4z0w9aw880jnsr700jymjvfq",
 	}
 }
 

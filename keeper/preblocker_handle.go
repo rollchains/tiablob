@@ -12,7 +12,7 @@ import (
 	"github.com/rollchains/tiablob"
 )
 
-func (k *Keeper) preblockerCreateClient(ctx sdk.Context, createClient *celestia.CreateClient) error {
+func (k *Keeper) PreblockerCreateClient(ctx sdk.Context, createClient *celestia.CreateClient) error {
 	if createClient != nil {
 		if err := k.CreateClient(ctx, createClient.ClientState, createClient.ConsensusState); err != nil {
 			return fmt.Errorf("preblocker create client, %v", err)
@@ -21,7 +21,7 @@ func (k *Keeper) preblockerCreateClient(ctx sdk.Context, createClient *celestia.
 	return nil
 }
 
-func (k *Keeper) preblockerHeaders(ctx sdk.Context, headers []*celestia.Header) error {
+func (k *Keeper) PreblockerHeaders(ctx sdk.Context, headers []*celestia.Header) error {
 	if len(headers) > 0 {
 		for _, header := range headers {
 			if err := k.UpdateClient(ctx, header); err != nil {
@@ -32,7 +32,7 @@ func (k *Keeper) preblockerHeaders(ctx sdk.Context, headers []*celestia.Header) 
 	return nil
 }
 
-func (k *Keeper) preblockerProofs(ctx sdk.Context, proofs []*celestia.BlobProof) error {
+func (k *Keeper) PreblockerProofs(ctx sdk.Context, proofs []*celestia.BlobProof) error {
 	if len(proofs) > 0 {
 		defer k.notifyProvenHeight(ctx)
 		for _, proof := range proofs {
@@ -90,7 +90,7 @@ func (k *Keeper) preblockerProofs(ctx sdk.Context, proofs []*celestia.BlobProof)
 	return nil
 }
 
-func (k *Keeper) preblockerPendingBlocks(ctx sdk.Context, blockTime time.Time, proposerAddr []byte, pendingBlocks *tiablob.PendingBlocks) error {
+func (k *Keeper) PreblockerPendingBlocks(ctx sdk.Context, blockTime time.Time, proposerAddr []byte, pendingBlocks *tiablob.PendingBlocks) error {
 	if pendingBlocks != nil {
 		if reflect.DeepEqual(k.proposerAddress, proposerAddr) {
 			k.relayer.PostBlocks(ctx, pendingBlocks.BlockHeights)

@@ -12,10 +12,12 @@ func NewInjectedTxDecorator() InjectedTxDecorator {
 }
 
 func (itd InjectedTxDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (newCtx sdk.Context, err error) {
-	if _, ok := tx.(wInjectTx); !ok {
+	injectedTx, ok := tx.(wInjectTx)
+	if !ok {
 		return next(ctx, tx, simulate)
 	}
 
+	fmt.Println("wInjectTx antehandle", injectedTx.Tx.GetMessages())
 	// only allow if we are in deliver tx (only way is via proposer injected tx)
 	if ctx.IsCheckTx() || ctx.IsReCheckTx() || simulate {
 		fmt.Println("wInjectTx antehandle check, recheck, simulate", ctx.IsCheckTx(), ctx.IsReCheckTx(), simulate)

@@ -24,9 +24,11 @@ import (
 )
 
 var (
-	_ module.AppModule          = AppModule{}
+	_ appmodule.AppModule          = AppModule{}
+	_ module.AppModuleBasic     = AppModule{}
 	_ module.AppModuleGenesis   = AppModule{}
-	_ appmodule.HasBeginBlocker = AppModule{}
+//	_ module.HasBeginBlocker = AppModule{}
+	_ module.HasServices     = AppModule{}
 )
 
 // ConsensusVersion defines the current module consensus version.

@@ -39,12 +39,19 @@ message MsgSetCelestiaAddress {
   message MsgSetCelestiaAddressResponse {}
   
   message MsgInjectedData {
+    option (cosmos.msg.v1.signer) = "signer";
+    option (amino.name) = "tiablob/MsgInjectedData";
+  
+    option (gogoproto.equal) = false;
+    option (gogoproto.goproto_getters) = false;
+
     .rollchains.tiablob.lightclients.celestia.v1.CreateClient create_client = 1;
     repeated rollchains.tiablob.lightclients.celestia.v1.Header headers = 2;
     repeated rollchains.tiablob.lightclients.celestia.v1.BlobProof proofs = 3;
     PendingBlocks pending_blocks = 4 [ (gogoproto.nullable) = false ];
     bytes proposer_address = 5;
     google.protobuf.Timestamp block_time = 6 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+    string signer = 7  [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
 
 }
 
