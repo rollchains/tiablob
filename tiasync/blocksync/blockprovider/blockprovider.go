@@ -299,9 +299,8 @@ func (bp *BlockProvider) getGenesisValidatorSet() *cmttypes.ValidatorSet {
 	bp.clientCtx.Codec.MustUnmarshalJSON(appState[gutypes.ModuleName], &guGenesisState)
 
 	var valSet cmttypes.ValidatorSet
-	for _, val := range bp.genState.Validators.Validators {
-		valSet.Validators = append(valSet.Validators, val)
-	}
+	valSet.Validators = append(valSet.Validators, bp.genState.Validators.Validators...)
+
 	for _, genTx := range guGenesisState.GenTxs {
 		tx, err := bp.clientCtx.TxConfig.TxJSONDecoder()(genTx)
 		if err != nil {
