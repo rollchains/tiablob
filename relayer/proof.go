@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"strings"
 
-	protoblocktypes "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/rollchains/tiablob/celestia-node/blob"
 	"github.com/rollchains/tiablob/celestia-node/share"
 	"github.com/rollchains/tiablob/lightclients/celestia"
 	cn "github.com/rollchains/tiablob/relayer/celestia-node"
+
+	"github.com/rollchains/tiablob"
 )
 
 func (r *Relayer) getCachedProof(height int64) *celestia.BlobProof {
@@ -256,21 +257,21 @@ func (r *Relayer) getBlobProof(ctx context.Context, mBlob *blob.Blob, queryHeigh
 }
 
 func (r *Relayer) getBlobHeightAndData(ctx context.Context, mBlob *blob.Blob, queryHeight int64, latestProvenHeight int64) (int64, []byte) {
-	var blobBlockProto protoblocktypes.Block
-	err := blobBlockProto.Unmarshal(mBlob.GetData())
+	var signedBlock tiablob.SignedBlock
+	err := signedBlock.Unmarshal(mBlob.GetData())
 	if err != nil {
 		r.logger.Info("blob unmarshal", "note", "may be a namespace collision", "height", queryHeight, "error", err)
 		return 0, nil
 	}
 
-	rollchainBlockHeight := blobBlockProto.Header.Height
+	rollchainBlockHeight := signedBlock.Block.Header.Height
 
 	// Ignore any blocks that are <= the latest proven height
 	if rollchainBlockHeight <= latestProvenHeight {
 		return 0, nil
 	}
 
-	blockProtoBz, err := r.GetLocalBlockAtHeight(ctx, rollchainBlockHeight)
+	blockProtoBz, err := r.GetSignedBlockAtHeight(ctx, rollchainBlockHeight)
 	if err != nil {
 		return 0, nil
 	}
@@ -278,7 +279,7 @@ func (r *Relayer) getBlobHeightAndData(ctx context.Context, mBlob *blob.Blob, qu
 	return rollchainBlockHeight, blockProtoBz
 }
 
-func (r *Relayer) GetLocalBlockAtHeight(ctx context.Context, rollchainBlockHeight int64) ([]byte, error) {
+func (r *Relayer) GetSignedBlockAtHeight(ctx context.Context, rollchainBlockHeight int64) ([]byte, error) {
 	// Cannot use txClient.GetBlockWithTxs since it tries to decode the txs. This API is broken when using the same tx
 	// injection method as vote extensions. https://docs.cosmos.network/v0.50/build/abci/vote-extensions#vote-extension-propagation
 	// "FinalizeBlock will ignore any byte slice that doesn't implement an sdk.Tx, so any injected vote extensions will safely be ignored in FinalizeBlock"
@@ -295,7 +296,21 @@ func (r *Relayer) GetLocalBlockAtHeight(ctx context.Context, rollchainBlockHeigh
 		return nil, err
 	}
 
-	return blockProto.Marshal()
+	// Don't need to publish last commit
+	blockProto.LastCommit = nil
+
+	resultCommit, err := r.localProvider.GetCommitAtHeight(ctx, rollchainBlockHeight)
+	if err != nil {
+		r.logger.Error("getting commit", "height:", rollchainBlockHeight, "error", err)
+		return nil, err
+	}
+
+	signedBlock := tiablob.SignedBlock{
+		Block: blockProto,
+		Commit: resultCommit.Commit.ToProto(),
+	}
+
+	return signedBlock.Marshal()
 }
 
 // GetShareIndex calculates the share index given the EDS index of the blob and square size of the respective block

@@ -24,6 +24,15 @@ func (cc *CosmosProvider) GetBlockAtHeight(ctx context.Context, height int64) (*
 	return block, nil
 }
 
+// GetCommitAtHeight queries the commit at a given height
+func (cc *CosmosProvider) GetCommitAtHeight(ctx context.Context, height int64) (*coretypes.ResultCommit, error) {
+	commit, err := cc.rpcClient.Commit(ctx, &height)
+	if err != nil {
+		return nil, fmt.Errorf("error querying block at height %d: %w", height, err)
+	}
+	return commit, nil
+}
+
 // Status queries the status of this node, can be used to check if it is catching up or a validator
 func (cc *CosmosProvider) Status(ctx context.Context) (*coretypes.ResultStatus, error) {
 	status, err := cc.rpcClient.Status(ctx)

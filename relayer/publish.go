@@ -70,25 +70,13 @@ func (r *Relayer) postBlocks(ctx sdk.Context, blocks []int64) {
 	blobs := make([]*blobtypes.Blob, len(blocks))
 
 	for i, height := range blocks {
-		res, err := r.localProvider.GetBlockAtHeight(ctx, height)
+		signedBlockBz, err := r.GetSignedBlockAtHeight(ctx, height)
 		if err != nil {
-			r.logger.Error("Error getting block", "height:", height, "error", err)
+			r.logger.Error("getting signed block", "height", height, "error", err)
 			return
 		}
 
-		blockProto, err := res.Block.ToProto()
-		if err != nil {
-			r.logger.Error("Error protoing block", "error", err)
-			return
-		}
-
-		blockBz, err := blockProto.Marshal()
-		if err != nil {
-			r.logger.Error("Error marshaling block", "error", err)
-			return
-		}
-
-		blob, err := blobtypes.NewBlob(r.celestiaNamespace, blockBz, appconsts.ShareVersionZero)
+		blob, err := blobtypes.NewBlob(r.celestiaNamespace, signedBlockBz, appconsts.ShareVersionZero)
 		if err != nil {
 			r.logger.Error("Error building blob", "error", err)
 			return

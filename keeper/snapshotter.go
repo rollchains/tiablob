@@ -74,17 +74,17 @@ func (s *TiaBlobSnapshotter) SnapshotExtension(height uint64, payloadWriter snap
 	}
 
 	for unprovenHeight := provenHeight + 1; unprovenHeight <= int64(height); unprovenHeight++ {
-		blockProtoBz, err := s.keeper.relayer.GetLocalBlockAtHeight(ctx, unprovenHeight)
+		signedBlockBz, err := s.keeper.relayer.GetSignedBlockAtHeight(ctx, unprovenHeight)
 		if err != nil {
-			blockProtoBz = s.keeper.unprovenBlocks[unprovenHeight]
-			if blockProtoBz == nil {
+			signedBlockBz = s.keeper.unprovenBlocks[unprovenHeight]
+			if signedBlockBz == nil {
 				return err
 			}
 		}
 
 		unprovenBlock := tiablob.UnprovenBlock{
 			Height: unprovenHeight,
-			Block:  blockProtoBz,
+			Block:  signedBlockBz,
 		}
 
 		unprovenBlockBz, err := unprovenBlock.Marshal()

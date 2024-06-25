@@ -10,15 +10,15 @@ import (
 	"github.com/strangelove-ventures/interchaintest/v8/testutil"
 	"github.com/stretchr/testify/require"
 
-	blocktypes "github.com/cometbft/cometbft/proto/tendermint/types"
-
 	node "github.com/rollchains/rollchains/interchaintest/api/celestia-node"
 	"github.com/rollchains/rollchains/interchaintest/setup"
+	"github.com/rollchains/tiablob"
 )
 
 var celestiaNodeHome = "/var/cosmos-chain/celestia-node"
 
 // TestPublish verifies on celestia node that rollchains is posting blobs, it does not check proved heights
+// go test -timeout 10m -v -run TestPublish . -count 1
 func TestPublish(t *testing.T) {
 	ctx := context.Background()
 	chains := setup.StartCelestiaAndRollchains(t, ctx, 1)
@@ -59,16 +59,16 @@ func watchForPublishedBlocks(
 				t.Log("No blobs found")
 			} else {
 				for j := 0; j < len(blobs); j++ {
-					var block blocktypes.Block
-					err = block.Unmarshal(blobs[j].Data)
+					var signedBlock tiablob.SignedBlock
+					err = signedBlock.Unmarshal(blobs[j].Data)
 					if err != nil {
 						t.Log("Error unmarshalling block")
 					} else {
 						rollchainBlocksSeen++
-						if rollchainHighestBlock < block.Header.Height {
-							rollchainHighestBlock = block.Header.Height
+						if rollchainHighestBlock < signedBlock.Block.Header.Height {
+							rollchainHighestBlock = signedBlock.Block.Header.Height
 						}
-						t.Log("Block ", block.Header.Height, " found")
+						t.Log("Block ", signedBlock.Block.Header.Height, " found")
 					}
 				}
 			}
