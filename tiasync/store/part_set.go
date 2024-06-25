@@ -22,10 +22,10 @@ func NewPartSetFromData(data []byte, partSize int) *PartSet {
 		part := data[i*partSize : cmtmath.MinInt(len(data), (i+1)*partSize)]
 		parts[i] = part
 	}
-	
+
 	return &PartSet{
-		total:         total,
-		parts:         parts,
+		total: total,
+		parts: parts,
 	}
 }
 

@@ -4,12 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	abci "github.com/cometbft/cometbft/abci/types"
 	coretypes "github.com/cometbft/cometbft/rpc/core/types"
-
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 func (cc *CosmosProvider) Validators(ctx context.Context, height int64) (*coretypes.ResultValidators, error) {
@@ -27,17 +22,4 @@ func (cc *CosmosProvider) Status(ctx context.Context) (*coretypes.ResultStatus, 
 		return nil, fmt.Errorf("error querying status: %w", err)
 	}
 	return status, nil
-}
-
-func sdkErrorToGRPCError(resp abci.ResponseQuery) error {
-	switch resp.Code {
-	case sdkerrors.ErrInvalidRequest.ABCICode():
-		return status.Error(codes.InvalidArgument, resp.Log)
-	case sdkerrors.ErrUnauthorized.ABCICode():
-		return status.Error(codes.Unauthenticated, resp.Log)
-	case sdkerrors.ErrKeyNotFound.ABCICode():
-		return status.Error(codes.NotFound, resp.Log)
-	default:
-		return status.Error(codes.Unknown, resp.Log)
-	}
 }

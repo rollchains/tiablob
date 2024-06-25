@@ -24,7 +24,7 @@ type Reactor struct {
 	localPeerID p2p.ID
 }
 
-// NewReactor returns a new Reactor 
+// NewReactor returns a new Reactor
 func NewReactor(localPeerID p2p.ID) *Reactor {
 	conR := &Reactor{
 		localPeerID: localPeerID,
@@ -37,7 +37,7 @@ func NewReactor(localPeerID p2p.ID) *Reactor {
 // OnStart implements BaseService by subscribing to events, which later will be
 // broadcasted to other peers and starting state if we're not in block sync.
 func (conR *Reactor) OnStart() error {
- 	return nil
+	return nil
 }
 
 // OnStop implements BaseService by unsubscribing from events and stopping
@@ -77,7 +77,7 @@ func (conR *Reactor) AddPeer(peer p2p.Peer) {
 
 func defaultRoundStepMessage() (nrsMsg *cmtcons.NewRoundStep) {
 	nrsMsg = &cmtcons.NewRoundStep{
-		Height:                math.MaxInt64-1, // Local node should always be less than our height for tx propagation
+		Height:                math.MaxInt64 - 1, // Local node should always be less than our height for tx propagation
 		Round:                 0,
 		Step:                  1,
 		SecondsSinceStartTime: 1,

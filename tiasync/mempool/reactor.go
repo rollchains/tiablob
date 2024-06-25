@@ -18,8 +18,8 @@ const (
 // It maintains a map from peer ID to peer. Broadcasting is only outward to val network.
 type Reactor struct {
 	p2p.BaseReactor
-	config  *cfg.MempoolConfig
-	peers map[p2p.ID]p2p.Peer
+	config      *cfg.MempoolConfig
+	peers       map[p2p.ID]p2p.Peer
 	localPeerID p2p.ID
 
 	// Semaphores to keep track of how many connections to peers are active for broadcasting
@@ -32,8 +32,8 @@ type Reactor struct {
 // NewReactor returns a new Reactor with the given config.
 func NewReactor(config *cfg.MempoolConfig, localPeerID p2p.ID) *Reactor {
 	memR := &Reactor{
-		config:  config,
-		peers: make(map[p2p.ID]p2p.Peer),
+		config:      config,
+		peers:       make(map[p2p.ID]p2p.Peer),
 		localPeerID: localPeerID,
 	}
 	memR.BaseReactor = *p2p.NewBaseReactor("Mempool", memR)
@@ -105,7 +105,7 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 		if e.Src.ID() == memR.localPeerID {
 			memR.broadcastTxRoutine(protoTxs)
 		}
-		
+
 	default:
 		// note: tiasync only supports 1 message, so we may enter here occasionally
 		memR.Logger.Debug("unknown message type", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
@@ -134,7 +134,7 @@ func (memR *Reactor) sendTxToPeer(peer p2p.Peer, txs [][]byte) {
 		}
 
 		if peerSemaphore != nil {
-			for peer.IsRunning() {
+			if peer.IsRunning() {
 				// Block on the semaphore until a slot is available to start gossiping with this peer.
 				// Do not block indefinitely, in case the peer is disconnected before gossiping starts.
 				ctxTimeout, cancel := context.WithTimeout(context.TODO(), 30*time.Second)
@@ -149,11 +149,10 @@ func (memR *Reactor) sendTxToPeer(peer p2p.Peer, txs [][]byte) {
 
 				// Release semaphore to allow other peer to start sending transactions.
 				defer peerSemaphore.Release(1)
-				break
 			}
 		}
 	}
-	
+
 	if !memR.IsRunning() || !peer.IsRunning() {
 		return
 	}

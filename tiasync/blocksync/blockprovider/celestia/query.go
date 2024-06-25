@@ -5,7 +5,6 @@ import (
 	"time"
 )
 
-
 func (cc *CosmosProvider) QueryTimeAtHeight(ctx context.Context, height *int64) (time.Time, error) {
 	res, err := cc.rpcClient.Header(ctx, height)
 	if err != nil {
