@@ -7,9 +7,11 @@ import (
 
 	"github.com/rollchains/rollchain/app/upgrades"
 	"github.com/rollchains/rollchain/app/upgrades/noop"
+//	"github.com/rollchains/rollchain/app/upgrades/v2"
 )
 
 // Upgrades list of chain upgrades
+//var Upgrades = []upgrades.Upgrade{v2.NewUpgradeV2()}
 var Upgrades = []upgrades.Upgrade{}
 
 // RegisterUpgradeHandlers registers the chain upgrade handlers
