@@ -107,7 +107,7 @@ func (bcR *Reactor) RemovePeer(peer p2p.Peer, _ interface{}) {}
 // respondToPeer loads a block and sends it to the requesting peer,
 // if we have it. Otherwise, we'll respond saying we don't have it.
 func (bcR *Reactor) respondToPeer(msg *bcproto.BlockRequest, src p2p.Peer) (queued bool) {
-	block := bcR.blockProvider.GetVerifiedBlock(msg.Height)
+	block, commit := bcR.blockProvider.GetVerifiedBlock(msg.Height)
 	if block == nil {
 		bcR.Logger.Info("Peer asking for a block we don't have", "src", src, "height", msg.Height)
 		return src.TrySend(p2p.Envelope{
@@ -125,6 +125,27 @@ func (bcR *Reactor) respondToPeer(msg *bcproto.BlockRequest, src p2p.Peer) (queu
 	}
 
 	var extCommit *types.ExtendedCommit
+	voteExtensionEnableHeight := bcR.blockProvider.GetVoteExtensionsEnableHeight()
+	if voteExtensionEnableHeight != 0 && voteExtensionEnableHeight <= msg.Height {
+		bcR.Logger.Info("Vote extensions enabled, mocking extended commit")
+		extCommit = &types.ExtendedCommit{
+			Height: commit.Height,
+			BlockID: commit.BlockID,
+			Round: commit.Round,
+		}
+		for _, sig := range commit.Signatures {
+			extCommitSig := types.ExtendedCommitSig{
+				CommitSig: sig,
+			}
+			if sig.BlockIDFlag == types.BlockIDFlagCommit {
+				extCommitSig.ExtensionSignature = sig.Signature
+			}
+			extCommit.ExtendedSignatures = append(extCommit.ExtendedSignatures, extCommitSig)
+		}
+	} else {
+		bcR.Logger.Info("Vote extensions not enabled")
+	}
+
 	return src.TrySend(p2p.Envelope{
 		ChannelID: BlocksyncChannel,
 		Message: &bcproto.BlockResponse{

@@ -49,7 +49,6 @@ func (k *Keeper) preblockerProofs(ctx sdk.Context, proofs []*celestia.BlobProof)
 				checkHeight++
 
 				// Form blob
-				// State sync will need to sync from a snapshot + the unproven blocks
 				blockProtoBz, err := k.relayer.GetLocalBlockAtHeight(ctx, height)
 				if err != nil {
 					// Check for cached unprovenBlocks

@@ -52,7 +52,6 @@ func (k Keeper) processProofs(ctx sdk.Context, clients []*celestia.Header, proof
 				checkHeight++
 
 				// Form blob
-				// State sync will need to sync from a snapshot + the unproven blocks
 				blockProtoBz, err := k.relayer.GetLocalBlockAtHeight(ctx, height)
 				if err != nil {
 					// Check for cached unprovenBlocks, verify we want validators to check their cache from a state sync.

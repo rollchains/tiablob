@@ -939,6 +939,8 @@ func NewChainApp(
 	app.SetPreBlocker(app.PreBlocker)
 	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
+	app.SetExtendVoteHandler(ExtendVoteHandler)
+	app.SetVerifyVoteExtensionHandler(VerifyVoteExtensionHandler)
 
 	anteHandler, err := NewAnteHandler(
 		HandlerOptions{
