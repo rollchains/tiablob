@@ -233,7 +233,7 @@ func TestUpgradeTiasyncVeFromGenesis(t *testing.T) {
 	height, err := chains.RollchainChain.Height(ctx)
 	require.NoError(t, err)
 
-	haltHeightDelta := int64(13)
+	haltHeightDelta := int64(10)
 	haltHeight := height + haltHeightDelta
 
 	upgradeMsg := &upgradetypes.MsgSoftwareUpgrade{
@@ -317,7 +317,7 @@ func TestUpgradeTiasyncVeFromGenesis(t *testing.T) {
 	timeoutCtx, timeoutCtxCancel = context.WithTimeout(ctx, time.Second*75)
 	defer timeoutCtxCancel()
 
-	err = testutil.WaitForBlocks(timeoutCtx, 15, chains.RollchainChain)
+	err = testutil.WaitForBlocks(timeoutCtx, 20, chains.RollchainChain)
 	require.NoError(t, err, "chain did not produce blocks after upgrade")
 
 	// Restart the fullnode for the upgrade (node is expected to be halted for the upgrade at this point)
@@ -340,13 +340,34 @@ func TestUpgradeTiasyncVeFromGenesis(t *testing.T) {
 	require.Error(t, err)
 	fmt.Println("Error fullnode restart1:", err)
 
+// Restart the fullnode for the upgrade (node is expected to be halted for the upgrade at this point)
+	var eg2 errgroup.Group
+for _, fn := range chains.RollchainChain.FullNodes {
+	fn := fn
+	eg2.Go(func() error {
+		if err := fn.StopContainer(ctx); err != nil {
+			return err
+		}
+		if err := fn.RemoveContainer(ctx); err != nil {
+			return err
+		}
+		if err := fn.CreateNodeContainer(ctx); err != nil {
+			return err
+		}
+		return fn.StartContainer(ctx)
+	})
+}
+err = eg2.Wait()
+require.Error(t, err)
+fmt.Println("Error fullnode restart2:", err)
+
 	timeoutCtx, timeoutCtxCancel = context.WithTimeout(ctx, time.Minute*5)
 	defer timeoutCtxCancel()
 
 	previousHeight, err := chains.RollchainChain.Height(ctx)
 	require.NoError(t, err)
 
-	err = testutil.WaitForBlocks(timeoutCtx, 100, chains.RollchainChain)
+	err = testutil.WaitForBlocks(timeoutCtx, 25, chains.RollchainChain)
 	require.NoError(t, err, "chain did not produce blocks after adding fullnode")
 
 	nodes := chains.RollchainChain.Nodes()
@@ -524,4 +545,26 @@ func TestUpgradeTiasyncVeStateSync(t *testing.T) {
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "height 150 is not available, lowest height is 201")
 	}
+
+
+	// Restart the fullnode for the upgrade (node is expected to be halted for the upgrade at this point)
+	var eg errgroup.Group
+	for _, fn := range chains.RollchainChain.FullNodes {
+		fn := fn
+		eg.Go(func() error {
+			if err := fn.StopContainer(ctx); err != nil {
+				return err
+			}
+			if err := fn.RemoveContainer(ctx); err != nil {
+				return err
+			}
+			if err := fn.CreateNodeContainer(ctx); err != nil {
+				return err
+			}
+			return fn.StartContainer(ctx)
+		})
+	}
+	err = eg.Wait()
+	require.Error(t, err)
+	fmt.Println("Error fullnode restart1:", err)
 }

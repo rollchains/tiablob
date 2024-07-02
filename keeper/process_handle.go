@@ -52,13 +52,9 @@ func (k Keeper) processProofs(ctx sdk.Context, clients []*celestia.Header, proof
 				checkHeight++
 
 				// Form blob
-				blockProtoBz, err := k.relayer.GetLocalBlockAtHeight(ctx, height)
+				blockProtoBz, err := k.relayer.GetLocalBlockAtHeight(height)
 				if err != nil {
-					// Check for cached unprovenBlocks, verify we want validators to check their cache from a state sync.
-					blockProtoBz = k.unprovenBlocks[height]
-					if blockProtoBz == nil {
-						return fmt.Errorf("process proofs, get local block at height: %d, %v", height, err)
-					}
+					return fmt.Errorf("process proofs, get local block at height: %d, %v", height, err)
 				}
 
 				// create blob from local data

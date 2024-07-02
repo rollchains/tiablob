@@ -22,6 +22,7 @@ import (
 
 	"github.com/rollchains/rollchain/app"
 	"github.com/rollchains/rollchain/app/params"
+	"github.com/rollchains/tiablob/tiasync"
 )
 
 // NewRootCmd creates a new root command for chain app. It is called once in the
@@ -101,7 +102,14 @@ func NewRootCmd() *cobra.Command {
 			customAppTemplate, customAppConfig := initAppConfig()
 			customCMTConfig := initCometBFTConfig()
 
-			return server.InterceptConfigsPreRunHandler(cmd, customAppTemplate, customAppConfig, customCMTConfig)
+			if err := server.InterceptConfigsPreRunHandler(cmd, customAppTemplate, customAppConfig, customCMTConfig); err != nil {
+				return err
+			}
+
+			srvCtx := server.GetServerContextFromCmd(cmd)
+			tiasync.TiasyncPrerunRoutine(cmd, srvCtx)
+
+			return nil
 		},
 	}
 

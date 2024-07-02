@@ -34,7 +34,11 @@ func (k *Keeper) preblockerHeaders(ctx sdk.Context, headers []*celestia.Header) 
 
 func (k *Keeper) preblockerProofs(ctx sdk.Context, proofs []*celestia.BlobProof) error {
 	if len(proofs) > 0 {
-		defer k.notifyProvenHeight(ctx)
+		previousProvenHeight, err := k.GetProvenHeight(ctx)
+		if err != nil {
+			return fmt.Errorf("preblocker proofs, get previous proven height, %v", err)
+		}
+		defer k.notifyProvenHeight(ctx, previousProvenHeight)
 		for _, proof := range proofs {
 			provenHeight, err := k.GetProvenHeight(ctx)
 			if err != nil {
@@ -49,13 +53,9 @@ func (k *Keeper) preblockerProofs(ctx sdk.Context, proofs []*celestia.BlobProof)
 				checkHeight++
 
 				// Form blob
-				blockProtoBz, err := k.relayer.GetLocalBlockAtHeight(ctx, height)
+				blockProtoBz, err := k.relayer.GetLocalBlockAtHeight(height)
 				if err != nil {
-					// Check for cached unprovenBlocks
-					blockProtoBz = k.unprovenBlocks[height]
-					if blockProtoBz == nil {
-						return fmt.Errorf("preblocker proofs, get local block at height: %d, %v", height, err)
-					}
+					return fmt.Errorf("preblocker proofs, get local block at height: %d, %v", height, err)
 				}
 
 				// create blob from local data
@@ -104,7 +104,7 @@ func (k *Keeper) preblockerPendingBlocks(ctx sdk.Context, blockTime time.Time, p
 	return nil
 }
 
-func (k *Keeper) notifyProvenHeight(ctx sdk.Context) {
+func (k *Keeper) notifyProvenHeight(ctx sdk.Context, previousProvenHeight int64) {
 	provenHeight, err := k.GetProvenHeight(ctx)
 	if err != nil {
 		fmt.Println("unable to get proven height", err)
@@ -112,13 +112,5 @@ func (k *Keeper) notifyProvenHeight(ctx sdk.Context) {
 	}
 
 	k.relayer.NotifyProvenHeight(provenHeight)
-	k.pruneUnprovenBlocksMap(provenHeight)
-}
-
-func (k *Keeper) pruneUnprovenBlocksMap(provenHeight int64) {
-	for h := range k.unprovenBlocks {
-		if h <= provenHeight {
-			delete(k.unprovenBlocks, h)
-		}
-	}
+	go k.relayer.PruneBlockStore(previousProvenHeight)
 }

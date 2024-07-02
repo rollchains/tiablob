@@ -739,6 +739,7 @@ func NewChainApp(
 		appOpts,
 		appns.MustNewV0([]byte(CelestiaNamespace)),
 		filepath.Join(homePath, "keys"),
+		filepath.Join(homePath, "data"),
 		publishToCelestiaBlockInterval,
 	)
 	if err != nil {

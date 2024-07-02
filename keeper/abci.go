@@ -82,6 +82,7 @@ func (k *Keeper) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlock) err
 			return err
 		}
 	}
+	go k.relayer.PopulateUnprovenBlockStore()
 	return nil
 }
 

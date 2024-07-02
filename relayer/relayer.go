@@ -1,18 +1,23 @@
 package relayer
 
 import (
+	"context"
 	"sync"
 	"time"
+	
+	"github.com/spf13/cast"
 
 	"cosmossdk.io/log"
-	"github.com/cosmos/cosmos-sdk/client"
-	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	appns "github.com/rollchains/tiablob/celestia/namespace"
 	"github.com/rollchains/tiablob/lightclients/celestia"
 	celestiaprovider "github.com/rollchains/tiablob/relayer/celestia"
 	"github.com/rollchains/tiablob/relayer/local"
+	"github.com/rollchains/tiablob/relayer/store"
 
+	"github.com/cosmos/cosmos-sdk/client"
+	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/codec"
+	dbm "github.com/cometbft/cometbft-db"
 )
 
 const (
@@ -51,6 +56,9 @@ type Relayer struct {
 	celestiaGasAdjustment        float64
 	celestiaPublishBlockInterval int
 	celestiaLastQueriedHeight    int64
+
+	queryCtx context.Context
+	unprovenBlockStore *store.BlockStore
 }
 
 // NewRelayer creates a new Relayer instance
@@ -60,6 +68,7 @@ func NewRelayer(
 	appOpts servertypes.AppOptions,
 	celestiaNamespace appns.Namespace,
 	keyDir string,
+	dataDir string,
 	celestiaPublishBlockInterval int,
 ) (*Relayer, error) {
 	cfg := CelestiaConfigFromAppOpts(appOpts)
@@ -87,6 +96,17 @@ func NewRelayer(
 		celestiaPublishBlockInterval = cfg.OverridePubInterval
 	}
 
+	backend := dbm.GoLevelDBBackend
+	if cast.ToString(appOpts.Get("app-db-backend")) != "" {
+		backend = dbm.BackendType(cast.ToString(appOpts.Get("app-db-backend")))
+	}
+	db, err := dbm.NewDB("unprovenBlocks.db", backend, dataDir)
+	if err != nil {
+		return nil, err
+	}
+
+	unprovenBlockStore := store.NewBlockStore(db)
+
 	return &Relayer{
 		logger: logger,
 
@@ -110,6 +130,9 @@ func NewRelayer(
 		blockProofCache:      make(map[int64]*celestia.BlobProof),
 		blockProofCacheLimit: cfg.MaxFlushSize,
 		celestiaHeaderCache:  make(map[int64]*celestia.Header),
+
+		queryCtx: context.Background(),
+		unprovenBlockStore: unprovenBlockStore,
 	}, nil
 }
 

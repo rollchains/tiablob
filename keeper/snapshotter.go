@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"context"
 	"fmt"
 	"io"
 
@@ -59,8 +58,6 @@ func (*TiaBlobSnapshotter) SupportedFormats() []uint32 {
 // SnapshotExtension implements the snapshot.ExntensionSnapshotter interface.
 // SnapshotExtension is used to write data payloads into the underlying protobuf stream from the local client.
 func (s *TiaBlobSnapshotter) SnapshotExtension(height uint64, payloadWriter snapshot.ExtensionPayloadWriter) error {
-	ctx := context.Background()
-
 	cacheMS, err := s.cms.CacheMultiStoreWithVersion(int64(height))
 	if err != nil {
 		return err
@@ -74,12 +71,9 @@ func (s *TiaBlobSnapshotter) SnapshotExtension(height uint64, payloadWriter snap
 	}
 
 	for unprovenHeight := provenHeight + 1; unprovenHeight <= int64(height); unprovenHeight++ {
-		blockProtoBz, err := s.keeper.relayer.GetLocalBlockAtHeight(ctx, unprovenHeight)
+		blockProtoBz, err := s.keeper.relayer.GetLocalBlockAtHeight(unprovenHeight)
 		if err != nil {
-			blockProtoBz = s.keeper.unprovenBlocks[unprovenHeight]
-			if blockProtoBz == nil {
-				return err
-			}
+			return err
 		}
 
 		unprovenBlock := tiablob.UnprovenBlock{
@@ -142,7 +136,7 @@ func restoreV1(k *Keeper, height int64, unprovenBlockBz []byte) error {
 		return fmt.Errorf("unproven block height is greater than current height")
 	}
 
-	k.unprovenBlocks[unprovenBlock.Height] = unprovenBlock.Block
+	k.relayer.PushSnapshotBlocks(unprovenBlock.Height, unprovenBlock.Block)
 
 	return nil
 }

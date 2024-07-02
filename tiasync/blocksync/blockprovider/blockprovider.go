@@ -93,7 +93,7 @@ func NewBlockProvider(
 		genState: state,
 		store:    store,
 
-		veEnableHeight: getGenesisVoteExtensionEnableHeight(genDoc, cmtConfig),
+		veEnableHeight: getInitialVoteExtensionEnableHeight(genDoc, cmtConfig, state),
 	}
 }
 

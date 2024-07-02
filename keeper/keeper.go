@@ -34,8 +34,6 @@ type Keeper struct {
 	injectedProofsLimit            int
 	celestiaNamespace              share.Namespace
 
-	unprovenBlocks map[int64][]byte
-
 	proposerAddress []byte
 }
 
@@ -81,8 +79,6 @@ func NewKeeper(
 		publishToCelestiaBlockInterval: publishToCelestiaBlockInterval,
 		injectedProofsLimit:            cfg.MaxFlushSize,
 		celestiaNamespace:              celestiaNamespace,
-
-		unprovenBlocks: make(map[int64][]byte),
 	}
 }
 
