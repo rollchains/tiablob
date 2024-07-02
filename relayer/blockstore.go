@@ -1,6 +1,7 @@
 package relayer
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -29,11 +30,13 @@ func (r *Relayer) GetLocalBlockAtHeight(height int64) ([]byte, error) {
 
 // Called in Preblocker, gets the latest block(s) from cometbft and populates our store
 func (r *Relayer) PopulateUnprovenBlockStore() {
+	ctx := context.Background()
+
 	if r.clientCtx.Client == nil {
 		r.logger.Info("comet rpc client is not set yet")
 		return
 	}
-	abciInfo, err := r.clientCtx.Client.ABCIInfo(r.queryCtx)
+	abciInfo, err := r.clientCtx.Client.ABCIInfo(ctx)
 	if err != nil {
 		r.logger.Info("unable to get latest height, not an error", "error", err)
 		return
@@ -41,12 +44,13 @@ func (r *Relayer) PopulateUnprovenBlockStore() {
 	lastBlockHeight := abciInfo.Response.LastBlockHeight
 
 	currentBlockHeight := r.unprovenBlockStore.Height()
-	for height := currentBlockHeight + 1; currentBlockHeight <= lastBlockHeight; currentBlockHeight++ {
+	r.logger.Info("Executing populate unproven blockstore", "initial height", currentBlockHeight, "latest height", lastBlockHeight)
+	for height := currentBlockHeight + 1; height <= lastBlockHeight; height++ {
 		// Cannot use txClient.GetBlockWithTxs since it tries to decode the txs. This API is broken when using the same tx
 		// injection method as vote extensions. https://docs.cosmos.network/v0.50/build/abci/vote-extensions#vote-extension-propagation
 		// "FinalizeBlock will ignore any byte slice that doesn't implement an sdk.Tx, so any injected vote extensions will safely be ignored in FinalizeBlock"
 		// "Some existing Cosmos SDK core APIs may need to be modified and thus broken."
-		block, err := r.localProvider.GetBlockAtHeight(r.queryCtx, height)
+		block, err := r.localProvider.GetBlockAtHeight(ctx, height)
 		if err != nil {
 			r.logger.Error("getting local block", "height", height)
 			return
@@ -65,6 +69,7 @@ func (r *Relayer) PopulateUnprovenBlockStore() {
 
 		r.unprovenBlockStore.SaveBlock(height, blockBz)
 	}
+	r.logger.Info("populate unproven blockstore done")
 
 }
 

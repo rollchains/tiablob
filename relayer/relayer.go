@@ -1,7 +1,6 @@
 package relayer
 
 import (
-	"context"
 	"sync"
 	"time"
 	
@@ -57,7 +56,6 @@ type Relayer struct {
 	celestiaPublishBlockInterval int
 	celestiaLastQueriedHeight    int64
 
-	queryCtx context.Context
 	unprovenBlockStore *store.BlockStore
 }
 
@@ -131,7 +129,6 @@ func NewRelayer(
 		blockProofCacheLimit: cfg.MaxFlushSize,
 		celestiaHeaderCache:  make(map[int64]*celestia.Header),
 
-		queryCtx: context.Background(),
 		unprovenBlockStore: unprovenBlockStore,
 	}, nil
 }

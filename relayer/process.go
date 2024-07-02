@@ -10,6 +10,8 @@ import (
 
 // Start begins the relayer process
 func (r *Relayer) Start() error {
+	ctx := context.Background()
+
 	if err := r.celestiaProvider.CreateKeystore(); err != nil {
 		return err
 	}
@@ -18,17 +20,17 @@ func (r *Relayer) Start() error {
 	defer timer.Stop()
 	for {
 		select {
-		case <-r.queryCtx.Done():
+		case <-ctx.Done():
 			return nil
 		case height := <-r.commitHeights:
 			r.latestCommitHeight = height
 		case height := <-r.provenHeights:
 			r.updateHeight(height)
 		case <-timer.C:
-			if r.isValidatorAndCaughtUp(r.queryCtx) {
-				latestClientState := r.getClientState(r.queryCtx)
-				r.checkForNewBlockProofs(r.queryCtx, latestClientState)
-				r.shouldUpdateClient(r.queryCtx, latestClientState)
+			if r.isValidatorAndCaughtUp(ctx) {
+				latestClientState := r.getClientState(ctx)
+				r.checkForNewBlockProofs(ctx, latestClientState)
+				r.shouldUpdateClient(ctx, latestClientState)
 			}
 			timer.Reset(r.pollInterval)
 		}
