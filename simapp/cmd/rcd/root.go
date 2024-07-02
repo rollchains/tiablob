@@ -107,7 +107,7 @@ func NewRootCmd() *cobra.Command {
 			}
 
 			srvCtx := server.GetServerContextFromCmd(cmd)
-			tiasync.TiasyncPrerunRoutine(cmd, srvCtx)
+			tiasync.TiasyncPrerunRoutine(version.AppName, cmd, srvCtx)
 
 			return nil
 		},

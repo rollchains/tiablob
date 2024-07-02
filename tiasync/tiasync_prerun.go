@@ -44,7 +44,7 @@ type TiasyncPrerun struct {
 	Logger log.Logger
 }
 
-func TiasyncPrerunRoutine(cmd *cobra.Command, srvCtx *server.Context) error {
+func TiasyncPrerunRoutine(appName string, cmd *cobra.Command, srvCtx *server.Context) error {
 	cometCfg := srvCtx.Config
 	tiasyncCfg := TiasyncConfigFromAppOpts(srvCtx.Viper)
 
@@ -54,6 +54,11 @@ func TiasyncPrerunRoutine(cmd *cobra.Command, srvCtx *server.Context) error {
 	logger, err := cmtflags.ParseLogLevel(cometCfg.LogLevel, logger, cfg.DefaultLogLevel)
 	if err != nil {
 		panic(err)
+	}
+
+	// only run on start
+	if cmd.Use != "start" || cmd.Parent().Use != appName {
+		return nil
 	}
 
 	if !tiasyncCfg.Enable {
