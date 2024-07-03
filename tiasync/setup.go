@@ -28,7 +28,7 @@ func createPEXReactorAndAddToSwitch(addrBook pex.AddrBook, config *cfg.Config,
 ) *pex.Reactor {
 	pexReactor := pex.NewReactor(addrBook,
 		&pex.ReactorConfig{
-			Seeds: splitAndTrimEmpty(TiasyncInternalCfg.P2P.Seeds, ",", ""),
+			Seeds:    splitAndTrimEmpty(TiasyncInternalCfg.P2P.Seeds, ",", ""),
 			SeedMode: TiasyncInternalCfg.P2P.SeedMode,
 			// See consensus/reactor.go: blocksToContributeToBecomeGoodPeer 10000
 			// blocks assuming 10s blocks ~ 28 hours.
@@ -80,7 +80,7 @@ func createAddrBookAndSetOnSwitch(config *cfg.Config, tiasyncCfg *TiasyncConfig,
 	addrBookFile := tiasyncCfg.AddrBookFile(config.BaseConfig)
 	addrBook := pex.NewAddrBook(addrBookFile, config.P2P.AddrBookStrict)
 	addrBook.SetLogger(p2pLogger.With("tsbook", addrBookFile))
-	
+
 	// Add ourselves to addrbook to prevent dialing ourselves
 	if TiasyncInternalCfg.P2P.ExternalAddress != "" {
 		addr, err := p2p.NewNetAddressString(p2p.IDAddressString(nodeKey.ID(), TiasyncInternalCfg.P2P.ExternalAddress))

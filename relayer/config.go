@@ -126,6 +126,7 @@ func CelestiaConfigFromAppOpts(appOpts servertypes.AppOptions) CelestiaConfig {
 }
 
 var RelayerInternalCfg RelayerInternalConfig
+
 type RelayerInternalConfig struct {
 	// Database backend: goleveldb | cleveldb | boltdb | rocksdb
 	// * goleveldb (github.com/syndtr/goleveldb - most popular implementation)

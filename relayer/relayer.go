@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
-	
+
 	"github.com/spf13/cast"
 
 	"cosmossdk.io/log"
@@ -14,10 +14,10 @@ import (
 	"github.com/rollchains/tiablob/relayer/local"
 	"github.com/rollchains/tiablob/relayer/store"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-	"github.com/cosmos/cosmos-sdk/codec"
 	dbm "github.com/cometbft/cometbft-db"
+	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/codec"
+	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 )
 
 const (
@@ -69,7 +69,7 @@ func NewRelayer(
 	homePath string,
 	celestiaPublishBlockInterval int,
 ) (*Relayer, error) {
-	keyDir :=	filepath.Join(homePath, "keys")
+	keyDir := filepath.Join(homePath, "keys")
 	cfg := CelestiaConfigFromAppOpts(appOpts)
 
 	if cfg.MaxFlushSize < 1 || cfg.MaxFlushSize > MaxMaxFlushSize {
@@ -99,7 +99,7 @@ func NewRelayer(
 	if RelayerInternalCfg.DBPath != "" {
 		dataDir = RelayerInternalCfg.DBPath
 	}
-	dataPath :=	filepath.Join(homePath, dataDir)
+	dataPath := filepath.Join(homePath, dataDir)
 
 	backend := dbm.GoLevelDBBackend
 	if cast.ToString(appOpts.Get("app-db-backend")) != "" {

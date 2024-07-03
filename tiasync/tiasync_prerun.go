@@ -14,20 +14,20 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/p2p/pex"
-	"github.com/cosmos/cosmos-sdk/server"
-	"github.com/cometbft/cometbft/types"
-	"github.com/cometbft/cometbft/version"
-	"github.com/cometbft/cometbft/store"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/store"
+	"github.com/cometbft/cometbft/types"
+	"github.com/cometbft/cometbft/version"
+	"github.com/cosmos/cosmos-sdk/server"
 )
 
 type TiasyncPrerun struct {
 
 	// config
-	cmtConfig   *cfg.Config
-	tiasyncCfg  *TiasyncConfig
-	genesisDoc  *types.GenesisDoc // initial validator set
+	cmtConfig  *cfg.Config
+	tiasyncCfg *TiasyncConfig
+	genesisDoc *types.GenesisDoc // initial validator set
 
 	// network
 	transport   *p2p.MultiplexTransport
@@ -38,8 +38,8 @@ type TiasyncPrerun struct {
 	isListening bool
 
 	// services
-	extCommitReactor        p2p.Reactor        // for fetching extended commit
-	pexReactor       *pex.Reactor       // for exchanging peer addresses
+	extCommitReactor p2p.Reactor  // for fetching extended commit
+	pexReactor       *pex.Reactor // for exchanging peer addresses
 
 	Logger log.Logger
 }
@@ -63,7 +63,7 @@ func TiasyncPrerunRoutine(appName string, cmd *cobra.Command, srvCtx *server.Con
 	if !tiasyncCfg.Enable {
 		return nil
 	}
-	
+
 	if err := verifyAndModifyConfigs(&tiasyncCfg, cometCfg); err != nil {
 		panic(err)
 	}
@@ -84,7 +84,7 @@ func TiasyncPrerunRoutine(appName string, cmd *cobra.Command, srvCtx *server.Con
 		}
 		return genDoc, nil
 	}
-	
+
 	// Unlike tiasync, tiasync-prerun uses primary block and state DBs, if replay is required, a restart may also be required...
 	var blockStoreDB dbm.DB
 	blockStoreDB, err = dbProvider(&cfg.DBContext{ID: "blockstore", Config: cometCfg})
@@ -141,7 +141,7 @@ func TiasyncPrerunRoutine(appName string, cmd *cobra.Command, srvCtx *server.Con
 	for {
 		select {
 		case <-ts.extCommitReactor.Quit():
-			ts.sw.Stop()
+			_ = ts.sw.Stop()
 			ts.transport.Close()
 			return nil
 		}
@@ -218,18 +218,18 @@ func NewTiasyncPrerun(
 	pexReactor := createPEXReactorAndAddToSwitch(addrBook, cmtConfig, sw, logger)
 
 	return &TiasyncPrerun{
-		cmtConfig: cmtConfig,
+		cmtConfig:  cmtConfig,
 		tiasyncCfg: tiasyncCfg,
 		genesisDoc: genDoc,
-		
+
 		transport: transport,
-		sw: sw,
-		addrBook: addrBook,
-		nodeInfo: nodeInfo,
-		nodeKey: nodeKey,
+		sw:        sw,
+		addrBook:  addrBook,
+		nodeInfo:  nodeInfo,
+		nodeKey:   nodeKey,
 
 		extCommitReactor: extCommitReactor,
-		pexReactor: pexReactor,
+		pexReactor:       pexReactor,
 
 		Logger: logger,
 	}, nil

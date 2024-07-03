@@ -33,15 +33,15 @@ type BlockStore struct {
 	// The only reason for keeping these fields in the struct is that the data
 	// can't efficiently be queried from the database since the key encoding we use is not
 	// lexicographically ordered (see https://github.com/tendermint/tendermint/issues/4567).
-	mtx                       cmtsync.RWMutex
-	base                      int64
-	height                    int64
+	mtx    cmtsync.RWMutex
+	base   int64
+	height int64
 }
 
 // TODO: make proto, low priority
 type BlockStoreState struct {
-	Base                      int64 `json:"base"`
-	Height                    int64 `json:"height"`
+	Base   int64 `json:"base"`
+	Height int64 `json:"height"`
 }
 
 // TODO: make proto, low priority
@@ -54,9 +54,9 @@ type BlockMeta struct {
 func NewBlockStore(db dbm.DB) *BlockStore {
 	bs := LoadBlockStoreState(db)
 	return &BlockStore{
-		base:                      bs.Base,
-		height:                    bs.Height,
-		db:                        db,
+		base:   bs.Base,
+		height: bs.Height,
+		db:     db,
 	}
 }
 
@@ -68,8 +68,8 @@ func (bs *BlockStore) SetInitialState(height int64) {
 	bs.height = height
 
 	bss := BlockStoreState{
-		Base:                      bs.base,
-		Height:                    bs.height,
+		Base:   bs.base,
+		Height: bs.height,
 	}
 	saveBlockStoreStateBatchInternal(&bss, bs.db, nil)
 }
@@ -325,8 +325,8 @@ func (bs *BlockStore) saveBlockPart(height int64, partIndex int, part []byte, ba
 // Contract: the caller MUST have, at least, a read lock on `bs`.
 func (bs *BlockStore) saveStateAndWriteDB(batch dbm.Batch, errMsg string) error {
 	bss := BlockStoreState{
-		Base:                      bs.base,
-		Height:                    bs.height,
+		Base:   bs.base,
+		Height: bs.height,
 	}
 	SaveBlockStoreStateBatch(&bss, batch)
 
@@ -390,8 +390,8 @@ func LoadBlockStoreState(db dbm.DB) BlockStoreState {
 
 	if len(bytes) == 0 {
 		return BlockStoreState{
-			Base:                      0,
-			Height:                    0,
+			Base:   0,
+			Height: 0,
 		}
 	}
 

@@ -86,7 +86,7 @@ func (r *Relayer) postBlocks(ctx sdk.Context, blocks []int64) {
 				r.logger.Error("Error protoing block", "error", err)
 				return
 			}
-	
+
 			blockBz, err = blockProto.Marshal()
 			if err != nil {
 				r.logger.Error("Error marshaling block", "error", err)

@@ -54,9 +54,9 @@ type BlockProvider struct {
 	clientCtx client.Context
 	store     *store.BlockStore
 
-	valSet *cmttypes.ValidatorSet
+	valSet         *cmttypes.ValidatorSet
 	veEnableHeight int64
-	mtx    cmtsync.Mutex
+	mtx            cmtsync.Mutex
 }
 
 func NewBlockProvider(
@@ -247,8 +247,8 @@ func (bp *BlockProvider) queryLocalNode(ctx context.Context) {
 	if err == nil {
 		bp.logger.Info("Updating vote extensions enable height", "height", paramsResp.Params.Abci.VoteExtensionsEnableHeight)
 		bp.mtx.Lock()
-		bp.veEnableHeight = paramsResp.Params.Abci.VoteExtensionsEnableHeight 
-		bp.mtx.Unlock()	
+		bp.veEnableHeight = paramsResp.Params.Abci.VoteExtensionsEnableHeight
+		bp.mtx.Unlock()
 	}
 }
 

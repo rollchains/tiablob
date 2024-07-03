@@ -6,8 +6,8 @@ import (
 
 	cfg "github.com/cometbft/cometbft/config"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
-	cmttypes "github.com/cometbft/cometbft/types"
 	sm "github.com/cometbft/cometbft/state"
+	cmttypes "github.com/cometbft/cometbft/types"
 )
 
 type Genesis struct {
@@ -25,7 +25,7 @@ type Params struct {
 // Get the vote extension enable height from state and if 0, try from genesis
 func getInitialVoteExtensionEnableHeight(genDoc *cmttypes.GenesisDoc, cmtConfig *cfg.Config, state sm.State) int64 {
 	veEnableHeight := state.ConsensusParams.ABCI.VoteExtensionsEnableHeight
-	
+
 	if veEnableHeight == 0 {
 		veEnableHeight = genDoc.ConsensusParams.ABCI.VoteExtensionsEnableHeight
 	}

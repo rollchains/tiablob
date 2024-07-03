@@ -5,14 +5,14 @@ import (
 	"reflect"
 	"time"
 
-	cmtmath "github.com/cometbft/cometbft/libs/math"
 	dbm "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/libs/log"
+	cmtmath "github.com/cometbft/cometbft/libs/math"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/p2p"
 	bcproto "github.com/cometbft/cometbft/proto/tendermint/blocksync"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
 
 	"github.com/cosmos/gogoproto/proto"
 )
@@ -29,20 +29,20 @@ type Reactor struct {
 	// immutable
 	state sm.State
 
-	mtx cmtsync.Mutex
+	mtx            cmtsync.Mutex
 	extCommitFound bool
-	height int64
+	height         int64
 
-	blockStoreDB  dbm.DB
+	blockStoreDB dbm.DB
 }
 
 // NewReactor returns new reactor instance.
 func NewReactor(state sm.State, logger log.Logger, blockStoreDB dbm.DB, height int64) *Reactor {
-	
+
 	ecR := &Reactor{
-		state: state,
+		state:        state,
 		blockStoreDB: blockStoreDB,
-		height: height,
+		height:       height,
 	}
 	ecR.BaseReactor = *p2p.NewBaseReactor("Reactor", ecR)
 	ecR.SetLogger(logger)
@@ -78,10 +78,10 @@ func (ecR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 
 // AddPeer implements Reactor by sending our request to peer.
 func (ecR *Reactor) AddPeer(peer p2p.Peer) {
-//	ecR.mtx.Lock()
-//	ecR.peers[peer.ID()] = peer
-//	defer ecR.mtx.Unlock()
-	if !ecR.FoundStatus(){
+	//	ecR.mtx.Lock()
+	//	ecR.peers[peer.ID()] = peer
+	//	defer ecR.mtx.Unlock()
+	if !ecR.FoundStatus() {
 		peer.Send(p2p.Envelope{
 			ChannelID: BlocksyncChannel,
 			Message: &bcproto.BlockRequest{
@@ -93,9 +93,9 @@ func (ecR *Reactor) AddPeer(peer p2p.Peer) {
 
 // RemovePeer implements Reactor by removing peer from the pool.
 func (ecR *Reactor) RemovePeer(peer p2p.Peer, _ interface{}) {
-//	ecR.mtx.Lock()
-//	defer ecR.mtx.Unlock()
-//	delete(ecR.peers, peer.ID())
+	// ecR.mtx.Lock()
+	// defer ecR.mtx.Unlock()
+	// delete(ecR.peers, peer.ID())
 }
 
 // Receive implements Reactor by handling 4 types of messages (look below).
@@ -168,13 +168,13 @@ func (ecR *Reactor) Receive(e p2p.Envelope) {
 		ecR.Logger.Info("Extended commit found", "height", ecR.height, "peer", e.Src)
 
 		ecR.extCommitFound = true
-		ecR.Stop()
+		_ = ecR.Stop()
 	case *bcproto.StatusRequest:
 		e.Src.TrySend(p2p.Envelope{
 			ChannelID: BlocksyncChannel,
 			Message: &bcproto.StatusResponse{
 				Height: 0,
-				Base: 0,
+				Base:   0,
 			},
 		})
 	case *bcproto.StatusResponse:
@@ -194,7 +194,7 @@ func (ecR *Reactor) requestRoutine() {
 		case <-ecR.Quit():
 			return
 		case <-requestTicker.C:
-			if ecR.FoundStatus(){
+			if ecR.FoundStatus() {
 				return
 			}
 			go ecR.broadcastBlockRequest(ecR.height)

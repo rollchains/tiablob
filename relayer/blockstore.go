@@ -10,13 +10,13 @@ import (
 
 func (r *Relayer) GetLocalBlockAtHeight(height int64) ([]byte, error) {
 	var block []byte
-	if err := retry.Do(func() error { 
+	if err := retry.Do(func() error {
 		block = r.unprovenBlockStore.LoadBlock(height)
 		if block == nil {
 			return fmt.Errorf("loading unproven block is nil at height: %d", height)
 		}
 		return nil
-	}, retry.Delay(time.Millisecond * 50),retry.Attempts(uint(10)), retry.OnRetry(func(n uint, err error) {
+	}, retry.Delay(time.Millisecond*50), retry.Attempts(uint(10)), retry.OnRetry(func(n uint, err error) {
 		r.logger.Info("failed to get block from unproven store", "height", height, "attempt", n+1)
 		if n == 2 || n == 6 {
 			r.PopulateUnprovenBlockStore()
@@ -80,5 +80,5 @@ func (r *Relayer) PushSnapshotBlocks(height int64, block []byte) {
 // Only prune to the previous proven height when proven height changes
 // on startup, the last block is replayed, those blocks need to persist for the replay
 func (r *Relayer) PruneBlockStore(previousProvenHeight int64) {
-	r.unprovenBlockStore.PruneBlocks(previousProvenHeight)
+	_, _ = r.unprovenBlockStore.PruneBlocks(previousProvenHeight)
 }

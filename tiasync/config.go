@@ -85,6 +85,7 @@ type TiasyncConfig struct {
 }
 
 var TiasyncInternalCfg TiasyncInternalConfig
+
 type TiasyncInternalConfig struct {
 	P2P cfg.P2PConfig
 }
@@ -118,11 +119,11 @@ func verifyAndModifyConfigs(tiasyncCfg *TiasyncConfig, cometCfg *cfg.Config) err
 	if cometCfg.StateSync.Enable && cometCfg.P2P.PersistentPeers == "" {
 		return fmt.Errorf("tiasync enabled, must have at least one persistent peer with state sync enabled")
 	}
-	
+
 	cometCfg.P2P.AddrBookStrict = false
 	cometCfg.P2P.AllowDuplicateIP = true
 	cometCfg.P2P.ExternalAddress = ""
-	cometCfg.P2P.ListenAddress = "tcp://127.0.0.1:"+tiasyncCfg.LocalhostPort
+	cometCfg.P2P.ListenAddress = "tcp://127.0.0.1:" + tiasyncCfg.LocalhostPort
 	cometCfg.P2P.PersistentPeers = ""
 	cometCfg.P2P.PexReactor = false
 	cometCfg.P2P.Seeds = ""

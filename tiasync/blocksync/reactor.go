@@ -136,9 +136,9 @@ func (bcR *Reactor) respondToPeer(msg *bcproto.BlockRequest, src p2p.Peer) (queu
 	if voteExtensionEnableHeight != 0 && voteExtensionEnableHeight <= msg.Height {
 		bcR.Logger.Info("Vote extensions enabled, mocking extended commit")
 		extCommit = &types.ExtendedCommit{
-			Height: commit.Height,
+			Height:  commit.Height,
 			BlockID: commit.BlockID,
-			Round: commit.Round,
+			Round:   commit.Round,
 		}
 		for _, sig := range commit.Signatures {
 			extCommitSig := types.ExtendedCommitSig{

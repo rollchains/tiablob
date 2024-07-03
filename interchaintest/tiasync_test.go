@@ -39,8 +39,8 @@ func TestTiasyncFromGenesis(t *testing.T) {
 				"override-namespace": "rc_demo0",
 			},
 			"tiasync": testutil.Toml{
-				"chain-id":       chains.RollchainChain.Config().ChainID,
-				"enable":         true,
+				"chain-id": chains.RollchainChain.Config().ChainID,
+				"enable":   true,
 			},
 		},
 	}, 1)
@@ -88,7 +88,7 @@ func TestTiasyncResubmission(t *testing.T) {
 				"override-namespace": "rc_demo0",
 			},
 			"tiasync": testutil.Toml{
-				"enable":         true,
+				"enable": true,
 			},
 		},
 	}, 1)
@@ -157,7 +157,7 @@ func TestTiasyncStateSync(t *testing.T) {
 				"override-namespace": "rc_demo0",
 			},
 			"tiasync": testutil.Toml{
-				"enable":         true,
+				"enable": true,
 			},
 		},
 		"config/config.toml": testutil.Toml{
@@ -227,7 +227,7 @@ func TestTiasyncTxPropagation(t *testing.T) {
 				"override-namespace": "rc_demo0",
 			},
 			"tiasync": testutil.Toml{
-				"enable":         true,
+				"enable": true,
 			},
 		},
 	}, 1)
@@ -303,7 +303,7 @@ func TestTiasyncRestartFullnode(t *testing.T) {
 				"override-namespace": "rc_demo0",
 			},
 			"tiasync": testutil.Toml{
-				"enable":         true,
+				"enable": true,
 			},
 		},
 	}, 1)

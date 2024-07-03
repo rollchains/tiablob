@@ -21,7 +21,7 @@ import (
 
 	"github.com/rollchains/rollchains/interchaintest/api/rollchain"
 	"github.com/rollchains/rollchains/interchaintest/setup"
-	
+
 	"golang.org/x/sync/errgroup"
 )
 
@@ -50,7 +50,7 @@ func TestTiasyncVeFromGenesis(t *testing.T) {
 				"override-namespace": "rc_demo",
 			},
 			"tiasync": testutil.Toml{
-				"enable":         true,
+				"enable": true,
 			},
 		},
 	}, 1)
@@ -115,7 +115,7 @@ func TestTiasyncVeStateSync(t *testing.T) {
 				"override-namespace": "rc_demo",
 			},
 			"tiasync": testutil.Toml{
-				"enable":         true,
+				"enable": true,
 			},
 		},
 		"config/config.toml": testutil.Toml{
@@ -190,7 +190,7 @@ func TestUpgradeTiasyncVeFromGenesis(t *testing.T) {
 				"override-namespace": "rc_demo",
 			},
 			"tiasync": testutil.Toml{
-				"enable":         true,
+				"enable": true,
 			},
 		},
 	}, 1)
@@ -307,26 +307,26 @@ func TestUpgradeTiasyncVeFromGenesis(t *testing.T) {
 	require.Error(t, err)
 	fmt.Println("Error fullnode restart1:", err)
 
-// Restart the fullnode for the upgrade (node is expected to be halted for the upgrade at this point)
+	// Restart the fullnode for the upgrade (node is expected to be halted for the upgrade at this point)
 	var eg2 errgroup.Group
-for _, fn := range chains.RollchainChain.FullNodes {
-	fn := fn
-	eg2.Go(func() error {
-		if err := fn.StopContainer(ctx); err != nil {
-			return err
-		}
-		if err := fn.RemoveContainer(ctx); err != nil {
-			return err
-		}
-		if err := fn.CreateNodeContainer(ctx); err != nil {
-			return err
-		}
-		return fn.StartContainer(ctx)
-	})
-}
-err = eg2.Wait()
-require.Error(t, err)
-fmt.Println("Error fullnode restart2:", err)
+	for _, fn := range chains.RollchainChain.FullNodes {
+		fn := fn
+		eg2.Go(func() error {
+			if err := fn.StopContainer(ctx); err != nil {
+				return err
+			}
+			if err := fn.RemoveContainer(ctx); err != nil {
+				return err
+			}
+			if err := fn.CreateNodeContainer(ctx); err != nil {
+				return err
+			}
+			return fn.StartContainer(ctx)
+		})
+	}
+	err = eg2.Wait()
+	require.Error(t, err)
+	fmt.Println("Error fullnode restart2:", err)
 
 	timeoutCtx, timeoutCtxCancel = context.WithTimeout(ctx, time.Minute*5)
 	defer timeoutCtxCancel()
@@ -458,7 +458,7 @@ func TestUpgradeTiasyncVeStateSync(t *testing.T) {
 				"override-namespace": "rc_demo",
 			},
 			"tiasync": testutil.Toml{
-				"enable":         true,
+				"enable": true,
 			},
 		},
 		"config/config.toml": testutil.Toml{
@@ -503,7 +503,6 @@ func TestUpgradeTiasyncVeStateSync(t *testing.T) {
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "height 150 is not available, lowest height is 201")
 	}
-
 
 	// Restart the fullnode for the upgrade (node is expected to be halted for the upgrade at this point)
 	var eg errgroup.Group
