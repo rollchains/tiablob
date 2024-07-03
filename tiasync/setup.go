@@ -28,7 +28,8 @@ func createPEXReactorAndAddToSwitch(addrBook pex.AddrBook, config *cfg.Config,
 ) *pex.Reactor {
 	pexReactor := pex.NewReactor(addrBook,
 		&pex.ReactorConfig{
-			SeedMode: false,
+			Seeds: splitAndTrimEmpty(TiasyncInternalCfg.P2P.Seeds, ",", ""),
+			SeedMode: TiasyncInternalCfg.P2P.SeedMode,
 			// See consensus/reactor.go: blocksToContributeToBecomeGoodPeer 10000
 			// blocks assuming 10s blocks ~ 28 hours.
 			// TODO (melekes): make it dynamic based on the actual block latencies
@@ -79,12 +80,22 @@ func createAddrBookAndSetOnSwitch(config *cfg.Config, tiasyncCfg *TiasyncConfig,
 	addrBookFile := tiasyncCfg.AddrBookFile(config.BaseConfig)
 	addrBook := pex.NewAddrBook(addrBookFile, config.P2P.AddrBookStrict)
 	addrBook.SetLogger(p2pLogger.With("tsbook", addrBookFile))
-
-	addr, err := p2p.NewNetAddressString(p2p.IDAddressString(nodeKey.ID(), TiasyncInternalCfg.ListenAddress))
-	if err != nil {
-		return nil, fmt.Errorf("tiasync.laddr is incorrect: %w", err)
+	
+	// Add ourselves to addrbook to prevent dialing ourselves
+	if TiasyncInternalCfg.P2P.ExternalAddress != "" {
+		addr, err := p2p.NewNetAddressString(p2p.IDAddressString(nodeKey.ID(), TiasyncInternalCfg.P2P.ExternalAddress))
+		if err != nil {
+			return nil, fmt.Errorf("p2p.external_address is incorrect: %w", err)
+		}
+		addrBook.AddOurAddress(addr)
 	}
-	addrBook.AddOurAddress(addr)
+	if TiasyncInternalCfg.P2P.ListenAddress != "" {
+		addr, err := p2p.NewNetAddressString(p2p.IDAddressString(nodeKey.ID(), TiasyncInternalCfg.P2P.ListenAddress))
+		if err != nil {
+			return nil, fmt.Errorf("tiasync.laddr is incorrect: %w", err)
+		}
+		addrBook.AddOurAddress(addr)
+	}
 
 	sw.SetAddrBook(addrBook)
 
@@ -122,8 +133,7 @@ func createTransport(
 // TODO: we only need state for the p2p protocol version. This is being populated from genDoc, what makes those values change?
 // Can we get that state another way? i.e. rpc?
 func makeNodeInfo(
-	//config *cfg.Config,
-	tiasyncCfg *TiasyncConfig,
+	cometCfg *cfg.Config,
 	nodeKey *p2p.NodeKey,
 	genDoc *types.GenesisDoc,
 	state sm.State,
@@ -150,11 +160,10 @@ func makeNodeInfo(
 		Moniker: "tiasync",
 		Other: p2p.DefaultNodeInfoOther{
 			TxIndex:    txIndexerStatus,
-			RPCAddress: "tcp://0.0.0.0:26657", // not used? but is validated...
+			RPCAddress: cometCfg.RPC.ListenAddress,
 		},
+		ListenAddr: TiasyncInternalCfg.P2P.ListenAddress,
 	}
-
-	nodeInfo.ListenAddr = TiasyncInternalCfg.ListenAddress
 
 	err := nodeInfo.Validate()
 	return nodeInfo, err

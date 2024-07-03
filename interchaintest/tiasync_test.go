@@ -43,12 +43,6 @@ func TestTiasyncFromGenesis(t *testing.T) {
 				"enable":         true,
 			},
 		},
-		/*"config/config.toml": testutil.Toml{
-			//"log_level": "debug",
-			"p2p": testutil.Toml{
-				"persistent_peers":   chains.RollchainChain.Nodes().PeerString(ctx),
-			},
-		},*/
 	}, 1)
 	require.Error(t, err) // expected to fail, always catching up
 	fmt.Println("Error:", err)

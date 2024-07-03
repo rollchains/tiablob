@@ -8,6 +8,8 @@ import (
 	cfg "github.com/cometbft/cometbft/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/spf13/cast"
+
+	"github.com/rollchains/tiablob/relayer"
 )
 
 const (
@@ -84,40 +86,7 @@ type TiasyncConfig struct {
 
 var TiasyncInternalCfg TiasyncInternalConfig
 type TiasyncInternalConfig struct {
-	// Database backend: goleveldb | cleveldb | boltdb | rocksdb
-	// * goleveldb (github.com/syndtr/goleveldb - most popular implementation)
-	//   - pure go
-	//   - stable
-	// * cleveldb (uses levigo wrapper)
-	//   - fast
-	//   - requires gcc
-	//   - use cleveldb build tag (go build -tags cleveldb)
-	// * boltdb (uses etcd's fork of bolt - github.com/etcd-io/bbolt)
-	//   - EXPERIMENTAL
-	//   - may be faster is some use-cases (random reads - indexer)
-	//   - use boltdb build tag (go build -tags boltdb)
-	// * rocksdb (uses github.com/tecbot/gorocksdb)
-	//   - EXPERIMENTAL
-	//   - requires gcc
-	//   - use rocksdb build tag (go build -tags rocksdb)
-	// * badgerdb (uses github.com/dgraph-io/badger)
-	//   - EXPERIMENTAL
-	//   - use badgerdb build tag (go build -tags badgerdb)
-	DBBackend string
-
-	// Database directory
-	DBPath string
-
-	// Address to listen for incoming connections from the validator network
-	ListenAddress string
-
-	ExternalAddress string
-
-	// Peers that are upstream from this node and on the validator network
-	PersistentPeers string
-
-	Seeds string
-
+	P2P cfg.P2PConfig
 }
 
 func TiasyncConfigFromAppOpts(appOpts servertypes.AppOptions) TiasyncConfig {
@@ -139,21 +108,16 @@ func (t TiasyncConfig) AddrBookFile(cometCfg cfg.BaseConfig) string {
 	return rootify(t.AddrBookPath, cometCfg.RootDir)
 }
 
-// only if tiasync is enabled
-func verifyConfigs(tiasyncCfg *TiasyncConfig, cometCfg *cfg.Config) error {
-		if cometCfg.StateSync.Enable && cometCfg.P2P.PersistentPeers == "" {
-			return fmt.Errorf("tiasync enabled, must have at least one persistent peer with state sync enabled")
-		}
-	return nil
+func copyConfig(cometCfg *cfg.Config) {
+	relayer.RelayerInternalCfg.DBBackend = cometCfg.DBBackend
+	relayer.RelayerInternalCfg.DBPath = cometCfg.DBPath
+	TiasyncInternalCfg.P2P = *cometCfg.P2P
 }
 
-func modifyConfigs(tiasyncCfg *TiasyncConfig, cometCfg *cfg.Config) {
-	TiasyncInternalCfg.DBBackend = cometCfg.DBBackend
-	TiasyncInternalCfg.DBPath = cometCfg.DBPath
-	TiasyncInternalCfg.ListenAddress = cometCfg.P2P.ListenAddress
-	TiasyncInternalCfg.ExternalAddress = cometCfg.P2P.ExternalAddress
-	TiasyncInternalCfg.PersistentPeers = cometCfg.P2P.PersistentPeers
-	TiasyncInternalCfg.Seeds = cometCfg.P2P.Seeds
+func verifyAndModifyConfigs(tiasyncCfg *TiasyncConfig, cometCfg *cfg.Config) error {
+	if cometCfg.StateSync.Enable && cometCfg.P2P.PersistentPeers == "" {
+		return fmt.Errorf("tiasync enabled, must have at least one persistent peer with state sync enabled")
+	}
 	
 	cometCfg.P2P.AddrBookStrict = false
 	cometCfg.P2P.AllowDuplicateIP = true
@@ -162,6 +126,8 @@ func modifyConfigs(tiasyncCfg *TiasyncConfig, cometCfg *cfg.Config) {
 	cometCfg.P2P.PersistentPeers = ""
 	cometCfg.P2P.PexReactor = false
 	cometCfg.P2P.Seeds = ""
+
+	return nil
 }
 
 // helper function to make config creation independent of root dir

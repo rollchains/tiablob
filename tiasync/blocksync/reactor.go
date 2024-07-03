@@ -104,10 +104,10 @@ func (bcR *Reactor) AddPeer(peer p2p.Peer) {
 // RemovePeer implements Reactor by removing peer from the pool.
 func (bcR *Reactor) RemovePeer(peer p2p.Peer, _ interface{}) {
 	if peer.ID() == bcR.localPeerID {
-		// this is a persistent peer, delay 100ms on removal due to reconnection speed
-		// cometbft's block pool can still be cleaning up old peer
-		bcR.Logger.Info("Removing local peer and delaying 100ms")
-		time.Sleep(time.Millisecond * 100)
+		// this is a persistent peer, delay 1s on removal due to reconnection speed
+		// cometbft's block pool can still be cleaning up old peer/bpRequest
+		bcR.Logger.Info("Removing local peer and delaying 1s")
+		time.Sleep(time.Second * 1)
 	}
 }
 

@@ -1,6 +1,7 @@
 package relayer
 
 import (
+	"path/filepath"
 	"sync"
 	"time"
 	
@@ -65,10 +66,10 @@ func NewRelayer(
 	cdc codec.BinaryCodec,
 	appOpts servertypes.AppOptions,
 	celestiaNamespace appns.Namespace,
-	keyDir string,
-	dataDir string,
+	homePath string,
 	celestiaPublishBlockInterval int,
 ) (*Relayer, error) {
+	keyDir :=	filepath.Join(homePath, "keys")
 	cfg := CelestiaConfigFromAppOpts(appOpts)
 
 	if cfg.MaxFlushSize < 1 || cfg.MaxFlushSize > MaxMaxFlushSize {
@@ -94,11 +95,19 @@ func NewRelayer(
 		celestiaPublishBlockInterval = cfg.OverridePubInterval
 	}
 
+	dataDir := "data"
+	if RelayerInternalCfg.DBPath != "" {
+		dataDir = RelayerInternalCfg.DBPath
+	}
+	dataPath :=	filepath.Join(homePath, dataDir)
+
 	backend := dbm.GoLevelDBBackend
 	if cast.ToString(appOpts.Get("app-db-backend")) != "" {
 		backend = dbm.BackendType(cast.ToString(appOpts.Get("app-db-backend")))
+	} else if RelayerInternalCfg.DBBackend != "" {
+		backend = dbm.BackendType(RelayerInternalCfg.DBBackend)
 	}
-	db, err := dbm.NewDB("unprovenBlocks.db", backend, dataDir)
+	db, err := dbm.NewDB("unprovenBlocks.db", backend, dataPath)
 	if err != nil {
 		return nil, err
 	}

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"sort"
 	"sync"
 
@@ -738,8 +737,7 @@ func NewChainApp(
 		appCodec,
 		appOpts,
 		appns.MustNewV0([]byte(CelestiaNamespace)),
-		filepath.Join(homePath, "keys"),
-		filepath.Join(homePath, "data"),
+		homePath,
 		publishToCelestiaBlockInterval,
 	)
 	if err != nil {
