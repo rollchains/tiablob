@@ -51,18 +51,6 @@ func TestTiasyncVeFromGenesis(t *testing.T) {
 			},
 			"tiasync": testutil.Toml{
 				"enable":         true,
-				"laddr":          "tcp://0.0.0.0:26656",
-				"upstream-peers": chains.RollchainChain.Nodes().PeerString(ctx),
-			},
-		},
-		"config/config.toml": testutil.Toml{
-			//"log_level": "debug",
-			"p2p": testutil.Toml{
-				"laddr":              "tcp://127.0.0.1:26777",
-				"persistent_peers":   "",
-				"addr_book_strict":   false,
-				"allow_duplicate_ip": true,
-				"pex":                false,
 			},
 		},
 	}, 1)
@@ -128,8 +116,6 @@ func TestTiasyncVeStateSync(t *testing.T) {
 			},
 			"tiasync": testutil.Toml{
 				"enable":         true,
-				"laddr":          "tcp://0.0.0.0:26656",
-				"upstream-peers": chains.RollchainChain.Nodes().PeerString(ctx),
 			},
 		},
 		"config/config.toml": testutil.Toml{
@@ -140,13 +126,6 @@ func TestTiasyncVeStateSync(t *testing.T) {
 				"trust_height": trustedHeight,
 				"trust_hash":   trustedHash,
 				"trust_period": "1h",
-			},
-			"p2p": testutil.Toml{
-				"laddr":              "tcp://127.0.0.1:26777",
-				"persistent_peers":   "",
-				"addr_book_strict":   false,
-				"allow_duplicate_ip": true,
-				"pex":                false,
 			},
 		},
 	}, 1)
@@ -212,18 +191,6 @@ func TestUpgradeTiasyncVeFromGenesis(t *testing.T) {
 			},
 			"tiasync": testutil.Toml{
 				"enable":         true,
-				"laddr":          "tcp://0.0.0.0:26656",
-				"upstream-peers": chains.RollchainChain.Nodes().PeerString(ctx),
-			},
-		},
-		"config/config.toml": testutil.Toml{
-			//"log_level": "debug",
-			"p2p": testutil.Toml{
-				"laddr":              "tcp://127.0.0.1:26777",
-				"persistent_peers":   "",
-				"addr_book_strict":   false,
-				"allow_duplicate_ip": true,
-				"pex":                false,
 			},
 		},
 	}, 1)
@@ -492,8 +459,6 @@ func TestUpgradeTiasyncVeStateSync(t *testing.T) {
 			},
 			"tiasync": testutil.Toml{
 				"enable":         true,
-				"laddr":          "tcp://0.0.0.0:26656",
-				"upstream-peers": chains.RollchainChain.Nodes().PeerString(ctx),
 			},
 		},
 		"config/config.toml": testutil.Toml{
@@ -504,13 +469,6 @@ func TestUpgradeTiasyncVeStateSync(t *testing.T) {
 				"trust_height": trustedHeight,
 				"trust_hash":   trustedHash,
 				"trust_period": "1h",
-			},
-			"p2p": testutil.Toml{
-				"laddr":              "tcp://127.0.0.1:26777",
-				"persistent_peers":   "",
-				"addr_book_strict":   false,
-				"allow_duplicate_ip": true,
-				"pex":                false,
 			},
 		},
 	}, 1)

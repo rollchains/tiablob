@@ -80,7 +80,7 @@ func createAddrBookAndSetOnSwitch(config *cfg.Config, tiasyncCfg *TiasyncConfig,
 	addrBook := pex.NewAddrBook(addrBookFile, config.P2P.AddrBookStrict)
 	addrBook.SetLogger(p2pLogger.With("tsbook", addrBookFile))
 
-	addr, err := p2p.NewNetAddressString(p2p.IDAddressString(nodeKey.ID(), tiasyncCfg.ListenAddress))
+	addr, err := p2p.NewNetAddressString(p2p.IDAddressString(nodeKey.ID(), TiasyncInternalCfg.ListenAddress))
 	if err != nil {
 		return nil, fmt.Errorf("tiasync.laddr is incorrect: %w", err)
 	}
@@ -154,7 +154,7 @@ func makeNodeInfo(
 		},
 	}
 
-	nodeInfo.ListenAddr = tiasyncCfg.ListenAddress
+	nodeInfo.ListenAddr = TiasyncInternalCfg.ListenAddress
 
 	err := nodeInfo.Validate()
 	return nodeInfo, err

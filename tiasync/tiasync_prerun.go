@@ -64,6 +64,12 @@ func TiasyncPrerunRoutine(appName string, cmd *cobra.Command, srvCtx *server.Con
 	if !tiasyncCfg.Enable {
 		return nil
 	}
+	
+	if err := verifyConfigs(&tiasyncCfg, cometCfg); err != nil {
+		panic(err)
+	}
+
+	modifyConfigs(&tiasyncCfg, cometCfg)
 
 	logger.Info("Tiasync enabled")
 	dbProvider := cfg.DefaultDBProvider
@@ -184,7 +190,7 @@ func NewTiasyncPrerun(
 			TxIndex:    "off",
 			RPCAddress: "tcp://0.0.0.0:26657", // not used? but is validated...
 		},
-		ListenAddr: tiasyncCfg.ListenAddress,
+		ListenAddr: TiasyncInternalCfg.ListenAddress,
 	}
 
 	transport, peerFilters := createTransport(cmtConfig, nodeInfo, nodeKey)
@@ -199,7 +205,7 @@ func NewTiasyncPrerun(
 	p2pLogger.Info("P2P Node ID", "ID", nodeKey.ID())
 
 	// TODO: add support for seeds (after intercepting comet config)
-	err = sw.AddPersistentPeers(splitAndTrimEmpty(tiasyncCfg.UpstreamPeers, ",", " "))
+	err = sw.AddPersistentPeers(splitAndTrimEmpty(TiasyncInternalCfg.PersistentPeers, ",", " "))
 	if err != nil {
 		return nil, fmt.Errorf("could not add peers from persistent_peers field: %w", err)
 	}
@@ -230,7 +236,7 @@ func NewTiasyncPrerun(
 
 func (t *TiasyncPrerun) Start() {
 	// Start the transport.
-	addr, err := p2p.NewNetAddressString(p2p.IDAddressString(t.nodeKey.ID(), t.tiasyncCfg.ListenAddress))
+	addr, err := p2p.NewNetAddressString(p2p.IDAddressString(t.nodeKey.ID(), TiasyncInternalCfg.ListenAddress))
 	if err != nil {
 		panic(err)
 	}
@@ -247,7 +253,7 @@ func (t *TiasyncPrerun) Start() {
 	}
 
 	// Always connect to persistent peers
-	err = t.sw.DialPeersAsync(splitAndTrimEmpty(t.tiasyncCfg.UpstreamPeers, ",", " "))
+	err = t.sw.DialPeersAsync(splitAndTrimEmpty(TiasyncInternalCfg.PersistentPeers, ",", " "))
 	if err != nil {
 		panic(fmt.Errorf("could not dial peers from persistent_peers field: %w", err))
 	}
