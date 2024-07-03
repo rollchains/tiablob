@@ -1,45 +1,16 @@
 # Overview
 
-Tiasync allows a fullnode to sync and execute blocks from Celestia instead of the validator network. It is a cometbft p2p proxy that sits between the fullnode's cometbft p2p network and validator network. Individual blocks come from Celestia, state sync snapshots/chunks come from the validator network, and transactions are propagated to the validator network.
+Tiasync allows a fullnode to sync and execute blocks from Celestia instead of the validator network. It is a Cometbft p2p proxy that sits between the fullnode's Cometbft p2p network and validator network. Individual blocks come from Celestia, state sync snapshots/chunks come from the validator network, and transactions are propagated to the validator network.
 
 ## Configuration
 
-The minimum configurations for tiasync are below. These are in addition to the required Celestia/tiablob configurations. When tiasync is enabled, these minimum configurations will be verified so that the fullnode cannot connect to the validator network directly.
-
-config.toml
-```toml
-[p2p]
-    # Listen address must be localhost only, port can be changed
-    laddr = "tcp://127.0.0.1:26777"
-
-    # Must have no seeds
-    seeds = ""
-
-    # Must have no persistent peers
-    persistent_peers = ""
-
-    # Address book must not be strict
-    addr_book_strict = false
-
-    # Duplicate ips should be allowed (local fullnode and tiasync)
-    allow_duplicate_ip = true
-
-    # Pex must be false/disabled
-    pex = false
-```
+The minimum configuration for tiasync is below, but other default values can be overridden. This is in addition to the required Celestia/tiablob configurations. Tiasync will use Cometbft's p2p configurations to peer with the validator network while the fullnode will only peer with tiasync.
 
 app.toml
 ```toml
 [tiasync]
     # turns on tiasync
     enable = true
-
-    # Address for tiasync to listen for incoming connection from the validator network
-    laddr = "tcp://0.0.0.0:26656"
-
-    # Peers that are upstream from this fullnode and on the validator network
-    # optional when only syncing from genesis, but necessary for state sync and transaction propagation
-    upstream-peers = "upstream-node1-id@ip:port,upstream-node2-id@ip:port"
 
 ```
 
