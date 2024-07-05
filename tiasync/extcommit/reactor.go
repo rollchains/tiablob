@@ -47,10 +47,6 @@ func NewReactor(state sm.State, logger log.Logger, blockStoreDB dbm.DB, height i
 	ecR.BaseReactor = *p2p.NewBaseReactor("Reactor", ecR)
 	ecR.SetLogger(logger)
 
-	// at this point
-	// if extCommitFound == true, we already have the necessary extended commit to start up cometbft
-	// if extCommitFound == false, we need to get it from a peer
-
 	go ecR.requestRoutine()
 
 	return ecR
@@ -78,9 +74,6 @@ func (ecR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 
 // AddPeer implements Reactor by sending our request to peer.
 func (ecR *Reactor) AddPeer(peer p2p.Peer) {
-	//	ecR.mtx.Lock()
-	//	ecR.peers[peer.ID()] = peer
-	//	defer ecR.mtx.Unlock()
 	if !ecR.FoundStatus() {
 		peer.Send(p2p.Envelope{
 			ChannelID: BlocksyncChannel,
@@ -92,11 +85,7 @@ func (ecR *Reactor) AddPeer(peer p2p.Peer) {
 }
 
 // RemovePeer implements Reactor by removing peer from the pool.
-func (ecR *Reactor) RemovePeer(peer p2p.Peer, _ interface{}) {
-	// ecR.mtx.Lock()
-	// defer ecR.mtx.Unlock()
-	// delete(ecR.peers, peer.ID())
-}
+func (ecR *Reactor) RemovePeer(peer p2p.Peer, _ interface{}) {}
 
 // Receive implements Reactor by handling 4 types of messages (look below).
 func (ecR *Reactor) Receive(e p2p.Envelope) {

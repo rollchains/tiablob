@@ -189,7 +189,7 @@ func NewTiasyncPrerun(
 		Moniker: "tiasync_prerun",
 		Other: p2p.DefaultNodeInfoOther{
 			TxIndex:    "off",
-			RPCAddress: "tcp://0.0.0.0:26657", // not used? but is validated...
+			RPCAddress: cmtConfig.RPC.ListenAddress,
 		},
 		ListenAddr: TiasyncInternalCfg.P2P.ListenAddress,
 	}
@@ -205,10 +205,13 @@ func NewTiasyncPrerun(
 	sw.SetNodeKey(nodeKey)
 	p2pLogger.Info("P2P Node ID", "ID", nodeKey.ID())
 
-	// TODO: add support for seeds (after intercepting comet config)
 	err = sw.AddPersistentPeers(splitAndTrimEmpty(TiasyncInternalCfg.P2P.PersistentPeers, ",", " "))
 	if err != nil {
 		return nil, fmt.Errorf("could not add peers from persistent_peers field: %w", err)
+	}
+	err = sw.AddUnconditionalPeerIDs(splitAndTrimEmpty(TiasyncInternalCfg.P2P.UnconditionalPeerIDs, ",", " "))
+	if err != nil {
+		return nil, fmt.Errorf("could not add peer ids from unconditional_peer_ids field: %w", err)
 	}
 	addrBook, err := createAddrBookAndSetOnSwitch(cmtConfig, tiasyncCfg, sw, p2pLogger, nodeKey)
 	if err != nil {
