@@ -116,7 +116,7 @@ func (bcR *Reactor) RemovePeer(peer p2p.Peer, _ interface{}) {
 func (bcR *Reactor) respondToPeer(msg *bcproto.BlockRequest, src p2p.Peer) (queued bool) {
 	block, commit := bcR.blockProvider.GetVerifiedBlock(msg.Height)
 	if block == nil {
-		bcR.Logger.Info("Peer asking for a block we don't have", "src", src, "height", msg.Height)
+		bcR.Logger.Debug("Peer asking for a block we don't have", "src", src, "height", msg.Height)
 		return src.TrySend(p2p.Envelope{
 			ChannelID: BlocksyncChannel,
 			Message:   &bcproto.NoBlockResponse{Height: msg.Height},
@@ -134,7 +134,7 @@ func (bcR *Reactor) respondToPeer(msg *bcproto.BlockRequest, src p2p.Peer) (queu
 	var extCommit *types.ExtendedCommit
 	voteExtensionEnableHeight := bcR.blockProvider.GetVoteExtensionsEnableHeight()
 	if voteExtensionEnableHeight != 0 && voteExtensionEnableHeight <= msg.Height {
-		bcR.Logger.Info("Vote extensions enabled, mocking extended commit")
+		bcR.Logger.Debug("Vote extensions enabled, mocking extended commit")
 		extCommit = &types.ExtendedCommit{
 			Height:  commit.Height,
 			BlockID: commit.BlockID,
@@ -150,7 +150,7 @@ func (bcR *Reactor) respondToPeer(msg *bcproto.BlockRequest, src p2p.Peer) (queu
 			extCommit.ExtendedSignatures = append(extCommit.ExtendedSignatures, extCommitSig)
 		}
 	} else {
-		bcR.Logger.Info("Vote extensions not enabled")
+		bcR.Logger.Debug("Vote extensions not enabled")
 	}
 
 	return src.TrySend(p2p.Envelope{
@@ -185,10 +185,8 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 				res2, err := bcR.clientCtx.Client.ABCIInfo(ctx)
 				if err != nil {
 					bcR.localPeerInBlockSync = false
-					bcR.Logger.Info("error get latest height2", "error", err)
+					bcR.Logger.Debug("error getting fullnode latest height", "error", err)
 					return
-				} else {
-					bcR.Logger.Info("queried abci info,  latest block height", "height", res2.Response.LastBlockHeight)
 				}
 				pruned, err := bcR.store.PruneBlocks(res2.Response.LastBlockHeight, true)
 				if err != nil {
@@ -216,7 +214,7 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 		}
 	case *bcproto.StatusResponse:
 		if e.Src.ID() == bcR.localPeerID {
-			bcR.Logger.Info("block sync Receive StatusResponse", "height", msg.Height, "base", msg.Base)
+			bcR.Logger.Debug("block sync Receive StatusResponse", "height", msg.Height, "base", msg.Base)
 			pruned, err := bcR.store.PruneBlocks(msg.Height, false)
 			if err != nil {
 				bcR.Logger.Error("Error pruning blocks", "error", err)

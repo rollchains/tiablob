@@ -221,7 +221,7 @@ func (bp *BlockProvider) GetVerifiedBlock(height int64) (*protoblocktypes.Block,
 			// below the validator network's block production rate, and steadily getting further and further behind.
 			err = bp.valSet.VerifyCommitLightTrusting(block1.Header.ChainID, block2.LastCommit, cmtmath.Fraction{Numerator: 1, Denominator: 3})
 			if err == nil {
-				bp.logger.Info("Block verified w/ 1/3", "height", height)
+				bp.logger.Debug("Block verified w/ 1/3 of trusted val set", "height", height)
 				return block1Proto, block2.LastCommit
 			} else {
 				bp.logger.Info("Block not verified, note: not an error", "height", height, "error", err)
@@ -245,15 +245,15 @@ func (bp *BlockProvider) queryLocalNode(ctx context.Context) {
 
 	paramsResp, err := bp.consensusQuerier.Params(ctx, &contypes.QueryParamsRequest{})
 	if err == nil {
-		bp.logger.Info("Updating vote extensions enable height", "height", paramsResp.Params.Abci.VoteExtensionsEnableHeight)
 		bp.mtx.Lock()
+		bp.logger.Info("vote extensions enable height", "height", paramsResp.Params.Abci.VoteExtensionsEnableHeight)
 		bp.veEnableHeight = paramsResp.Params.Abci.VoteExtensionsEnableHeight
 		bp.mtx.Unlock()
 	}
 }
 
 func (bp *BlockProvider) queryCelestia(ctx context.Context) {
-	bp.logger.Info("bp queryCelestia()")
+	bp.logger.Debug("bp queryCelestia()")
 	celestiaNodeClient, err := cn.NewClient(ctx, bp.nodeRpcUrl, bp.nodeAuthToken)
 	if err != nil {
 		bp.logger.Error("creating celestia node client", "error", err)
@@ -267,7 +267,7 @@ func (bp *BlockProvider) queryCelestia(ctx context.Context) {
 		return
 	}
 
-	bp.logger.Info("bp celestia latest height", "height", celestiaLatestHeight)
+	bp.logger.Debug("bp celestia latest height", "height", celestiaLatestHeight)
 	for queryHeight := bp.celestiaHeight + 1; queryHeight < celestiaLatestHeight; queryHeight++ {
 		// get the namespace blobs from that height
 		blobs, err := celestiaNodeClient.Blob.GetAll(ctx, uint64(queryHeight), []share.Namespace{bp.celestiaNamespace.Bytes()})
@@ -326,7 +326,6 @@ func (bp *BlockProvider) getGenesisValidatorSet() *cmttypes.ValidatorSet {
 		msgs := tx.GetMsgs()
 		for _, msg := range msgs {
 			msgType := sdk.MsgTypeURL(msg)
-			bp.logger.Info("Msg type", "type", msgType)
 			// the rest of this is pretty hacky...
 			if msgType == "/cosmos.staking.v1beta1.MsgCreateValidator" {
 				createValMsg, ok := msg.(*stakingtypes.MsgCreateValidator)
