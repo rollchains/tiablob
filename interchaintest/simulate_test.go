@@ -36,8 +36,10 @@ func TestSimulateRealBlockTimes(t *testing.T) {
 	ctx := context.Background()
 
 	rollchainChainSpecs := make([]*interchaintest.ChainSpec, 2)
-	rollchainChainSpecs[0] = setup.RollchainChainSpec(t.Name(), 2, 0, "rc_demo", 0, "0")
+	rollchainChainSpecs[0] = setup.RollchainChainSpec(t.Name(), 2, 0, "rc_demo0", 0, "0")
 	rollchainChainSpecs[0].ConfigFileOverrides["config/config.toml"] = setRollchainBlockTime(5)
+	rollchainChainSpecs[1] = setup.RollchainChainSpec(t.Name(), 2, 1, "rc_demo1", 0, "0")
+	rollchainChainSpecs[1].ConfigFileOverrides["config/config.toml"] = setRollchainBlockTime(5)
 	chains := setup.StartWithSpecs(t, ctx, celestiaChainSpec(12), rollchainChainSpecs)
 
 	m := NewMetrics()

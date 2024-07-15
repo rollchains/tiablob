@@ -251,6 +251,10 @@ func (bs *BlockStore) SaveBlock(height int64, block []byte) {
 		bs.base = height
 	}
 
+	if bs.height == 0 {
+		bs.height = height
+	}
+
 	if bs.height+1 == height {
 		bs.height = height
 		nextHeight := height + 1
