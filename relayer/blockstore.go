@@ -44,6 +44,12 @@ func (r *Relayer) PopulateUnprovenBlockStore() {
 	lastBlockHeight := abciInfo.Response.LastBlockHeight
 
 	currentBlockHeight := r.unprovenBlockStore.Height()
+	if currentBlockHeight == 0 {
+		// set current block height to latest proven height for genesis restarts
+		// since latest proven height is set on initchain and can't change until blockstore height > 0, latestProvenHeight is safe to use
+		currentBlockHeight = r.latestProvenHeight
+	}
+
 	r.logger.Info("Executing populate unproven blockstore", "initial height", currentBlockHeight, "latest height", lastBlockHeight)
 	for height := currentBlockHeight + 1; height <= lastBlockHeight; height++ {
 		// Cannot use txClient.GetBlockWithTxs since it tries to decode the txs. This API is broken when using the same tx

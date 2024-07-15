@@ -107,7 +107,7 @@ func NewRelayer(
 	} else if RelayerInternalCfg.DBBackend != "" {
 		backend = dbm.BackendType(RelayerInternalCfg.DBBackend)
 	}
-	db, err := dbm.NewDB("unprovenBlocks.db", backend, dataPath)
+	db, err := dbm.NewDB("unprovenBlocks", backend, dataPath)
 	if err != nil {
 		return nil, err
 	}
