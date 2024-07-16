@@ -93,6 +93,13 @@ func TiasyncPrerunRoutine(appName string, cmd *cobra.Command, srvCtx *server.Con
 	}
 	defer blockStoreDB.Close()
 
+	blockStore := store.NewBlockStore(blockStoreDB)
+	blockStoreHeight := blockStore.Height()
+	if blockStoreHeight < 1 {
+		// if blockstore is empty, nothing to do and exit early
+		return nil
+	}
+
 	var stateDB dbm.DB
 	stateDB, err = dbProvider(&cfg.DBContext{ID: "state", Config: cometCfg})
 	if err != nil {
@@ -112,7 +119,7 @@ func TiasyncPrerunRoutine(appName string, cmd *cobra.Command, srvCtx *server.Con
 		return err
 	}
 
-	extCommitNeeded, height := isExtCommitNeeded(logger, blockStoreDB, state)
+	extCommitNeeded, height := isExtCommitNeeded(logger, blockStore, state)
 	if !extCommitNeeded {
 		return nil
 	}
@@ -265,10 +272,9 @@ func (t *TiasyncPrerun) Start() {
 
 func isExtCommitNeeded(
 	logger log.Logger,
-	blockStoreDB dbm.DB,
+	blockStore *store.BlockStore,
 	state sm.State,
 ) (bool, int64) {
-	blockStore := store.NewBlockStore(blockStoreDB)
 	blockStoreHeight := blockStore.Height()
 	if blockStoreHeight < 1 {
 		return false, 0
