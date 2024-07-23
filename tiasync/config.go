@@ -3,22 +3,22 @@ package tiasync
 import (
 	"fmt"
 	"path/filepath"
-	"strings"
 	"time"
 
 	cfg "github.com/cometbft/cometbft/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/spf13/cast"
+
+	"github.com/rollchains/tiablob/relayer"
 )
 
 const (
 	FlagAddrBookPath    = "tiasync.addr-book-path"
 	FlagChainID         = "tiasync.chain-id"
 	FlagEnable          = "tiasync.enable"
-	FlagListenAddress   = "tiasync.laddr"
+	FlagLocalhostPort   = "tiasync.localhost-port"
 	FlagNodeKeyPath     = "tiasync.node-key-path"
 	FlagTiaPollInterval = "tiasync.tia-poll-interval"
-	FlagUpstreamPeers   = "tiasync.upstream-peers"
 
 	DefaultConfigDir    = "config"
 	DefaultNodeKeyName  = "tiasync_node_key.json"
@@ -36,8 +36,8 @@ const (
 	# Switch to enable/disable tiasync
 	enable = false
 
-	# Address to listen for incoming connections from the validator network
-	laddr = ""
+	# Port that cometbft will listen on
+	localhost-port = "26777"
 
 	# Path to the JSON file containing the private key to use for node authentication in the p2p protocol
 	# Tiasync must have a different key than the full node's cometbft instance
@@ -45,9 +45,6 @@ const (
 
 	# Cadence to query celestia for new blocks
 	tia-poll-interval = "5s"
-
-	# Peers that are upstream from this node and on the validator network
-	upstream-peers = ""
 	`
 )
 
@@ -60,10 +57,9 @@ var DefaultTiasyncConfig = TiasyncConfig{
 	AddrBookPath:    defaultAddrBookPath,
 	ChainID:         "",
 	Enable:          false,
-	ListenAddress:   "",
+	LocalhostPort:   "26777",
 	NodeKeyPath:     defaultNodeKeyPath,
 	TiaPollInterval: time.Second * 5,
-	UpstreamPeers:   "",
 }
 
 // TiasyncConfig defines the configuration for the in-process tiasync.
@@ -77,8 +73,8 @@ type TiasyncConfig struct {
 	// Switch to enable/disable tiasync
 	Enable bool `mapstructure:"enable"`
 
-	// Address to listen for incoming connections from the validator network
-	ListenAddress string `mapstructure:"laddr"`
+	// Port that cometbft will listen on
+	LocalhostPort string `mapstructure:"localhost-port"`
 
 	// Path to the JSON file containing the private key to use for node authentication in the p2p protocol
 	// Tiasync must have a different key than the full node's cometbft instance
@@ -86,9 +82,12 @@ type TiasyncConfig struct {
 
 	// Cadence to query celestia for new blocks
 	TiaPollInterval time.Duration `mapstructure:"tia-poll-interval"`
+}
 
-	// Peers that are upstream from this node and on the validator network
-	UpstreamPeers string `mapstructure:"upstream-peers"`
+var TiasyncInternalCfg TiasyncInternalConfig
+
+type TiasyncInternalConfig struct {
+	P2P cfg.P2PConfig
 }
 
 func TiasyncConfigFromAppOpts(appOpts servertypes.AppOptions) TiasyncConfig {
@@ -96,10 +95,9 @@ func TiasyncConfigFromAppOpts(appOpts servertypes.AppOptions) TiasyncConfig {
 		AddrBookPath:    cast.ToString(appOpts.Get(FlagAddrBookPath)),
 		ChainID:         cast.ToString(appOpts.Get(FlagChainID)),
 		Enable:          cast.ToBool(appOpts.Get(FlagEnable)),
-		ListenAddress:   cast.ToString(appOpts.Get(FlagListenAddress)),
+		LocalhostPort:   cast.ToString(appOpts.Get(FlagLocalhostPort)),
 		NodeKeyPath:     cast.ToString(appOpts.Get(FlagNodeKeyPath)),
 		TiaPollInterval: cast.ToDuration(appOpts.Get(FlagTiaPollInterval)),
-		UpstreamPeers:   cast.ToString(appOpts.Get(FlagUpstreamPeers)),
 	}
 }
 
@@ -111,31 +109,25 @@ func (t TiasyncConfig) AddrBookFile(cometCfg cfg.BaseConfig) string {
 	return rootify(t.AddrBookPath, cometCfg.RootDir)
 }
 
-// only if tiasync is enabled
-func verifyConfigs(tiasyncCfg *TiasyncConfig, cometCfg *cfg.Config) error {
-	if tiasyncCfg.Enable {
-		if cometCfg.StateSync.Enable && tiasyncCfg.UpstreamPeers == "" {
-			return fmt.Errorf("tiasync enabled, must have at least one tiasync upstream peer with state sync enabled")
-		}
-		if !strings.Contains(cometCfg.P2P.ListenAddress, "127.0.0.1") {
-			return fmt.Errorf("tiasync enabled, comet config's P2P ListenAddress/laddr must contain 127.0.0.1")
-		}
-		if cometCfg.P2P.Seeds != "" || cometCfg.P2P.PersistentPeers != "" {
-			return fmt.Errorf("tiasync enabled, comet config's P2P seeds/persistent peers must be empty")
-		}
-		if cometCfg.P2P.AddrBookStrict {
-			return fmt.Errorf("tiasync enabled, comet config's P2P address book strict must be false")
-		}
-		if !cometCfg.P2P.AllowDuplicateIP {
-			return fmt.Errorf("tiasync enabled, comet config's P2P allow duplicate IP must be true")
-		}
-		if cometCfg.P2P.PexReactor {
-			return fmt.Errorf("tiasync enabled, comet config's P2P pex reactor must be false")
-		}
-		if cometCfg.P2P.ExternalAddress != "" {
-			return fmt.Errorf("tiasync enabled, comet config's P2P external address must be empty")
-		}
+func copyConfig(cometCfg *cfg.Config) {
+	relayer.RelayerInternalCfg.DBBackend = cometCfg.DBBackend
+	relayer.RelayerInternalCfg.DBPath = cometCfg.DBPath
+	TiasyncInternalCfg.P2P = *cometCfg.P2P
+}
+
+func verifyAndModifyConfigs(tiasyncCfg *TiasyncConfig, cometCfg *cfg.Config) error {
+	if cometCfg.StateSync.Enable && cometCfg.P2P.PersistentPeers == "" {
+		return fmt.Errorf("tiasync enabled, must have at least one persistent peer with state sync enabled")
 	}
+
+	cometCfg.P2P.AddrBookStrict = false
+	cometCfg.P2P.AllowDuplicateIP = true
+	cometCfg.P2P.ExternalAddress = ""
+	cometCfg.P2P.ListenAddress = "tcp://127.0.0.1:" + tiasyncCfg.LocalhostPort
+	cometCfg.P2P.PersistentPeers = ""
+	cometCfg.P2P.PexReactor = false
+	cometCfg.P2P.Seeds = ""
+
 	return nil
 }
 

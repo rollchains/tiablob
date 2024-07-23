@@ -36,8 +36,10 @@ func TestSimulateRealBlockTimes(t *testing.T) {
 	ctx := context.Background()
 
 	rollchainChainSpecs := make([]*interchaintest.ChainSpec, 2)
-	rollchainChainSpecs[0] = setup.RollchainChainSpec(t.Name(), 2, 0, "rc_demo", 0)
+	rollchainChainSpecs[0] = setup.RollchainChainSpec(t.Name(), 2, 0, "rc_demo0", 0, "0")
 	rollchainChainSpecs[0].ConfigFileOverrides["config/config.toml"] = setRollchainBlockTime(5)
+	rollchainChainSpecs[1] = setup.RollchainChainSpec(t.Name(), 2, 1, "rc_demo1", 0, "0")
+	rollchainChainSpecs[1].ConfigFileOverrides["config/config.toml"] = setRollchainBlockTime(5)
 	chains := setup.StartWithSpecs(t, ctx, celestiaChainSpec(12), rollchainChainSpecs)
 
 	m := NewMetrics()
@@ -51,9 +53,9 @@ func rollchainChainSpecs(t *testing.T) []*interchaintest.ChainSpec {
 	rollchainChainSpecs := make([]*interchaintest.ChainSpec, numRc)
 	for i := 0; i < numRc; i++ {
 		if i == 0 {
-			rollchainChainSpecs[i] = setup.RollchainChainSpec(t.Name(), 8, i, fmt.Sprintf("rc_demo%d", i), 0)
+			rollchainChainSpecs[i] = setup.RollchainChainSpec(t.Name(), 8, i, fmt.Sprintf("rc_demo%d", i), 0, "0")
 		} else {
-			rollchainChainSpecs[i] = setup.RollchainChainSpec(t.Name(), 1, i, fmt.Sprintf("rc_demo%d", i), 0)
+			rollchainChainSpecs[i] = setup.RollchainChainSpec(t.Name(), 1, i, fmt.Sprintf("rc_demo%d", i), 0, "0")
 			if i%2 == 0 {
 				rollchainChainSpecs[i].ConfigFileOverrides["config/config.toml"] = setRollchainBlockTime(3)
 			}

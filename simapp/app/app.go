@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"sort"
 	"sync"
 
@@ -738,7 +737,7 @@ func NewChainApp(
 		appCodec,
 		appOpts,
 		appns.MustNewV0([]byte(CelestiaNamespace)),
-		filepath.Join(homePath, "keys"),
+		homePath,
 		publishToCelestiaBlockInterval,
 	)
 	if err != nil {
@@ -939,6 +938,8 @@ func NewChainApp(
 	app.SetPreBlocker(app.PreBlocker)
 	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
+	app.SetExtendVoteHandler(ExtendVoteHandler)
+	app.SetVerifyVoteExtensionHandler(VerifyVoteExtensionHandler)
 
 	anteHandler, err := NewAnteHandler(
 		HandlerOptions{

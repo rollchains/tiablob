@@ -133,7 +133,7 @@ func initRootCmd(
 	)
 }
 
-// Removes application.db, expected to be used with "comet reset-state"
+// Removes application.db and unprovenBlocks.db, expected to be used with "comet reset-state"
 func resetCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "reset-app",
@@ -148,6 +148,12 @@ func resetCommand() *cobra.Command {
 
 			if err := os.RemoveAll(appdb); err != nil {
 				return fmt.Errorf("failed to remove %s", appdb)
+			}
+
+			storedb := filepath.Join(clientCtx.HomeDir, filepath.Join("data", "unprovenBlocks.db"))
+
+			if err := os.RemoveAll(storedb); err != nil {
+				return fmt.Errorf("failed to remove %s", storedb)
 			}
 
 			return nil

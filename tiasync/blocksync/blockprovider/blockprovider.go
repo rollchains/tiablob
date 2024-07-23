@@ -32,6 +32,8 @@ import (
 	"github.com/rollchains/tiablob/tiasync/blocksync/blockprovider/celestia"
 	"github.com/rollchains/tiablob/tiasync/blocksync/blockprovider/trustedrpc"
 	"github.com/rollchains/tiablob/tiasync/store"
+
+	contypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
 )
 
 type BlockProvider struct {
@@ -46,13 +48,15 @@ type BlockProvider struct {
 	celestiaProvider *celestia.CosmosProvider
 	genDoc           *cmttypes.GenesisDoc
 	cmtConfig        *cfg.Config
+	consensusQuerier contypes.QueryClient
 
 	genState  sm.State
 	clientCtx client.Context
 	store     *store.BlockStore
 
-	valSet *cmttypes.ValidatorSet
-	mtx    cmtsync.Mutex
+	valSet         *cmttypes.ValidatorSet
+	veEnableHeight int64
+	mtx            cmtsync.Mutex
 }
 
 func NewBlockProvider(
@@ -79,6 +83,7 @@ func NewBlockProvider(
 		genDoc:           genDoc,
 		clientCtx:        clientCtx,
 		cmtConfig:        cmtConfig,
+		consensusQuerier: contypes.NewQueryClient(clientCtx),
 
 		nodeRpcUrl:        celestiaCfg.NodeRpcURL,
 		nodeAuthToken:     celestiaCfg.NodeAuthToken,
@@ -87,6 +92,8 @@ func NewBlockProvider(
 
 		genState: state,
 		store:    store,
+
+		veEnableHeight: getInitialVoteExtensionEnableHeight(genDoc, cmtConfig, state),
 	}
 }
 
@@ -143,16 +150,16 @@ func (bp *BlockProvider) Start(celestiaPollInterval time.Duration) {
 
 }
 
-func (bp *BlockProvider) GetVerifiedBlock(height int64) *protoblocktypes.Block {
+func (bp *BlockProvider) GetVerifiedBlock(height int64) (*protoblocktypes.Block, *cmttypes.Commit) {
 	bp.logger.Info("bp GetBlock()", "height", height)
 	if bp.store.Height()-1 < height {
-		return nil
+		return nil, nil
 	}
 
 	block1Meta := bp.store.LoadBlockMeta(height)
 	block2Meta := bp.store.LoadBlockMeta(height + 1)
 	if block1Meta == nil || block2Meta == nil {
-		return nil
+		return nil, nil
 	}
 
 	for block1Count := block1Meta.Count; block1Count > 0; block1Count-- {
@@ -194,7 +201,7 @@ func (bp *BlockProvider) GetVerifiedBlock(height int64) *protoblocktypes.Block {
 			// otherwise, if valset is still nil, return although we shouldn't enter here
 			if bp.valSet == nil {
 				bp.logger.Info("Val set is nil")
-				return nil
+				return nil, nil
 			}
 
 			// Verify that the block id of the block being verified matches that of the next block's last commit's block id
@@ -214,31 +221,39 @@ func (bp *BlockProvider) GetVerifiedBlock(height int64) *protoblocktypes.Block {
 			// below the validator network's block production rate, and steadily getting further and further behind.
 			err = bp.valSet.VerifyCommitLightTrusting(block1.Header.ChainID, block2.LastCommit, cmtmath.Fraction{Numerator: 1, Denominator: 3})
 			if err == nil {
-				bp.logger.Info("Block verified w/ 1/3", "height", height)
-				return block1Proto
+				bp.logger.Debug("Block verified w/ 1/3 of trusted val set", "height", height)
+				return block1Proto, block2.LastCommit
 			} else {
 				bp.logger.Info("Block not verified, note: not an error", "height", height, "error", err)
 			}
 		}
 	}
 
-	return nil
+	return nil, nil
 }
 
 func (bp *BlockProvider) queryLocalNode(ctx context.Context) {
 	valSet, err := bp.clientCtx.Client.Validators(ctx, nil, nil, nil)
 	if err == nil {
-		bp.logger.Info("Updating val set")
+		bp.logger.Debug("Updating val set")
 		bp.mtx.Lock()
 		bp.valSet = &cmttypes.ValidatorSet{
 			Validators: valSet.Validators,
 		}
 		bp.mtx.Unlock()
 	}
+
+	paramsResp, err := bp.consensusQuerier.Params(ctx, &contypes.QueryParamsRequest{})
+	if err == nil {
+		bp.mtx.Lock()
+		bp.logger.Info("vote extensions enable height", "height", paramsResp.Params.Abci.VoteExtensionsEnableHeight)
+		bp.veEnableHeight = paramsResp.Params.Abci.VoteExtensionsEnableHeight
+		bp.mtx.Unlock()
+	}
 }
 
 func (bp *BlockProvider) queryCelestia(ctx context.Context) {
-	bp.logger.Info("bp queryCelestia()")
+	bp.logger.Debug("bp queryCelestia()")
 	celestiaNodeClient, err := cn.NewClient(ctx, bp.nodeRpcUrl, bp.nodeAuthToken)
 	if err != nil {
 		bp.logger.Error("creating celestia node client", "error", err)
@@ -252,7 +267,7 @@ func (bp *BlockProvider) queryCelestia(ctx context.Context) {
 		return
 	}
 
-	bp.logger.Info("bp celestia latest height", "height", celestiaLatestHeight)
+	bp.logger.Debug("bp celestia latest height", "height", celestiaLatestHeight)
 	for queryHeight := bp.celestiaHeight + 1; queryHeight < celestiaLatestHeight; queryHeight++ {
 		// get the namespace blobs from that height
 		blobs, err := celestiaNodeClient.Blob.GetAll(ctx, uint64(queryHeight), []share.Namespace{bp.celestiaNamespace.Bytes()})
@@ -311,7 +326,6 @@ func (bp *BlockProvider) getGenesisValidatorSet() *cmttypes.ValidatorSet {
 		msgs := tx.GetMsgs()
 		for _, msg := range msgs {
 			msgType := sdk.MsgTypeURL(msg)
-			bp.logger.Info("Msg type", "type", msgType)
 			// the rest of this is pretty hacky...
 			if msgType == "/cosmos.staking.v1beta1.MsgCreateValidator" {
 				createValMsg, ok := msg.(*stakingtypes.MsgCreateValidator)
@@ -381,4 +395,10 @@ func (bp *BlockProvider) getValSetFromTrustedRpc(height int64) {
 		}
 		return
 	}
+}
+
+func (bp *BlockProvider) GetVoteExtensionsEnableHeight() int64 {
+	bp.mtx.Lock()
+	defer bp.mtx.Unlock()
+	return bp.veEnableHeight
 }

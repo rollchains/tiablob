@@ -63,10 +63,6 @@ func TiasyncRoutine(svrCtx *server.Context, clientCtx client.Context, celestiaNa
 		return
 	}
 
-	if err := verifyConfigs(&tiasyncCfg, cometCfg); err != nil {
-		panic(err)
-	}
-
 	logger, err := cmtflags.ParseLogLevel(cometCfg.LogLevel, logger, cfg.DefaultLogLevel)
 	if err != nil {
 		panic(err)
@@ -142,7 +138,7 @@ func NewTiasync(
 	)
 	stateSyncReactor.SetLogger(logger.With("tsmodule", "tsstatesync"))
 
-	nodeInfo, err := makeNodeInfo(tiasyncCfg, nodeKey, genDoc, state)
+	nodeInfo, err := makeNodeInfo(cmtConfig, nodeKey, genDoc, state)
 	if err != nil {
 		return nil, err
 	}
@@ -164,10 +160,16 @@ func NewTiasync(
 		stateSyncReactor, consensusReactor, nodeInfo, nodeKey, p2pLogger,
 	)
 
-	err = sw.AddPersistentPeers(getPersistentPeers(tiasyncCfg.UpstreamPeers, cometNodeKey, cmtConfig.P2P.ListenAddress))
+	err = sw.AddPersistentPeers(getPersistentPeers(TiasyncInternalCfg.P2P.PersistentPeers, cometNodeKey, cmtConfig.P2P.ListenAddress))
 	if err != nil {
 		return nil, fmt.Errorf("could not add peers from persistent_peers field: %w", err)
 	}
+
+	err = sw.AddUnconditionalPeerIDs(splitAndTrimEmpty(TiasyncInternalCfg.P2P.UnconditionalPeerIDs, ",", " "))
+	if err != nil {
+		return nil, fmt.Errorf("could not add peer ids from unconditional_peer_ids field: %w", err)
+	}
+
 	addrBook, err := createAddrBookAndSetOnSwitch(cmtConfig, tiasyncCfg, sw, p2pLogger, nodeKey)
 	if err != nil {
 		return nil, fmt.Errorf("could not create addrbook: %w", err)
@@ -204,7 +206,7 @@ func NewTiasync(
 
 func (t *Tiasync) Start() {
 	// Start the transport.
-	addr, err := p2p.NewNetAddressString(p2p.IDAddressString(t.nodeKey.ID(), t.tiasyncCfg.ListenAddress))
+	addr, err := p2p.NewNetAddressString(p2p.IDAddressString(t.nodeKey.ID(), TiasyncInternalCfg.P2P.ListenAddress))
 	if err != nil {
 		panic(err)
 	}
@@ -221,7 +223,7 @@ func (t *Tiasync) Start() {
 	}
 
 	// Always connect to persistent peers
-	err = t.sw.DialPeersAsync(getPersistentPeers(t.tiasyncCfg.UpstreamPeers, t.cometNodeKey, t.cmtConfig.P2P.ListenAddress))
+	err = t.sw.DialPeersAsync(getPersistentPeers(TiasyncInternalCfg.P2P.PersistentPeers, t.cometNodeKey, t.cmtConfig.P2P.ListenAddress))
 	if err != nil {
 		panic(fmt.Errorf("could not dial peers from persistent_peers field: %w", err))
 	}

@@ -1,18 +1,23 @@
 package relayer
 
 import (
+	"path/filepath"
 	"sync"
 	"time"
 
+	"github.com/spf13/cast"
+
 	"cosmossdk.io/log"
-	"github.com/cosmos/cosmos-sdk/client"
-	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	appns "github.com/rollchains/tiablob/celestia/namespace"
 	"github.com/rollchains/tiablob/lightclients/celestia"
 	celestiaprovider "github.com/rollchains/tiablob/relayer/celestia"
 	"github.com/rollchains/tiablob/relayer/local"
+	"github.com/rollchains/tiablob/relayer/store"
 
+	dbm "github.com/cometbft/cometbft-db"
+	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
+	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 )
 
 const (
@@ -51,6 +56,8 @@ type Relayer struct {
 	celestiaGasAdjustment        float64
 	celestiaPublishBlockInterval int
 	celestiaLastQueriedHeight    int64
+
+	unprovenBlockStore *store.BlockStore
 }
 
 // NewRelayer creates a new Relayer instance
@@ -59,9 +66,10 @@ func NewRelayer(
 	cdc codec.BinaryCodec,
 	appOpts servertypes.AppOptions,
 	celestiaNamespace appns.Namespace,
-	keyDir string,
+	homePath string,
 	celestiaPublishBlockInterval int,
 ) (*Relayer, error) {
+	keyDir := filepath.Join(homePath, "keys")
 	cfg := CelestiaConfigFromAppOpts(appOpts)
 
 	if cfg.MaxFlushSize < 1 || cfg.MaxFlushSize > MaxMaxFlushSize {
@@ -87,6 +95,25 @@ func NewRelayer(
 		celestiaPublishBlockInterval = cfg.OverridePubInterval
 	}
 
+	dataDir := "data"
+	if RelayerInternalCfg.DBPath != "" {
+		dataDir = RelayerInternalCfg.DBPath
+	}
+	dataPath := filepath.Join(homePath, dataDir)
+
+	backend := dbm.GoLevelDBBackend
+	if cast.ToString(appOpts.Get("app-db-backend")) != "" {
+		backend = dbm.BackendType(cast.ToString(appOpts.Get("app-db-backend")))
+	} else if RelayerInternalCfg.DBBackend != "" {
+		backend = dbm.BackendType(RelayerInternalCfg.DBBackend)
+	}
+	db, err := dbm.NewDB("unprovenBlocks", backend, dataPath)
+	if err != nil {
+		return nil, err
+	}
+
+	unprovenBlockStore := store.NewBlockStore(db)
+
 	return &Relayer{
 		logger: logger,
 
@@ -110,6 +137,8 @@ func NewRelayer(
 		blockProofCache:      make(map[int64]*celestia.BlobProof),
 		blockProofCacheLimit: cfg.MaxFlushSize,
 		celestiaHeaderCache:  make(map[int64]*celestia.Header),
+
+		unprovenBlockStore: unprovenBlockStore,
 	}, nil
 }
 

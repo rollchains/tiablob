@@ -302,6 +302,43 @@ func AddCommands(
 }
 ```
 
+## `root.go` wiring
+
+In your application root file, typically named `cmd/$APP/root.go`, incorporate the following to wire up tiasync.
+
+1. Imports
+
+Within the imported packages, add the `tiasync` dependency.
+
+```golang
+import (
+    // ...
+	"github.com/rollchains/tiablob/tiasync"
+)
+```
+
+2. Tiasync PersistentPreRunE command
+
+```golang
+func NewRootCmd() *cobra.Command {
+	// ...
+	rootCmd := &cobra.Command{
+		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
+			// ...
+			if err := server.InterceptConfigsPreRunHandler(cmd, customAppTemplate, customAppConfig, customCMTConfig); err != nil {
+				return err
+			}
+
+			srvCtx := server.GetServerContextFromCmd(cmd)
+			tiasync.TiasyncPrerunRoutine(version.AppName, cmd, srvCtx)
+
+			return nil
+		},
+	}
+	// ...
+}
+```
+
 ## Existing chains
 
 Existing chains will have an additional step. An upgrade handler will be needed to set the proven height to the upgrade height.

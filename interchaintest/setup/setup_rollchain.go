@@ -33,9 +33,9 @@ func RollchainChainSpecs(testName string, numRc int) []*interchaintest.ChainSpec
 	chainSpecs := make([]*interchaintest.ChainSpec, numRc)
 	for i := 0; i < numRc; i++ {
 		if i == 0 {
-			chainSpecs[i] = RollchainChainSpec(testName, 2, i, fmt.Sprintf("rc_demo%d", i), 0)
+			chainSpecs[i] = RollchainChainSpec(testName, 2, i, fmt.Sprintf("rc_demo%d", i), 0, "0")
 		} else {
-			chainSpecs[i] = RollchainChainSpec(testName, 1, i, fmt.Sprintf("rc_demo%d", i), 0)
+			chainSpecs[i] = RollchainChainSpec(testName, 1, i, fmt.Sprintf("rc_demo%d", i), 0, "0")
 		}
 	}
 	return chainSpecs
@@ -44,7 +44,7 @@ func RollchainChainSpecs(testName string, numRc int) []*interchaintest.ChainSpec
 // Set up default rollchain chain spec with custom values
 // testName: to generate celestia's app and node hostnames
 // numVals: each chain will want this custom (non-primaries expected to be 1)
-func RollchainChainSpec(testName string, numVals int, index int, namespace string, pubInterval int) *interchaintest.ChainSpec {
+func RollchainChainSpec(testName string, numVals int, index int, namespace string, pubInterval int, veEnableHeight string) *interchaintest.ChainSpec {
 	NumberFullNodes := 0
 	celestiaAppHostname := fmt.Sprintf("%s-val-0-%s", celestiaChainID, testName)            // celestia-1-val-0-TestPublish
 	celestiaNodeHostname := fmt.Sprintf("%s-celestia-node-0-%s", celestiaChainID, testName) // celestia-1-celestia-node-0-TestPublish
@@ -63,6 +63,7 @@ func RollchainChainSpec(testName string, numVals int, index int, namespace strin
 		cosmos.NewGenesisKV("app_state.poa.params.admins", []string{"rc10d07y265gmmuvt4z0w9aw880jnsr700jymjvfq", "rc1hj5fveer5cjtn4wd6wstzugjfdxzl0xpc4nmns"}),
 		// globalfee: set minimum fee requirements
 		cosmos.NewGenesisKV("app_state.globalfee.params.minimum_gas_prices", sdk.DecCoins{GasCoin}),
+		cosmos.NewGenesisKV("consensus.params.abci.vote_extensions_enable_height", veEnableHeight),
 	}
 
 	defaultChainConfig := ibc.ChainConfig{

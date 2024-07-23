@@ -120,7 +120,7 @@ func (r *Relayer) tryGetAggregatedProof(ctx context.Context, blobs []*blob.Blob,
 	for i, mBlob := range blobs {
 		var err error
 		// Replace blob data with our data for proof verification
-		heights[i], mBlob.Data = r.getBlobHeightAndData(ctx, mBlob, queryHeight, r.latestProvenHeight)
+		heights[i], mBlob.Data = r.getBlobHeightAndData(mBlob, queryHeight, r.latestProvenHeight)
 		if heights[i] == 0 || mBlob.Data == nil {
 			r.logger.Info("aggregate, getBlobHeightAndData bail", "error", err)
 			// bail immediately and try individual block proofs
@@ -197,7 +197,7 @@ func (r *Relayer) tryGetAggregatedProof(ctx context.Context, blobs []*blob.Blob,
 //
 // returns an error only when we shouldn't hit an error, otherwise nil if the blob could be someone elses (i.e. same namespace used)
 func (r *Relayer) getBlobProof(ctx context.Context, mBlob *blob.Blob, queryHeight int64, squareSize uint64, latestClientState *celestia.ClientState) error {
-	rollchainBlockHeight, data := r.getBlobHeightAndData(ctx, mBlob, queryHeight, r.latestProvenHeight)
+	rollchainBlockHeight, data := r.getBlobHeightAndData(mBlob, queryHeight, r.latestProvenHeight)
 	if data == nil {
 		return nil
 	}
@@ -255,7 +255,7 @@ func (r *Relayer) getBlobProof(ctx context.Context, mBlob *blob.Blob, queryHeigh
 	return nil
 }
 
-func (r *Relayer) getBlobHeightAndData(ctx context.Context, mBlob *blob.Blob, queryHeight int64, latestProvenHeight int64) (int64, []byte) {
+func (r *Relayer) getBlobHeightAndData(mBlob *blob.Blob, queryHeight int64, latestProvenHeight int64) (int64, []byte) {
 	var blobBlockProto protoblocktypes.Block
 	err := blobBlockProto.Unmarshal(mBlob.GetData())
 	if err != nil {
@@ -270,32 +270,12 @@ func (r *Relayer) getBlobHeightAndData(ctx context.Context, mBlob *blob.Blob, qu
 		return 0, nil
 	}
 
-	blockProtoBz, err := r.GetLocalBlockAtHeight(ctx, rollchainBlockHeight)
+	blockProtoBz, err := r.GetLocalBlockAtHeight(rollchainBlockHeight)
 	if err != nil {
 		return 0, nil
 	}
 
 	return rollchainBlockHeight, blockProtoBz
-}
-
-func (r *Relayer) GetLocalBlockAtHeight(ctx context.Context, rollchainBlockHeight int64) ([]byte, error) {
-	// Cannot use txClient.GetBlockWithTxs since it tries to decode the txs. This API is broken when using the same tx
-	// injection method as vote extensions. https://docs.cosmos.network/v0.50/build/abci/vote-extensions#vote-extension-propagation
-	// "FinalizeBlock will ignore any byte slice that doesn't implement an sdk.Tx, so any injected vote extensions will safely be ignored in FinalizeBlock"
-	// "Some existing Cosmos SDK core APIs may need to be modified and thus broken."
-	expectedBlock, err := r.localProvider.GetBlockAtHeight(ctx, rollchainBlockHeight)
-	if err != nil {
-		// TODO: add retries, bad if this errors
-		r.logger.Error("getting local block", "note", "may be a namespace collision", "rollchain height", rollchainBlockHeight, "err", err)
-		return nil, err
-	}
-
-	blockProto, err := expectedBlock.Block.ToProto()
-	if err != nil {
-		return nil, err
-	}
-
-	return blockProto.Marshal()
 }
 
 // GetShareIndex calculates the share index given the EDS index of the blob and square size of the respective block

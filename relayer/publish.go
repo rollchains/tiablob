@@ -70,22 +70,28 @@ func (r *Relayer) postBlocks(ctx sdk.Context, blocks []int64) {
 	blobs := make([]*blobtypes.Blob, len(blocks))
 
 	for i, height := range blocks {
+		var blockBz []byte
 		res, err := r.localProvider.GetBlockAtHeight(ctx, height)
 		if err != nil {
-			r.logger.Error("Error getting block", "height:", height, "error", err)
-			return
-		}
+			r.logger.Error("Error getting block via rpc", "height", height, "error", err)
+			// If block has been pruned, get it from unproven block store which isn't pruned until proven, but can lag behind cometbft's blockstore
+			blockBz, err = r.GetLocalBlockAtHeight(height)
+			if err != nil {
+				r.logger.Error("Error getting block from unproven blockstore", "height", height, "error", err)
+				return
+			}
+		} else {
+			blockProto, err := res.Block.ToProto()
+			if err != nil {
+				r.logger.Error("Error protoing block", "error", err)
+				return
+			}
 
-		blockProto, err := res.Block.ToProto()
-		if err != nil {
-			r.logger.Error("Error protoing block", "error", err)
-			return
-		}
-
-		blockBz, err := blockProto.Marshal()
-		if err != nil {
-			r.logger.Error("Error marshaling block", "error", err)
-			return
+			blockBz, err = blockProto.Marshal()
+			if err != nil {
+				r.logger.Error("Error marshaling block", "error", err)
+				return
+			}
 		}
 
 		blob, err := blobtypes.NewBlob(r.celestiaNamespace, blockBz, appconsts.ShareVersionZero)
