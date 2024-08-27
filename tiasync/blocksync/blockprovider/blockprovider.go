@@ -26,7 +26,7 @@ import (
 	"github.com/rollchains/tiablob"
 	"github.com/rollchains/tiablob/celestia-node/share"
 	appns "github.com/rollchains/tiablob/celestia/namespace"
-	lc "github.com/rollchains/tiablob/lightclients/celestia"
+	lc "github.com/rollchains/celestia-da-light-client"
 	"github.com/rollchains/tiablob/relayer"
 	cn "github.com/rollchains/tiablob/relayer/celestia-node"
 	"github.com/rollchains/tiablob/tiasync/blocksync/blockprovider/celestia"

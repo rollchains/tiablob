@@ -7,7 +7,7 @@ import (
 	fmt "fmt"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
-	celestia "github.com/rollchains/tiablob/lightclients/celestia"
+	celestia "github.com/rollchains/celestia-da-light-client"
 	io "io"
 	math "math"
 	math_bits "math/bits"

@@ -8,7 +8,7 @@ import (
 	protoblocktypes "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/rollchains/tiablob/celestia-node/blob"
 	"github.com/rollchains/tiablob/celestia-node/share"
-	"github.com/rollchains/tiablob/lightclients/celestia"
+	celestia "github.com/rollchains/celestia-da-light-client"
 	cn "github.com/rollchains/tiablob/relayer/celestia-node"
 )
 

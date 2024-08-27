@@ -7,7 +7,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/rollchains/tiablob"
-	"github.com/rollchains/tiablob/lightclients/celestia"
+	celestia "github.com/rollchains/celestia-da-light-client"
 )
 
 func (k Keeper) GetClientState(ctx sdk.Context) (*celestia.ClientState, bool) {

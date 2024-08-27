@@ -9,7 +9,7 @@ import (
 
 	"cosmossdk.io/log"
 	appns "github.com/rollchains/tiablob/celestia/namespace"
-	"github.com/rollchains/tiablob/lightclients/celestia"
+	celestia "github.com/rollchains/celestia-da-light-client"
 	celestiaprovider "github.com/rollchains/tiablob/relayer/celestia"
 	"github.com/rollchains/tiablob/relayer/local"
 	"github.com/rollchains/tiablob/relayer/store"

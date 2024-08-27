@@ -12,7 +12,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/rollchains/tiablob/lightclients/celestia"
+	celestia "github.com/rollchains/celestia-da-light-client"
 )
 
 // GetBlockAtHeight queries the block at a given height

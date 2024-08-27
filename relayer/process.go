@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/rollchains/tiablob/lightclients/celestia"
+	celestia "github.com/rollchains/celestia-da-light-client"
 )
 
 // Start begins the relayer process
