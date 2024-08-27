@@ -4,7 +4,7 @@ package rollchains.tiablob.v1;
 import "gogoproto/gogo.proto";
 import "rollchains/tiablob/v1/query.proto";
 import "rollchains/tiablob/v1/validator.proto";
-import "rollchains/tiablob/lightclients/celestia/v1/celestia.proto";
+import "rollchains/celestia_da_light_client/v1/celestia.proto";
 
 option go_package = "github.com/rollchains/tiablob";
 
@@ -16,7 +16,7 @@ message GenesisState {
     // increment only, never skipping heights.
     int64 proven_height = 2;
 
-    .rollchains.tiablob.lightclients.celestia.v1.GenesisState celestia_genesis_state = 3;
+    .rollchains.celestia_da_light_client.v1.GenesisState celestia_genesis_state = 3;
 
     repeated BlockWithExpiration pending_blocks = 4;
 }

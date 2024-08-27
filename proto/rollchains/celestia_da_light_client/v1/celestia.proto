@@ -1,0 +1,175 @@
+syntax = "proto3";
+package rollchains.celestia_da_light_client.v1;
+
+import "tendermint/types/validator.proto";
+import "tendermint/types/types.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+import "gogoproto/gogo.proto";
+import "tendermint/crypto/proof.proto";
+
+option go_package = "github.com/rollchains/celestia-da-light-client";
+
+// ClientState from Celestia tracks the current validator set, latest height,
+// and a possible frozen height.
+message ClientState {
+  option (gogoproto.goproto_getters) = false;
+
+  string   chain_id    = 1;
+  Fraction trust_level = 2 [(gogoproto.nullable) = false];
+  // duration of the period since the LatestTimestamp during which the
+  // submitted headers are valid for upgrade
+  google.protobuf.Duration trusting_period = 3 [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+  // duration of the staking unbonding period
+  google.protobuf.Duration unbonding_period = 4 [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+  // defines how much new (untrusted) header's Time can drift into the future.
+  google.protobuf.Duration max_clock_drift = 5 [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+  // Block height when the client was frozen due to a misbehaviour
+  Height frozen_height = 6 [(gogoproto.nullable) = false];
+  // Latest height the client was updated to
+  Height latest_height = 7 [(gogoproto.nullable) = false];
+}
+
+// ConsensusState defines the consensus state from Tendermint.
+message ConsensusState {
+  option (gogoproto.goproto_getters) = false;
+
+  // timestamp that corresponds to the block height in which the ConsensusState
+  // was stored.
+  google.protobuf.Timestamp timestamp = 1 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  // commitment root (i.e app hash)
+  bytes root = 2;
+  bytes next_validators_hash = 3 [(gogoproto.casttype) = "github.com/cometbft/cometbft/libs/bytes.HexBytes"];
+}
+
+message CreateClient {
+  option (gogoproto.goproto_getters) = false;
+
+  ClientState client_state = 1 [(gogoproto.nullable) = false];
+  ConsensusState consensus_state = 2 [(gogoproto.nullable) = false];
+}
+
+// Misbehaviour is a wrapper over two conflicting Headers
+// that implements Misbehaviour interface expected by ICS-02
+message Misbehaviour {
+  option (gogoproto.goproto_getters) = false;
+
+  // ClientID is deprecated
+  string client_id = 1 [deprecated = true];
+  Header header_1  = 2 [(gogoproto.customname) = "Header1"];
+  Header header_2  = 3 [(gogoproto.customname) = "Header2"];
+}
+
+// Header defines the Tendermint client consensus Header.
+// It encapsulates all the information necessary to update from a trusted
+// Tendermint ConsensusState. The inclusion of TrustedHeight and
+// TrustedValidators allows this update to process correctly, so long as the
+// ConsensusState for the TrustedHeight exists, this removes race conditions
+// among relayers The SignedHeader and ValidatorSet are the new untrusted update
+// fields for the client. The TrustedHeight is the height of a stored
+// ConsensusState on the client that will be used to verify the new untrusted
+// header. The Trusted ConsensusState must be within the unbonding period of
+// current time in order to correctly verify, and the TrustedValidators must
+// hash to TrustedConsensusState.NextValidatorsHash since that is the last
+// trusted validator set at the TrustedHeight.
+message Header {
+  .tendermint.types.SignedHeader signed_header = 1 [(gogoproto.embed) = true];
+
+  .tendermint.types.ValidatorSet validator_set      = 2;
+  Height                         trusted_height     = 3 [(gogoproto.nullable) = false];
+  .tendermint.types.ValidatorSet trusted_validators = 4;
+}
+
+// Fraction defines the protobuf message type for tmmath.Fraction that only
+// supports positive values.
+message Fraction {
+  uint64 numerator   = 1;
+  uint64 denominator = 2;
+}
+
+// Height is a monotonically increasing data type
+// that can be compared against another Height for the purposes of updating and
+// freezing clients
+//
+// Normally the RevisionHeight is incremented at each height while keeping
+// RevisionNumber the same. However some consensus algorithms may choose to
+// reset the height in certain conditions e.g. hard forks, state-machine
+// breaking changes In these cases, the RevisionNumber is incremented so that
+// height continues to be monitonically increasing even as the RevisionHeight
+// gets reset
+message Height {
+  option (gogoproto.goproto_getters)  = false;
+  option (gogoproto.goproto_stringer) = false;
+
+  // the revision that the client is currently on
+  uint64 revision_number = 1;
+  // the height within the given revision
+  uint64 revision_height = 2;
+}
+
+message BlobProof {
+  ShareProof share_proof = 1 [(gogoproto.nullable) = false];
+  int64 celestia_height = 2;
+  repeated int64 rollchain_heights = 3;
+}
+
+// ShareProof is an NMT proof that a set of shares exist in a set of rows and a
+// Merkle proof that those rows exist in a Merkle tree with a given data root.
+message ShareProof {
+  repeated bytes    data              = 1;
+  repeated NMTProof share_proofs      = 2;
+  bytes             namespace_id      = 3;
+  RowProof          row_proof         = 4;
+  uint32            namespace_version = 5;
+}
+
+// RowProof is a Merkle proof that a set of rows exist in a Merkle tree with a
+// given data root.
+message RowProof {
+  repeated bytes                    row_roots = 1;
+  repeated .tendermint.crypto.Proof proofs    = 2;
+  bytes                             root      = 3;
+  uint32                            start_row = 4;
+  uint32                            end_row   = 5;
+}
+
+// NMTProof is a proof of a namespace.ID in an NMT.
+// In case this proof proves the absence of a namespace.ID
+// in a tree it also contains the leaf hashes of the range
+// where that namespace would be.
+message NMTProof {
+  // Start index of this proof.
+  int32 start = 1;
+  // End index of this proof.
+  int32 end = 2;
+  // Nodes that together with the corresponding leaf values can be used to
+  // recompute the root and verify this proof. Nodes should consist of the max
+  // and min namespaces along with the actual hash, resulting in each being 48
+  // bytes each
+  repeated bytes nodes = 3;
+  // leafHash are nil if the namespace is present in the NMT. In case the
+  // namespace to be proved is in the min/max range of the tree but absent, this
+  // will contain the leaf hash necessary to verify the proof of absence. Leaf
+  // hashes should consist of the namespace along with the actual hash,
+  // resulting 40 bytes total.
+  bytes leaf_hash = 4;
+}
+
+// Consensus state with height attached for import/export genesis
+message ConsensusStateWithHeight {
+  Height height = 1 [(gogoproto.nullable) = false];
+  ConsensusState consensus_state = 2 [(gogoproto.nullable) = false];
+}
+
+// Clients key/value metadata for import/export genesis
+message GenesisMetadata {
+  bytes key = 1;
+  bytes value = 2;
+}
+
+// All client state for import/export genesis
+message GenesisState {
+  ClientState client_state = 1 [(gogoproto.nullable) = false];
+  repeated ConsensusStateWithHeight consensus_states = 2;
+  repeated GenesisMetadata metadata = 3;
+}

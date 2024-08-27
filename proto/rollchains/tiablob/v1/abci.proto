@@ -2,14 +2,14 @@ syntax = "proto3";
 package rollchains.tiablob.v1;
 
 import "gogoproto/gogo.proto";
-import "rollchains/tiablob/lightclients/celestia/v1/celestia.proto";
+import "rollchains/celestia_da_light_client/v1/celestia.proto";
 
 option go_package = "github.com/rollchains/tiablob";
 
 message InjectedData {
-    .rollchains.tiablob.lightclients.celestia.v1.CreateClient create_client = 1;
-    repeated rollchains.tiablob.lightclients.celestia.v1.Header headers = 2;
-    repeated rollchains.tiablob.lightclients.celestia.v1.BlobProof proofs = 3;
+    .rollchains.celestia_da_light_client.v1.CreateClient create_client = 1;
+    repeated rollchains.celestia_da_light_client.v1.Header headers = 2;
+    repeated rollchains.celestia_da_light_client.v1.BlobProof proofs = 3;
     PendingBlocks pending_blocks = 4 [ (gogoproto.nullable) = false ];
 }
 
