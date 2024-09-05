@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/rollchains/tiablob/lightclients/celestia"
+	celestia "github.com/rollchains/celestia-da-light-client"
 )
 
 func (r *Relayer) getCachedHeader(height int64) *celestia.Header {

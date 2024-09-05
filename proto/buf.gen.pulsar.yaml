@@ -13,10 +13,10 @@ managed:
 plugins:
   - name: go-pulsar
     out: ..
-    opt: paths=source_relative,Mcosmos/app/v1alpha1/module.proto=cosmossdk.io/api/cosmos/app/v1alpha1,Mrollchains/tiablob/lightclients/celestia/v1/celestia.proto=github.com/rollchains/tiablob/api/lightclients/celestia/v1
+    opt: paths=source_relative,Mcosmos/app/v1alpha1/module.proto=cosmossdk.io/api/cosmos/app/v1alpha1,Mrollchains/celestia_da_light_client/v1/celestia.proto=github.com/rollchains/celestia-da-light-client/api/v1
   - name: go-grpc
     out: ..
-    opt: paths=source_relative,Mcosmos/app/v1alpha1/module.proto=cosmossdk.io/api/cosmos/app/v1alpha1,Mrollchains/tiablob/lightclients/celestia/v1/celestia.proto=github.com/rollchains/tiablob/api/lightclients/celestia/v1
+    opt: paths=source_relative,Mcosmos/app/v1alpha1/module.proto=cosmossdk.io/api/cosmos/app/v1alpha1,Mrollchains/celestia_da_light_client/v1/celestia.proto=github.com/rollchains/celestia-da-light-client/api/v1
   - name: go-cosmos-orm
     out: ..
-    opt: paths=source_relative,Mcosmos/app/v1alpha1/module.proto=cosmossdk.io/api/cosmos/app/v1alpha1,Mrollchains/tiablob/lightclients/celestia/v1/celestia.proto=github.com/rollchains/tiablob/api/lightclients/celestia/v1
+    opt: paths=source_relative,Mcosmos/app/v1alpha1/module.proto=cosmossdk.io/api/cosmos/app/v1alpha1,Mrollchains/celestia_da_light_client/v1/celestia.proto=github.com/rollchains/celestia-da-light-client/api/v1

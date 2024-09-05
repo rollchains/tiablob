@@ -1,15 +1,14 @@
 syntax = "proto3";
-package rollchains.tiablob.lightclients.celestia.v1;
+package rollchains.celestia_da_light_client.v1;
 
 import "tendermint/types/validator.proto";
 import "tendermint/types/types.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 import "gogoproto/gogo.proto";
-import "celestia/core/v1/blob/blob.proto";
 import "tendermint/crypto/proof.proto";
 
-option go_package = "github.com/rollchains/tiablob/lightclients/celestia";
+option go_package = "github.com/rollchains/celestia-da-light-client";
 
 // ClientState from Celestia tracks the current validator set, latest height,
 // and a possible frozen height.
